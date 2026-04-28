@@ -1,0 +1,17 @@
+/.devenv/
+/.direnv/
+/reference/OpenMythos/
+
+# Julia local and coverage artifacts
+/LocalPreferences.toml
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+
+# Editor state
+/.vscode/*
+!/.vscode/settings.json
+
+# OS cruft
+.DS_Store
+
