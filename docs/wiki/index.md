@@ -8,15 +8,16 @@ It is intentionally concept-first: the goal is to explain what the Python projec
 
 - The root repository now contains a Julia package scaffold with `Project.toml`, `src/`, `test/`, and a resolved `Manifest.toml`.
 - The authoritative implementation today is the Python reference at `reference/OpenMythos`.
-- The implemented Julia slice now covers the primitive layer, the main model stack, named presets, a tokenizer bridge, an optional Python-vs-Julia parity harness, and a Lux-backed bootstrap training/data path.
-- The immediate next step is documentation and package polish around that training story.
+- The implemented Julia slice now covers the primitive layer, the main model stack, named presets, a tokenizer bridge, an optional Python-vs-Julia parity harness, a Lux-backed bootstrap training/data path, and package-level usage docs.
+- The tracked roadmap items are now in place; future work focuses on deeper training/runtime capability rather than missing repository basics.
 
 ## Reading order
 
-1. [Architecture](architecture.md) - the model we are actually porting.
-2. [Python reference map](python-reference-map.md) - which Python files matter and how they translate into Julia work.
-3. [References](references.md) - papers, datasets, and implementation references already cited by the Python project.
-4. [Julia reimplementation plan](julia-reimplementation-plan.md) - target module layout, libraries, and implementation phases.
+1. [Usage](usage.md) - how to actually run the current Julia package.
+2. [Architecture](architecture.md) - the model we are actually porting.
+3. [Python reference map](python-reference-map.md) - which Python files matter and how they translate into Julia work.
+4. [References](references.md) - papers, datasets, and implementation references already cited by the Python project.
+5. [Julia reimplementation plan](julia-reimplementation-plan.md) - target module layout, libraries, and implementation phases.
 
 ## Big picture
 
@@ -64,4 +65,13 @@ The Julia replica now has a real bootstrap training path:
 - local-text smoke training and an optional FineWeb-Edu Python streaming bridge,
 - a `LuxHeadOnlyOpenMythos` layer backed by `Optimisers.AdamW` and `NNlib.logsoftmax`.
 
-That path is intentionally limited to **head-only** optimization for now. The remaining work is mostly making the public package story and usage docs sharper.
+That path is intentionally limited to **head-only** optimization for now.
+
+## Future work
+
+The current roadmap items are complete. The main remaining directions are:
+
+- full-model gradient-based training beyond the head-only Lux layer,
+- distributed training/runtime behavior,
+- deeper performance work,
+- optional future documentation/API expansion as those land.

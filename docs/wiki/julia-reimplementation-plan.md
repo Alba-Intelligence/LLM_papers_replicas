@@ -31,7 +31,7 @@ The repository now has a working Julia package scaffold plus a parity-tested cor
 - `LTIInjection`
 - `ACTHalting`
 
-The remaining work is documentation and package polish around the current Lux-backed training surface.
+The tracked roadmap items are now in place. Future work centers on full-model gradient-based training, distributed runtime behavior, and later performance work.
 
 ## Chosen stack
 

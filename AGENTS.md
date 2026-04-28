@@ -208,4 +208,6 @@ Do not present those as root-level Julia commands.
 
 ## Near-term execution order
 
-1. Polish public docs and package APIs around the Lux-backed training story.
+1. Extend training beyond the current head-only Lux layer.
+2. Explore distributed/runtime behavior once the single-process story grows.
+3. Expand docs again when those surfaces land.

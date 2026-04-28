@@ -74,6 +74,8 @@ function MythosTokenizer(model_id::String=DEFAULT_MODEL_ID; runner::Cmd=_tokeniz
 end
 
 vocab_size(tok::MythosTokenizer) = tok.tokenizer.vocab_size
+tokenize(tok::MythosTokenizer, text::AbstractString) = encode(tok, text)
+detokenize(tok::MythosTokenizer, token_ids::AbstractVector{<:Integer}) = decode(tok, token_ids)
 
 function encode(tok::MythosTokenizer, text::AbstractString)
     payload = base64encode(codeunits(text))
