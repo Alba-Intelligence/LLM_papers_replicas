@@ -19,12 +19,18 @@ The repository now has a working Julia package scaffold plus a parity-tested cor
 - `TransformerBlock`
 - `RecurrentBlock`
 - `OpenMythos`
+- `MythosTokenizer`
+- `WarmupCosineSchedule`
+- token chunking / next-token batching helpers
+- `HeadOnlyTrainerState`
+- resumable checkpoint helpers
+- `scripts/train_3b_fineweb_edu.jl`
 - `loop_index_embedding`
 - `LoRAAdapter`
 - `LTIInjection`
 - `ACTHalting`
 
-The remaining work is training/data integration and the later Lux-centered training/runtime refactor.
+The remaining work is the Lux-centered full-model training/runtime refactor and the related documentation polish.
 
 ## Chosen stack
 
@@ -60,6 +66,7 @@ src/
   rope.jl
   blocks.jl
   recurrent.jl
+  training.jl
   moe.jl
   model.jl
   variants.jl
@@ -147,7 +154,7 @@ Status: done for forward/generate parity on small test configurations.
 - Recreate the dataset pipeline only after model parity exists.
 - Treat distributed training and exact FSDP feature parity as later milestones.
 
-Status: tokenizer bridge done; dataset/training path still pending.
+Status: tokenizer bridge, token chunking helpers, local-text batching, and optional FineWeb-Edu batch loading are done.
 
 ### Phase 6: training recipe
 
@@ -155,7 +162,7 @@ Status: tokenizer bridge done; dataset/training path still pending.
 - Keep the first Julia training target much smaller than the Python 3B recipe.
 - Design checkpointing and resume behavior in Julia-native terms rather than imitating PyTorch internals too literally.
 
-Status: pending.
+Status: bootstrap path done with head-only optimization, warmup/cosine scheduling, resumable checkpoints, and a Julia `scripts/train_3b_fineweb_edu.jl` entrypoint. Full-model optimization remains for the Lux migration.
 
 ## Test translation plan
 

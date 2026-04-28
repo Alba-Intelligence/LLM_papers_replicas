@@ -4,6 +4,7 @@
 
 # Julia local and coverage artifacts
 /LocalPreferences.toml
+/checkpoints/
 *.jl.cov
 *.jl.*.cov
 *.jl.mem
@@ -14,4 +15,3 @@
 
 # OS cruft
 .DS_Store
-

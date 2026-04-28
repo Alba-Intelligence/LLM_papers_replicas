@@ -21,7 +21,7 @@ The main job for coding agents is to turn the Python reference into a Julia pack
 - Julia package: `Project.toml`, `src/`, `test/`, and `Manifest.toml` now exist.
 - Wiki: `docs/wiki/`.
 
-The current Julia slice covers the core numerical primitives and the main model stack:
+The current Julia slice covers the core numerical primitives, the main model stack, tokenizer parity, and a bootstrap training/data path:
 
 - `MythosConfig`
 - `RMSNorm`
@@ -34,12 +34,16 @@ The current Julia slice covers the core numerical primitives and the main model 
 - `RecurrentBlock`
 - `OpenMythos`
 - `MythosTokenizer`
+- `WarmupCosineSchedule`
+- token chunking / next-token batching helpers
+- head-only bootstrap training loop
+- checkpoint save / load helpers
 - `loop_index_embedding`
 - `LoRAAdapter`
 - `LTIInjection`
 - `ACTHalting`
 
-Training/data integration is still future work.
+The current training path is intentionally bootstrap-sized: it wires tokenizer/data batching, checkpointing, a Julia `scripts/train_3b_fineweb_edu.jl` entrypoint, and an optional FineWeb-Edu Python bridge, while full-model optimization is still deferred to the later Lux-centered migration.
 
 ## Source priority
 
@@ -106,6 +110,7 @@ src/
   rope.jl
   blocks.jl
   recurrent.jl
+  training.jl
   moe.jl
   model.jl
   variants.jl
@@ -117,6 +122,7 @@ test/
   runtests.jl
 docs/wiki/
 scripts/
+  train_3b_fineweb_edu.jl
 ```
 
 ## Working conventions
@@ -139,6 +145,14 @@ Use small configs similar to the Python tests for most early work. Do not begin 
 ### Separate parity from optimization
 
 First match behavior with clear, readable Julia code. Only then optimize kernels, GPU paths, or cache layouts.
+
+### Keep bootstrap training honest
+
+The current Julia training path is a bootstrap bridge, not full PyTorch parity:
+
+- it covers data/tokenizer integration, batching, scheduling, checkpointing, and resumable smoke training,
+- it currently updates the LM head only,
+- the full-model optimizer/autodiff path belongs to the later Lux migration.
 
 ### Preserve architecture names
 
@@ -193,5 +207,5 @@ Do not present those as root-level Julia commands.
 ## Near-term execution order
 
 1. Add training/data integration.
-2. Bring in Lux-centered training/runtime abstractions as the model stack matures.
-3. Polish public docs and package APIs.
+2. Bring in Lux-centered full-model training/runtime abstractions.
+3. Polish public docs and package APIs around the training story.

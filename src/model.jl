@@ -35,7 +35,7 @@ function _causal_mask(seq_len::Integer, ::Type{T}=Float32) where {T<:AbstractFlo
     return mask
 end
 
-function (model::OpenMythos)(input_ids::AbstractMatrix{<:Integer}; n_loops::Union{Nothing, Integer}=nothing, kv_cache::Union{Nothing, AbstractDict}=nothing, start_pos::Integer=0)
+function _forward_hidden(model::OpenMythos, input_ids::AbstractMatrix{<:Integer}; n_loops::Union{Nothing, Integer}=nothing, kv_cache::Union{Nothing, AbstractDict}=nothing, start_pos::Integer=0)
     t = size(input_ids, 2)
     x = _embed_tokens(input_ids, model.embed)
     freqs_all = model.cfg.attn_type == "mla" ? model.freqs_cis_mla : model.freqs_cis
@@ -53,7 +53,12 @@ function (model::OpenMythos)(input_ids::AbstractMatrix{<:Integer}; n_loops::Unio
         x = layer(x, freqs; mask=mask, kv_cache=kv_cache, cache_key="coda_$(i - 1)")
     end
 
-    return _linear_feature_last(model.norm(x), model.head)
+    return model.norm(x)
+end
+
+function (model::OpenMythos)(input_ids::AbstractMatrix{<:Integer}; n_loops::Union{Nothing, Integer}=nothing, kv_cache::Union{Nothing, AbstractDict}=nothing, start_pos::Integer=0)
+    hidden = _forward_hidden(model, input_ids; n_loops=n_loops, kv_cache=kv_cache, start_pos=start_pos)
+    return _linear_feature_last(hidden, model.head)
 end
 
 function generate(model::OpenMythos, input_ids::AbstractMatrix{<:Integer}; max_new_tokens::Integer=64, n_loops::Integer=8, temperature::Real=1.0, top_k::Integer=50, rng::AbstractRNG=Random.default_rng())

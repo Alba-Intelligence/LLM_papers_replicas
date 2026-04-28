@@ -8,8 +8,8 @@ It is intentionally concept-first: the goal is to explain what the Python projec
 
 - The root repository now contains a Julia package scaffold with `Project.toml`, `src/`, `test/`, and a resolved `Manifest.toml`.
 - The authoritative implementation today is the Python reference at `reference/OpenMythos`.
-- The implemented Julia slice now covers the primitive layer, the main model stack, named presets, a tokenizer bridge, and an optional Python-vs-Julia parity harness.
-- The immediate next step is training/data integration.
+- The implemented Julia slice now covers the primitive layer, the main model stack, named presets, a tokenizer bridge, an optional Python-vs-Julia parity harness, and a bootstrap training/data path.
+- The immediate next step is the Lux-centered full-model training migration.
 
 ## Reading order
 
@@ -52,3 +52,15 @@ That combination is what the Julia port should preserve first. Everything else i
 ## Maintenance rule
 
 After a task is complete, update the relevant wiki pages if the task changed implementation status, architecture understanding, or workflow guidance, then record the work in git with a commit.
+
+## Training status
+
+The Julia replica now has a real bootstrap training path:
+
+- token chunking and next-token batch construction,
+- warmup + cosine learning-rate scheduling,
+- resumable checkpointing,
+- a small Julia `train_3b_fineweb_edu.jl` entrypoint,
+- local-text smoke training and an optional FineWeb-Edu Python streaming bridge.
+
+That path is intentionally limited to **head-only** optimization for now. Full-model optimization is the next Lux-centered milestone.

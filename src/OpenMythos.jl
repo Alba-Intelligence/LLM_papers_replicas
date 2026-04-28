@@ -3,6 +3,7 @@ module OpenMythos
 using Base64
 using LinearAlgebra
 using Random
+using Serialization
 using Statistics
 
 _sigmoid(x) = inv(one(x) + exp(-x))
@@ -105,6 +106,7 @@ include("recurrent.jl")
 include("model.jl")
 include("variants.jl")
 include("tokenizer.jl")
+include("training.jl")
 
 export MythosConfig,
        RMSNorm,
@@ -125,6 +127,21 @@ export MythosConfig,
        generate,
        DEFAULT_MODEL_ID,
        MythosTokenizer,
+       WarmupCosineSchedule,
+       learning_rate,
+       bootstrap_training_config,
+       chunk_next_token_pairs,
+       text_next_token_pairs,
+       batch_next_token_pairs,
+       fineweb_edu_batches,
+       HeadOnlyTrainerState,
+       head_only_logits,
+       head_only_loss,
+       train_head_only_step!,
+       train_head_only!,
+       latest_checkpoint,
+       save_head_only_checkpoint,
+       load_head_only_checkpoint,
        mythos_1b,
        mythos_3b,
        mythos_10b,
