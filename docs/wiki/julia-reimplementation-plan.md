@@ -47,6 +47,7 @@ The remaining work is training/data integration and the later Lux-centered train
 3. Start with small CPU-friendly configs mirroring the Python tests.
 4. Separate parity work from optimization work.
 5. Use Python interop only where it reduces risk during the bootstrap phase.
+6. After completing a task, update the affected wiki pages before making the follow-up git commit.
 
 ## Proposed target layout
 

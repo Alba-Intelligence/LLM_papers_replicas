@@ -48,3 +48,7 @@ That combination is what the Julia port should preserve first. Everything else i
 - Treat `reference/OpenMythos/docs/open_mythos.md` as the clearest architecture narrative.
 - Treat `reference/OpenMythos/open_mythos/moda.py` as a secondary experimental branch, not the first porting target.
 - Port invariants before porting scale.
+
+## Maintenance rule
+
+After a task is complete, update the relevant wiki pages if the task changed implementation status, architecture understanding, or workflow guidance, then record the work in git with a commit.

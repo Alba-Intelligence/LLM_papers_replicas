@@ -166,6 +166,14 @@ Before or during major implementation work, keep `docs/wiki/` current:
 
 When code changes invalidate those pages, update them.
 
+## Completion workflow
+
+When a task materially changes the package, architecture notes, workflow, or implementation status:
+
+1. Update the relevant `docs/wiki/` pages before considering the task complete.
+2. Create a git commit after the task is complete.
+3. Prefer logical commit boundaries that preserve a readable port history instead of one large catch-all commit.
+
 ## Current reference commands
 
 These commands exist only in the Python reference subtree:
