@@ -5,6 +5,9 @@ using LinearAlgebra
 using Random
 using Serialization
 using Statistics
+import Lux
+import NNlib
+import Optimisers
 
 _sigmoid(x) = inv(one(x) + exp(-x))
 _silu(x) = x * _sigmoid(x)
@@ -134,6 +137,7 @@ export MythosConfig,
        text_next_token_pairs,
        batch_next_token_pairs,
        fineweb_edu_batches,
+       LuxHeadOnlyOpenMythos,
        HeadOnlyTrainerState,
        head_only_logits,
        head_only_loss,

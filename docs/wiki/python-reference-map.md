@@ -21,7 +21,7 @@ This page is the bridge between the current Python project and the future Julia 
 | `tests/test_main.py` | Invariant-heavy model tests | `test/` parity tests | Highest |
 | `tests/test_tokenizer.py` | Tokenizer behavior checks | `test/test_tokenizer.jl` | High |
 | `docs/open_mythos.md` | Architecture reference | `docs/wiki/` and future API docs | High |
-| `training/3b_fine_web_edu.py` | FSDP training recipe | `src/training.jl` plus `scripts/train_3b_fineweb_edu.jl` bootstrap path | High |
+| `training/3b_fine_web_edu.py` | FSDP training recipe | `src/training.jl` plus `scripts/train_3b_fineweb_edu.jl` Lux-backed bootstrap path | High |
 | `docs/datasets.md` | Dataset recommendations | wiki / training docs | Medium |
 | `open_mythos/moda.py` | MoDA + DeepSeek MoE branch | separate later module or deferred experiment | Low |
 | `tests/bench_vs_transformer.py` | comparative benchmark | later validation tooling | Low |

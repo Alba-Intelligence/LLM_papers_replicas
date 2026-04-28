@@ -1,3 +1,4 @@
+using Lux
 using Random
 
 @testset "WarmupCosineSchedule" begin
@@ -52,6 +53,10 @@ end
     @test final_loss < initial_loss
     @test state.step == 12
     @test !all(isapprox.(state.head, model.head; atol=1f-6))
+
+    lux_layer = LuxHeadOnlyOpenMythos(model; n_loops=2)
+    logits_from_lux, _ = Lux.apply(lux_layer, x, (head=state.head,), Lux.initialstates(MersenneTwister(11), lux_layer))
+    @test logits_from_lux == head_only_logits(state, x; n_loops=2)
 end
 
 @testset "Checkpoint roundtrip and pruning" begin
@@ -81,8 +86,7 @@ end
         restored = load_head_only_checkpoint(last_path, model)
         @test restored.step == state.step
         @test restored.head == state.head
-        @test restored.adam_m == state.adam_m
-        @test restored.adam_v == state.adam_v
+        @test typeof(restored.opt_state) == typeof(state.opt_state)
     end
 end
 

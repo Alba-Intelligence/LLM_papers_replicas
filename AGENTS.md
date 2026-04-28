@@ -43,7 +43,7 @@ The current Julia slice covers the core numerical primitives, the main model sta
 - `LTIInjection`
 - `ACTHalting`
 
-The current training path is intentionally bootstrap-sized: it wires tokenizer/data batching, checkpointing, a Julia `scripts/train_3b_fineweb_edu.jl` entrypoint, and an optional FineWeb-Edu Python bridge, while full-model optimization is still deferred to the later Lux-centered migration.
+The current training path is intentionally bootstrap-sized: it wires tokenizer/data batching, checkpointing, a Julia `scripts/train_3b_fineweb_edu.jl` entrypoint, an optional FineWeb-Edu Python bridge, and a Lux-backed head-only training layer.
 
 ## Source priority
 
@@ -97,6 +97,8 @@ The current package slice is stdlib-first so it can build in restricted environm
 
 Use `PythonCall.jl` only when it meaningfully reduces bootstrap risk, especially for tokenizer or dataset interop.
 
+The core model implementation is still manual and parity-oriented, but the training surface now uses `Lux.jl`, `NNlib.jl`, and `Optimisers.jl`.
+
 ## Expected repository shape
 
 Agents should grow the repo toward:
@@ -148,11 +150,11 @@ First match behavior with clear, readable Julia code. Only then optimize kernels
 
 ### Keep bootstrap training honest
 
-The current Julia training path is a bootstrap bridge, not full PyTorch parity:
+The current Julia training path is a Lux-backed bootstrap bridge, not full PyTorch parity:
 
 - it covers data/tokenizer integration, batching, scheduling, checkpointing, and resumable smoke training,
-- it currently updates the LM head only,
-- the full-model optimizer/autodiff path belongs to the later Lux migration.
+- it currently updates the LM head only through a `LuxHeadOnlyOpenMythos` layer with `Optimisers.AdamW`,
+- the core model internals are still manual Julia blocks under that Lux training surface.
 
 ### Preserve architecture names
 
@@ -206,6 +208,4 @@ Do not present those as root-level Julia commands.
 
 ## Near-term execution order
 
-1. Add training/data integration.
-2. Bring in Lux-centered full-model training/runtime abstractions.
-3. Polish public docs and package APIs around the training story.
+1. Polish public docs and package APIs around the Lux-backed training story.

@@ -68,7 +68,7 @@ function main()
 
     println("Tokenizer model: $(TOKENIZER_MODEL_ID)")
     println("Vocab size: $(OpenMythos.vocab_size(tokenizer)) | seq_len: $(SEQ_LEN) | batch_size: $(BATCH_SIZE) | total_steps: $(TOTAL_STEPS)")
-    println("Training mode: head-only bootstrap")
+    println("Training mode: Lux-backed head-only bootstrap")
     latest !== nothing && println("Resuming from $(latest)")
 
     metrics = train_head_only!(

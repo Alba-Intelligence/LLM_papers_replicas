@@ -226,16 +226,27 @@ end
 fineweb_edu_batches(tokenizer::MythosTokenizer, seq_len::Integer, batch_size::Integer; kwargs...) =
     fineweb_edu_batches(tokenizer.model_id, seq_len, batch_size; kwargs...)
 
+struct LuxHeadOnlyOpenMythos{M<:OpenMythos} <: Lux.LuxCore.AbstractLuxLayer
+    model::M
+    n_loops::Union{Nothing, Int}
+end
+
+LuxHeadOnlyOpenMythos(model::OpenMythos; n_loops::Union{Nothing, Int}=nothing) = LuxHeadOnlyOpenMythos{typeof(model)}(model, n_loops)
+
+Lux.initialparameters(::AbstractRNG, layer::LuxHeadOnlyOpenMythos) = (head=copy(layer.model.head),)
+Lux.initialstates(::AbstractRNG, ::LuxHeadOnlyOpenMythos) = NamedTuple()
+
+function (layer::LuxHeadOnlyOpenMythos)(input_ids::AbstractMatrix{<:Integer}, ps, st)
+    hidden = _forward_hidden(layer.model, input_ids; n_loops=layer.n_loops)
+    return _linear_feature_last(hidden, ps.head), st
+end
+
 mutable struct HeadOnlyTrainerState{T<:AbstractFloat}
-    model::OpenMythos{T}
+    layer::LuxHeadOnlyOpenMythos{OpenMythos{T}}
     head::Matrix{T}
-    adam_m::Matrix{T}
-    adam_v::Matrix{T}
+    lux_state::NamedTuple
+    opt_state
     schedule::WarmupCosineSchedule{T}
-    weight_decay::T
-    beta1::T
-    beta2::T
-    eps::T
     step::Int
 end
 
@@ -246,19 +257,21 @@ function HeadOnlyTrainerState(
     beta1::Real=0.9,
     beta2::Real=0.95,
     eps::Real=1e-8,
+    n_loops::Union{Nothing, Integer}=nothing,
 ) where {T<:AbstractFloat}
-    head = copy(model.head)
-    zeros_like = zero.(head)
-    return HeadOnlyTrainerState(
-        model,
+    layer = LuxHeadOnlyOpenMythos(model; n_loops=n_loops)
+    head = Lux.initialparameters(Random.default_rng(), layer).head
+    lux_state = Lux.initialstates(Random.default_rng(), layer)
+    opt_state = Optimisers.setup(
+        Optimisers.AdamW(; eta=zero(T), beta=(T(beta1), T(beta2)), lambda=T(weight_decay), epsilon=T(eps)),
         head,
-        copy(zeros_like),
-        copy(zeros_like),
+    )
+    return HeadOnlyTrainerState(
+        layer,
+        head,
+        lux_state,
+        opt_state,
         schedule,
-        T(weight_decay),
-        T(beta1),
-        T(beta2),
-        T(eps),
         0,
     )
 end
@@ -267,23 +280,19 @@ function _head_loss_and_grad(hidden::AbstractArray{T}, head::AbstractMatrix{T}, 
     flat_hidden = _flatten_feature_last(hidden)
     logits = head * flat_hidden
     logits_rows = permutedims(logits, (2, 1))
-    probs = similar(logits_rows)
+    log_probs = NNlib.logsoftmax(logits_rows; dims=2)
+    probs = exp.(log_probs)
     flat_targets = vec(target_ids)
     total_loss = zero(T)
 
     for i in axes(logits_rows, 1)
-        row = @view logits_rows[i, :]
-        m = maximum(row)
-        exps = exp.(row .- m)
-        s = sum(exps)
-        @view(probs[i, :]) .= exps ./ s
         tgt = flat_targets[i] + 1
         (1 <= tgt <= size(probs, 2)) || throw(BoundsError(probs, (i, tgt)))
-        total_loss -= log(probs[i, tgt])
+        total_loss -= log_probs[i, tgt]
     end
 
     n = size(logits_rows, 1)
-    grad_rows = copy(probs)
+    grad_rows = probs
     for i in eachindex(flat_targets)
         grad_rows[i, flat_targets[i] + 1] -= one(T)
     end
@@ -293,39 +302,33 @@ function _head_loss_and_grad(hidden::AbstractArray{T}, head::AbstractMatrix{T}, 
     return total_loss / T(n), grad_weight
 end
 
+function _layer_for(state::HeadOnlyTrainerState, n_loops::Union{Nothing, Integer})
+    if n_loops === nothing || n_loops == state.layer.n_loops
+        return state.layer
+    end
+    return LuxHeadOnlyOpenMythos(state.layer.model; n_loops=n_loops)
+end
+
 function head_only_logits(state::HeadOnlyTrainerState, input_ids::AbstractMatrix{<:Integer}; n_loops::Union{Nothing, Integer}=nothing)
-    hidden = _forward_hidden(state.model, input_ids; n_loops=n_loops)
-    return _linear_feature_last(hidden, state.head)
+    logits, _ = Lux.apply(_layer_for(state, n_loops), input_ids, (head=state.head,), state.lux_state)
+    return logits
 end
 
 function head_only_loss(state::HeadOnlyTrainerState{T}, input_ids::AbstractMatrix{<:Integer}, target_ids::AbstractMatrix{<:Integer}; n_loops::Union{Nothing, Integer}=nothing) where {T<:AbstractFloat}
-    hidden = _forward_hidden(state.model, input_ids; n_loops=n_loops)
+    hidden = _forward_hidden(state.layer.model, input_ids; n_loops=(n_loops === nothing ? state.layer.n_loops : n_loops))
     loss, = _head_loss_and_grad(hidden, state.head, target_ids)
     return loss
 end
 
 function train_head_only_step!(state::HeadOnlyTrainerState{T}, input_ids::AbstractMatrix{<:Integer}, target_ids::AbstractMatrix{<:Integer}; n_loops::Union{Nothing, Integer}=nothing) where {T<:AbstractFloat}
     size(input_ids) == size(target_ids) || throw(ArgumentError("input_ids and target_ids must have the same shape"))
-    hidden = _forward_hidden(state.model, input_ids; n_loops=n_loops)
+    hidden = _forward_hidden(state.layer.model, input_ids; n_loops=(n_loops === nothing ? state.layer.n_loops : n_loops))
     loss, grad = _head_loss_and_grad(hidden, state.head, target_ids)
 
     lr = learning_rate(state.schedule, state.step)
+    Optimisers.adjust!(state.opt_state, lr)
+    state.opt_state, state.head = Optimisers.update(state.opt_state, state.head, grad)
     state.step += 1
-
-    one_minus_beta1 = one(T) - state.beta1
-    one_minus_beta2 = one(T) - state.beta2
-    state.adam_m .= state.beta1 .* state.adam_m .+ one_minus_beta1 .* grad
-    state.adam_v .= state.beta2 .* state.adam_v .+ one_minus_beta2 .* (grad .* grad)
-
-    bias1 = one(T) - state.beta1 ^ state.step
-    bias2 = one(T) - state.beta2 ^ state.step
-    mhat = state.adam_m ./ bias1
-    vhat = state.adam_v ./ bias2
-
-    if state.weight_decay != 0
-        state.head .*= one(T) - lr * state.weight_decay
-    end
-    state.head .-= lr .* (mhat ./ (sqrt.(vhat) .+ state.eps))
 
     return (loss=loss, lr=lr, grad_norm=T(sqrt(sum(abs2, grad))), step=state.step)
 end
@@ -347,16 +350,13 @@ function save_head_only_checkpoint(state::HeadOnlyTrainerState, ckpt_dir::Abstra
     payload = Dict(
         "step" => state.step,
         "head" => copy(state.head),
-        "adam_m" => copy(state.adam_m),
-        "adam_v" => copy(state.adam_v),
+        "lux_state" => state.lux_state,
+        "opt_state" => state.opt_state,
         "schedule" => state.schedule,
-        "weight_decay" => state.weight_decay,
-        "beta1" => state.beta1,
-        "beta2" => state.beta2,
-        "eps" => state.eps,
-        "cfg" => state.model.cfg,
-        "vocab_size" => state.model.cfg.vocab_size,
-        "mode" => "head_only",
+        "cfg" => state.layer.model.cfg,
+        "vocab_size" => state.layer.model.cfg.vocab_size,
+        "mode" => "lux_head_only",
+        "n_loops" => state.layer.n_loops,
         "metadata" => Dict(string(k) => v for (k, v) in pairs(metadata)),
     )
     open(temp_path, "w") do io
@@ -379,16 +379,13 @@ function load_head_only_checkpoint(path::AbstractString, model::OpenMythos{T}) w
     end
     head = T.(payload["head"])
     size(head) == size(model.head) || throw(ArgumentError("checkpoint head shape does not match model"))
+    n_loops = get(payload, "n_loops", nothing)
     return HeadOnlyTrainerState(
-        model,
+        LuxHeadOnlyOpenMythos(model; n_loops=n_loops),
         head,
-        T.(payload["adam_m"]),
-        T.(payload["adam_v"]),
+        get(payload, "lux_state", NamedTuple()),
+        payload["opt_state"],
         payload["schedule"],
-        T(payload["weight_decay"]),
-        T(payload["beta1"]),
-        T(payload["beta2"]),
-        T(payload["eps"]),
         Int(payload["step"]),
     )
 end

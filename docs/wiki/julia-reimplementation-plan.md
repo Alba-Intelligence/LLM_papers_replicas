@@ -22,6 +22,7 @@ The repository now has a working Julia package scaffold plus a parity-tested cor
 - `MythosTokenizer`
 - `WarmupCosineSchedule`
 - token chunking / next-token batching helpers
+- `LuxHeadOnlyOpenMythos`
 - `HeadOnlyTrainerState`
 - resumable checkpoint helpers
 - `scripts/train_3b_fineweb_edu.jl`
@@ -30,7 +31,7 @@ The repository now has a working Julia package scaffold plus a parity-tested cor
 - `LTIInjection`
 - `ACTHalting`
 
-The remaining work is the Lux-centered full-model training/runtime refactor and the related documentation polish.
+The remaining work is documentation and package polish around the current Lux-backed training surface.
 
 ## Chosen stack
 
@@ -162,7 +163,7 @@ Status: tokenizer bridge, token chunking helpers, local-text batching, and optio
 - Keep the first Julia training target much smaller than the Python 3B recipe.
 - Design checkpointing and resume behavior in Julia-native terms rather than imitating PyTorch internals too literally.
 
-Status: bootstrap path done with head-only optimization, warmup/cosine scheduling, resumable checkpoints, and a Julia `scripts/train_3b_fineweb_edu.jl` entrypoint. Full-model optimization remains for the Lux migration.
+Status: bootstrap path done with a Lux explicit layer, `Optimisers.AdamW`, `NNlib.logsoftmax`, warmup/cosine scheduling, resumable checkpoints, and a Julia `scripts/train_3b_fineweb_edu.jl` entrypoint.
 
 ## Test translation plan
 
