@@ -42,7 +42,31 @@ Useful entry points:
 - `detokenize(tok, ids)`
 - `vocab_size(tok)`
 
-## 3. Run the bootstrap training script
+## 3. Open the notebook example
+
+There is a small Pluto notebook in:
+
+```text
+notebooks/small_example.jl
+```
+
+To open it:
+
+```julia
+using Pluto
+Pluto.run()
+```
+
+Then select `notebooks/small_example.jl`.
+
+The notebook demonstrates:
+
+- project activation,
+- tiny-model construction,
+- a forward pass,
+- short random-weight generation.
+
+## 4. Run the bootstrap training script
 
 The training entrypoint is:
 
@@ -82,7 +106,7 @@ OPENMYTHOS_FINEWEB_BATCHES=8 \
 julia --project=. scripts/train_3b_fineweb_edu.jl
 ```
 
-## 4. Understand the training scope
+## 5. Understand the training scope
 
 The current bootstrap trainer is intentionally limited:
 
@@ -92,7 +116,7 @@ The current bootstrap trainer is intentionally limited:
 - the core model internals are still manual Julia blocks,
 - full-model autodiff/distributed training is still future work.
 
-## 5. What to read next
+## 6. What to read next
 
 1. [Architecture](architecture.md)
 2. [Python reference map](python-reference-map.md)

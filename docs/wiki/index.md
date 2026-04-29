@@ -19,6 +19,8 @@ It is intentionally concept-first: the goal is to explain what the Python projec
 4. [References](references.md) - papers, datasets, and implementation references already cited by the Python project.
 5. [Julia reimplementation plan](julia-reimplementation-plan.md) - target module layout, libraries, and implementation phases.
 
+There is also a small Pluto notebook example at `notebooks/small_example.jl`.
+
 ## Big picture
 
 The main OpenMythos path is a Recurrent-Depth Transformer:

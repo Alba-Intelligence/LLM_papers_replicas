@@ -34,6 +34,17 @@ logits = model(input_ids; n_loops=2)
 @show size(logits)  # (1, 16, 256)
 ```
 
+### Pluto notebook example
+
+There is also a small Pluto notebook at `notebooks/small_example.jl`.
+
+```julia
+using Pluto
+Pluto.run()
+```
+
+Then open `notebooks/small_example.jl`.
+
 ### Tokenizer usage
 
 ```julia
@@ -69,6 +80,7 @@ julia --project=. scripts/train_3b_fineweb_edu.jl
 - `src/` - Julia package implementation
 - `test/` - translated parity and regression tests
 - `docs/wiki/` - architecture, usage, and porting notes
+- `notebooks/small_example.jl` - Pluto notebook smoke example
 - `scripts/train_3b_fineweb_edu.jl` - Lux-backed bootstrap training entrypoint
 - `reference/OpenMythos/` - upstream Python reference (ignored by git in this replica repo)
 
