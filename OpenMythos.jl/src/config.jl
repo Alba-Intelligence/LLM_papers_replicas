@@ -1,4 +1,6 @@
-Base.@kwdef struct MythosConfig
+abstract type AbstractModelConfig end
+
+Base.@kwdef struct MythosConfig <: AbstractModelConfig
     vocab_size::Int = 32_000
     dim::Int = 2_048
     n_heads::Int = 16

@@ -1,6 +1,13 @@
 # Usage
 
-This page shows the current user-facing workflow for the Julia replica.
+This page shows the current user-facing workflow for the Julia workspace.
+
+## Package locations
+
+- Run OpenMythos package commands from `OpenMythos.jl/`.
+- Run DeepSeek V4 package commands from `DeepSeekv4.jl/`.
+- Shared low-level primitives live in `TransformerCore.jl/`.
+- Keep using the shared wiki from the repository root.
 
 ## 1. Construct a tiny model
 
@@ -47,7 +54,7 @@ Useful entry points:
 There is a small Pluto notebook in:
 
 ```text
-notebooks/small_example.jl
+OpenMythos.jl/notebooks/small_example.jl
 ```
 
 To open it:
@@ -57,7 +64,7 @@ using Pluto
 Pluto.run()
 ```
 
-Then select `notebooks/small_example.jl`.
+Then select `OpenMythos.jl/notebooks/small_example.jl`.
 
 The notebook demonstrates:
 
@@ -71,6 +78,7 @@ The notebook demonstrates:
 The training entrypoint is:
 
 ```bash
+cd OpenMythos.jl
 julia --project=. scripts/train_3b_fineweb_edu.jl
 ```
 
@@ -90,6 +98,7 @@ Useful environment variables:
 Example local-text smoke run:
 
 ```bash
+cd OpenMythos.jl
 OPENMYTHOS_TRAIN_TOKENIZER_MODEL_ID=gpt2 \
 OPENMYTHOS_TRAIN_TOTAL_STEPS=8 \
 OPENMYTHOS_TRAIN_SEQ_LEN=32 \
@@ -99,6 +108,7 @@ julia --project=. scripts/train_3b_fineweb_edu.jl
 Example FineWeb-Edu-backed smoke run:
 
 ```bash
+cd OpenMythos.jl
 OPENMYTHOS_USE_FINEWEB_EDU=1 \
 OPENMYTHOS_TRAIN_TOKENIZER_MODEL_ID=gpt2 \
 OPENMYTHOS_FINEWEB_SUBSET=sample-10BT \
@@ -106,7 +116,14 @@ OPENMYTHOS_FINEWEB_BATCHES=8 \
 julia --project=. scripts/train_3b_fineweb_edu.jl
 ```
 
-## 5. Understand the training scope
+## 5. Run the DeepSeek V4 package smoke tests
+
+```bash
+cd DeepSeekv4.jl
+julia --project=. -q -e 'using Pkg; Pkg.test()'
+```
+
+## 6. Understand the training scope
 
 The current bootstrap trainer is intentionally limited:
 
@@ -116,7 +133,7 @@ The current bootstrap trainer is intentionally limited:
 - the core model internals are still manual Julia blocks,
 - full-model autodiff/distributed training is still future work.
 
-## 6. What to read next
+## 7. What to read next
 
 1. [Architecture](architecture.md)
 2. [Python reference map](python-reference-map.md)

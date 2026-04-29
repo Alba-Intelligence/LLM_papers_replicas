@@ -6,7 +6,14 @@ Rebuild the main OpenMythos model family in Julia while preserving the behaviora
 
 ## Current implementation status
 
-The repository now has a working Julia package scaffold plus a parity-tested core model stack:
+The workspace now has:
+
+- `OpenMythos.jl/` for the original recurrent package,
+- `DeepSeekv4.jl/` for the new DeepSeek V4 package,
+- `TransformerCore.jl/` for shared low-level primitives,
+- `docs/wiki/` as shared workspace documentation.
+
+The OpenMythos package includes a parity-tested core model stack:
 
 - `MythosConfig`
 - `RMSNorm`
@@ -59,34 +66,20 @@ The tracked roadmap items are now in place. Future work centers on full-model gr
 ## Proposed target layout
 
 ```text
-Project.toml
-src/
-  OpenMythos.jl
-  config.jl
-  norms.jl
-  rope.jl
-  blocks.jl
-  recurrent.jl
-  training.jl
-  moe.jl
-  model.jl
-  variants.jl
-  tokenizer.jl
-  attention/
-    gqa.jl
-    mla.jl
-test/
-  runtests.jl
-  test_norms.jl
-  test_rope.jl
-  test_attention_gqa.jl
-  test_attention_mla.jl
-  test_moe.jl
-  test_recurrent.jl
-  test_model.jl
-  test_tokenizer.jl
-scripts/
-  train_3b_fineweb_edu.jl
+OpenMythos.jl/
+  Project.toml
+  src/
+  test/
+  scripts/
+  notebooks/
+DeepSeekv4.jl/
+  Project.toml
+  src/
+  test/
+TransformerCore.jl/
+  Project.toml
+  src/
+  test/
 docs/
   wiki/
 ```
@@ -163,7 +156,7 @@ Status: tokenizer bridge, token chunking helpers, local-text batching, and optio
 - Keep the first Julia training target much smaller than the Python 3B recipe.
 - Design checkpointing and resume behavior in Julia-native terms rather than imitating PyTorch internals too literally.
 
-Status: bootstrap path done with a Lux explicit layer, `Optimisers.AdamW`, `NNlib.logsoftmax`, warmup/cosine scheduling, resumable checkpoints, and a Julia `scripts/train_3b_fineweb_edu.jl` entrypoint.
+Status: bootstrap path done with a Lux explicit layer, `Optimisers.AdamW`, `NNlib.logsoftmax`, warmup/cosine scheduling, resumable checkpoints, and a Julia `OpenMythos.jl/scripts/train_3b_fineweb_edu.jl` entrypoint.
 
 ## Test translation plan
 

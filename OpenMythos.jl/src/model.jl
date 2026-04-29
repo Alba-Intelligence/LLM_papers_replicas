@@ -27,14 +27,6 @@ function OpenMythos(cfg::MythosConfig; rng::AbstractRNG=Random.default_rng(), T:
     )
 end
 
-function _causal_mask(seq_len::Integer, ::Type{T}=Float32) where {T<:AbstractFloat}
-    mask = zeros(T, 1, 1, seq_len, seq_len)
-    for i in 1:seq_len, j in (i + 1):seq_len
-        mask[1, 1, i, j] = T(-Inf)
-    end
-    return mask
-end
-
 function _forward_hidden(model::OpenMythos, input_ids::AbstractMatrix{<:Integer}; n_loops::Union{Nothing, Integer}=nothing, kv_cache::Union{Nothing, AbstractDict}=nothing, start_pos::Integer=0)
     t = size(input_ids, 2)
     x = _embed_tokens(input_ids, model.embed)

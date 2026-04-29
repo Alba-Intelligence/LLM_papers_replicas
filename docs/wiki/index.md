@@ -6,9 +6,12 @@ It is intentionally concept-first: the goal is to explain what the Python projec
 
 ## Current repository state
 
-- The root repository now contains a Julia package scaffold with `Project.toml`, `src/`, `test/`, and a resolved `Manifest.toml`.
+- The root repository is now a multi-package workspace.
+- `OpenMythos.jl/` contains the recurrent OpenMythos Julia package with its own `Project.toml`, `src/`, `test/`, and `Manifest.toml`.
+- `DeepSeekv4.jl/` contains the new DeepSeek V4 Julia package.
+- `TransformerCore.jl/` contains reusable feature-last tensor helpers, `RMSNorm`, and RoPE utilities shared by both packages.
 - The authoritative implementation today is the Python reference at `reference/OpenMythos`.
-- The implemented Julia slice now covers the primitive layer, the main model stack, named presets, a tokenizer bridge, an optional Python-vs-Julia parity harness, a Lux-backed bootstrap training/data path, and package-level usage docs.
+- The implemented Julia slice now covers the OpenMythos primitive layer and main model stack, plus an architecture-first DeepSeek V4 package with tiny-config CSA/HCA, mHC, MTP, and generation smoke paths.
 - The tracked roadmap items are now in place; future work focuses on deeper training/runtime capability rather than missing repository basics.
 
 ## Reading order
@@ -17,9 +20,11 @@ It is intentionally concept-first: the goal is to explain what the Python projec
 2. [Architecture](architecture.md) - the model we are actually porting.
 3. [Python reference map](python-reference-map.md) - which Python files matter and how they translate into Julia work.
 4. [References](references.md) - papers, datasets, and implementation references already cited by the Python project.
-5. [Julia reimplementation plan](julia-reimplementation-plan.md) - target module layout, libraries, and implementation phases.
+5. [DeepSeek V4 architecture](deepseek-v4-architecture.md) - the current DeepSeek V4 package surface and its deliberate deferrals.
+6. [Multi-package workspace](multi-model-repo-plan.md) - how the Julia workspace is split across packages.
+7. [Julia reimplementation plan](julia-reimplementation-plan.md) - target module layout, libraries, and implementation phases.
 
-There is also a small Pluto notebook example at `notebooks/small_example.jl`.
+There is also a small Pluto notebook example at `OpenMythos.jl/notebooks/small_example.jl`.
 
 ## Big picture
 
@@ -51,6 +56,7 @@ That combination is what the Julia port should preserve first. Everything else i
 - Treat `reference/OpenMythos/docs/open_mythos.md` as the clearest architecture narrative.
 - Treat `reference/OpenMythos/open_mythos/moda.py` as a secondary experimental branch, not the first porting target.
 - Port invariants before porting scale.
+- Keep the wiki shared across packages even as Julia implementation code moves into package subdirectories.
 
 ## Maintenance rule
 
@@ -63,7 +69,7 @@ The Julia replica now has a real bootstrap training path:
 - token chunking and next-token batch construction,
 - warmup + cosine learning-rate scheduling,
 - resumable checkpointing,
-- a small Julia `train_3b_fineweb_edu.jl` entrypoint,
+- a small Julia `OpenMythos.jl/scripts/train_3b_fineweb_edu.jl` entrypoint,
 - local-text smoke training and an optional FineWeb-Edu Python streaming bridge,
 - a `LuxHeadOnlyOpenMythos` layer backed by `Optimisers.AdamW` and `NNlib.logsoftmax`.
 

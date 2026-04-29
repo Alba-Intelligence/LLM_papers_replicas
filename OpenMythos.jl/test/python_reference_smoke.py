@@ -2,7 +2,7 @@ import sys
 
 import torch
 
-sys.path.insert(0, "reference/OpenMythos")
+sys.path.insert(0, "../reference/OpenMythos")
 
 from open_mythos.main import apply_rope, precompute_rope_freqs
 

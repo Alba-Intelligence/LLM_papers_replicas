@@ -16,9 +16,12 @@ The main job for coding agents is to turn the Python reference into a Julia pack
 
 ## Current state
 
-- Root repo: environment scaffolding, Julia package scaffold, and porting docs.
+- Root repo: environment scaffolding, a multi-package Julia workspace, and porting docs.
 - Python reference: `reference/OpenMythos`.
-- Julia package: `Project.toml`, `src/`, `test/`, and `Manifest.toml` now exist.
+- Julia packages:
+  - `OpenMythos.jl/` for the recurrent OpenMythos package,
+  - `DeepSeekv4.jl/` for the DeepSeek V4 package,
+  - `TransformerCore.jl/` for shared reusable primitives.
 - Wiki: `docs/wiki/`.
 
 The current Julia slice covers the core numerical primitives, the main model stack, tokenizer parity, and a bootstrap training/data path:
@@ -43,7 +46,7 @@ The current Julia slice covers the core numerical primitives, the main model sta
 - `LTIInjection`
 - `ACTHalting`
 
-The current training path is intentionally bootstrap-sized: it wires tokenizer/data batching, checkpointing, a Julia `scripts/train_3b_fineweb_edu.jl` entrypoint, an optional FineWeb-Edu Python bridge, and a Lux-backed head-only training layer.
+The current OpenMythos training path is intentionally bootstrap-sized: it wires tokenizer/data batching, checkpointing, a Julia `OpenMythos.jl/scripts/train_3b_fineweb_edu.jl` entrypoint, an optional FineWeb-Edu Python bridge, and a Lux-backed head-only training layer.
 
 ## Source priority
 
@@ -104,27 +107,21 @@ The core model implementation is still manual and parity-oriented, but the train
 Agents should grow the repo toward:
 
 ```text
-Project.toml
-src/
-  OpenMythos.jl
-  config.jl
-  norms.jl
-  rope.jl
-  blocks.jl
-  recurrent.jl
-  training.jl
-  moe.jl
-  model.jl
-  variants.jl
-  tokenizer.jl
-  attention/
-    gqa.jl
-    mla.jl
-test/
-  runtests.jl
+OpenMythos.jl/
+  Project.toml
+  src/
+  test/
+  scripts/
+  notebooks/
+DeepSeekv4.jl/
+  Project.toml
+  src/
+  test/
+TransformerCore.jl/
+  Project.toml
+  src/
+  test/
 docs/wiki/
-scripts/
-  train_3b_fineweb_edu.jl
 ```
 
 ## Working conventions
