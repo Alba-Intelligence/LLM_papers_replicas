@@ -11,7 +11,7 @@ The replica now includes:
 - an optional Python-vs-Julia parity harness for selected utilities,
 - a Lux-backed bootstrap training path with checkpointing and local/FineWeb smoke data flows.
 
-The current training surface is intentionally **head-only**: the core model implementation remains manual and parity-oriented, while the bootstrap trainer uses `Lux.jl`, `NNlib.jl`, and `Optimisers.jl`.
+The current training surface is intentionally **head-only**: the core model implementation remains manual and parity-oriented, while the bootstrap trainer uses `Lux.jl` and `Optimisers.jl` on top of schedule, batching, checkpoint, and loss helpers now shared through `TransformerCore.jl`.
 
 ## Quickstart
 

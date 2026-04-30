@@ -2,7 +2,7 @@
 
 julia_version = "1.12.6"
 manifest_format = "2.0"
-project_hash = "b1ee9cd2b33afa46a609ea6fb5b12fe96210df7f"
+project_hash = "17c65a6054391f3479e178fa2cfa3ea2120e350a"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "bbc22a9a08a0ef6460041086d8a7b27940ed4ffd"
@@ -531,7 +531,7 @@ uuid = "05823500-19ac-5b8b-9628-191a04bc5112"
 version = "0.8.7+0"
 
 [[deps.OpenMythos]]
-deps = ["Base64", "LinearAlgebra", "Lux", "NNlib", "Optimisers", "Random", "Serialization", "Statistics", "TransformerCore"]
+deps = ["Base64", "LinearAlgebra", "Lux", "Optimisers", "Random", "Serialization", "Statistics", "TransformerCore"]
 path = "."
 uuid = "14910245-a25f-4a31-bb4a-c11b32311dac"
 version = "0.1.0"

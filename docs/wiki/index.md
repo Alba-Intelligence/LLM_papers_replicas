@@ -9,9 +9,9 @@ It is intentionally concept-first: the goal is to explain what the Python projec
 - The root repository is now a multi-package workspace.
 - `OpenMythos.jl/` contains the recurrent OpenMythos Julia package with its own `Project.toml`, `src/`, `test/`, and `Manifest.toml`.
 - `DeepSeekv4.jl/` contains the new DeepSeek V4 Julia package.
-- `TransformerCore.jl/` contains reusable feature-last tensor helpers, `RMSNorm`, and RoPE utilities shared by both packages.
+- `TransformerCore.jl/` contains reusable feature-last tensor helpers, `RMSNorm`, RoPE utilities, and the current shared schedule/batching/head-loss utilities.
 - The authoritative implementation today is the Python reference at `reference/OpenMythos`.
-- The implemented Julia slice now covers the OpenMythos primitive layer and main model stack, plus an architecture-first DeepSeek V4 package with tiny-config CSA/HCA, mHC, MTP, and generation smoke paths.
+- The implemented Julia slice now covers the OpenMythos primitive layer and main model stack, plus an architecture-first DeepSeek V4 package with tiny-config CSA/HCA, mHC, MTP, generation smoke paths, and a first trainable head-only bootstrap milestone.
 - The tracked roadmap items are now in place; future work focuses on deeper training/runtime capability rather than missing repository basics.
 
 ## Reading order
@@ -72,15 +72,16 @@ The Julia replica now has a real bootstrap training path:
 - resumable checkpointing,
 - a small Julia `OpenMythos.jl/scripts/train_3b_fineweb_edu.jl` entrypoint,
 - local-text smoke training and an optional FineWeb-Edu Python streaming bridge,
-- a `LuxHeadOnlyOpenMythos` layer backed by `Optimisers.AdamW` and `NNlib.logsoftmax`.
+- a `LuxHeadOnlyOpenMythos` layer backed by `Optimisers.AdamW`,
+- a parallel `LuxHeadOnlyDeepSeekV4` bootstrap path and `DeepSeekv4.jl/scripts/train_deepseek_tiny.jl`,
+- shared schedule, batching, checkpoint discovery, and head-loss helpers in `TransformerCore.jl`.
 
 That path is intentionally limited to **head-only** optimization for now.
 
 ## Future work
 
-The next concrete engineering target is the training foundation. After that, the main remaining directions are:
+The training foundation is now in place. The main remaining directions are:
 
-- model-family-neutral training entry points,
 - full-model gradient-based training beyond the head-only Lux layer,
 - distributed training/runtime behavior,
 - deeper performance work,

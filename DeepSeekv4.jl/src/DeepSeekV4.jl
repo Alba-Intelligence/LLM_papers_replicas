@@ -2,7 +2,10 @@ module DeepSeekV4
 
 using LinearAlgebra
 using Random
+using Serialization
 using Statistics
+import Lux
+import Optimisers
 using TransformerCore: _sigmoid,
                        _silu,
                        _flatten_feature_last,
@@ -16,7 +19,14 @@ using TransformerCore: _sigmoid,
                        _sample_categorical,
                        RMSNorm,
                        precompute_rope_freqs,
-                       apply_rope
+                       apply_rope,
+                       WarmupCosineSchedule,
+                       learning_rate,
+                       chunk_next_token_pairs,
+                       text_next_token_pairs,
+                       batch_next_token_pairs,
+                       latest_checkpoint,
+                       _head_loss_and_grad
 
 include("config.jl")
 include("ffn.jl")
@@ -24,6 +34,7 @@ include("attention.jl")
 include("mhc.jl")
 include("deepseek_model.jl")
 include("variants.jl")
+include("training.jl")
 
 export DeepSeekV4Config,
        RMSNorm,
@@ -40,6 +51,21 @@ export DeepSeekV4Config,
        deepseek_hidden,
        mtp_logits,
        generate,
+       WarmupCosineSchedule,
+       learning_rate,
+       chunk_next_token_pairs,
+       text_next_token_pairs,
+       batch_next_token_pairs,
+       latest_checkpoint,
+       bootstrap_deepseek_training_config,
+       LuxHeadOnlyDeepSeekV4,
+       DeepSeekHeadTrainerState,
+       deepseek_head_logits,
+       deepseek_head_loss,
+       train_deepseek_head_only_step!,
+       train_deepseek_head_only!,
+       save_deepseek_checkpoint,
+       load_deepseek_checkpoint,
        deepseek_v4_tiny,
        deepseek_v4_flash,
        deepseek_v4_pro

@@ -53,6 +53,28 @@ The current package does **not** yet attempt full V4 systems parity. These remai
 - deterministic fused kernels,
 - million-token production serving.
 
+## Training surface
+
+`DeepSeekv4.jl/` now also includes a first trainable bootstrap milestone:
+
+- `bootstrap_deepseek_training_config`
+- `LuxHeadOnlyDeepSeekV4`
+- `DeepSeekHeadTrainerState`
+- `train_deepseek_head_only_step!`
+- `train_deepseek_head_only!`
+- `save_deepseek_checkpoint`
+- `load_deepseek_checkpoint`
+- `scripts/train_deepseek_tiny.jl`
+
+This surface intentionally mirrors the OpenMythos bootstrap trainer:
+
+- the model body stays frozen,
+- only the LM head is updated,
+- shared schedule, batching, checkpoint discovery, and head-loss math come from `TransformerCore.jl`,
+- the default script uses local byte-encoded batches for a simple smoke-training path.
+
+MTP-aware training, full-model gradients, distributed training, and paper-scale optimizer/runtime work remain later phases.
+
 ## Why the package is split from OpenMythos
 
 OpenMythos is a recurrent-depth model family with a `prelude -> recurrent -> coda` core.

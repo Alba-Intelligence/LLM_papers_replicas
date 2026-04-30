@@ -96,6 +96,7 @@ end
 
 include("norms.jl")
 include("rope.jl")
+include("training_utils.jl")
 
 export _sigmoid,
        _silu,
@@ -110,6 +111,13 @@ export _sigmoid,
        _sample_categorical,
        RMSNorm,
        precompute_rope_freqs,
-       apply_rope
+       apply_rope,
+       WarmupCosineSchedule,
+       learning_rate,
+       chunk_next_token_pairs,
+       text_next_token_pairs,
+       batch_next_token_pairs,
+       latest_checkpoint,
+       _head_loss_and_grad
 
 end

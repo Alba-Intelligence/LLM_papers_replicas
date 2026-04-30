@@ -4,11 +4,16 @@ version = "0.1.0"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Lux = "b2108857-7c20-44ae-9111-449ecde12c47"
+Optimisers = "3bd65402-5787-11e9-1adc-39752487f4e2"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+Serialization = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 TransformerCore = "b57a3b10-0dc6-488f-8532-4c1c16641fe1"
 
 [compat]
+Lux = "1.31.4"
+Optimisers = "0.4.7"
 julia = "1.12"
 
 [extras]

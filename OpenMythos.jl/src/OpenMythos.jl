@@ -6,8 +6,8 @@ using Random
 using Serialization
 using Statistics
 import Lux
-import NNlib
 import Optimisers
+import TransformerCore
 using TransformerCore: _sigmoid,
                        _silu,
                        _flatten_feature_last,
@@ -21,7 +21,14 @@ using TransformerCore: _sigmoid,
                        _sample_categorical,
                        RMSNorm,
                        precompute_rope_freqs,
-                       apply_rope
+                       apply_rope,
+                       WarmupCosineSchedule,
+                       learning_rate,
+                       chunk_next_token_pairs,
+                       text_next_token_pairs,
+                       batch_next_token_pairs,
+                       latest_checkpoint,
+                       _head_loss_and_grad
 
 function _causal_mask(seq_len::Integer, ::Type{T}=Float32) where {T<:AbstractFloat}
     mask = zeros(T, 1, 1, seq_len, seq_len)

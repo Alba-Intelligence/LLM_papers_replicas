@@ -6,7 +6,7 @@ This page shows the current user-facing workflow for the Julia workspace.
 
 - Run OpenMythos package commands from `OpenMythos.jl/`.
 - Run DeepSeek V4 package commands from `DeepSeekv4.jl/`.
-- Shared low-level primitives live in `TransformerCore.jl/`.
+- Shared low-level primitives and generic training helpers live in `TransformerCore.jl/`.
 - Keep using the shared wiki from the repository root.
 
 ## 1. Run package tests
@@ -105,9 +105,9 @@ The notebook demonstrates:
 - a forward pass,
 - short random-weight generation.
 
-## 6. Run the bootstrap training script
+## 6. Run the bootstrap training scripts
 
-The training entrypoint is:
+The OpenMythos training entrypoint is:
 
 ```bash
 cd OpenMythos.jl
@@ -148,15 +148,44 @@ OPENMYTHOS_FINEWEB_BATCHES=8 \
 julia --project=. scripts/train_3b_fineweb_edu.jl
 ```
 
+The DeepSeek V4 training entrypoint is:
+
+```bash
+cd DeepSeekv4.jl
+julia --project=. scripts/train_deepseek_tiny.jl
+```
+
+Useful environment variables:
+
+| Variable | Meaning | Default |
+| --- | --- | --- |
+| `DEEPSEEK_V4_TRAIN_VOCAB_SIZE` | tiny bootstrap vocab size | `512` |
+| `DEEPSEEK_V4_TRAIN_TOTAL_STEPS` | total bootstrap steps | `8` |
+| `DEEPSEEK_V4_TRAIN_SEQ_LEN` | sequence length | `32` |
+| `DEEPSEEK_V4_TRAIN_BATCH_SIZE` | batch size | `2` |
+| `DEEPSEEK_V4_TRAIN_CKPT_DIR` | checkpoint directory | `checkpoints` |
+| `DEEPSEEK_V4_TRAIN_TEXT` | local training text override | empty |
+| `DEEPSEEK_V4_TRAIN_TEXT_FILE` | path to local training text | empty |
+
+Example local DeepSeek smoke run:
+
+```bash
+cd DeepSeekv4.jl
+DEEPSEEK_V4_TRAIN_TOTAL_STEPS=8 \
+DEEPSEEK_V4_TRAIN_SEQ_LEN=32 \
+julia --project=. scripts/train_deepseek_tiny.jl
+```
+
 ## 7. Understand the training scope
 
 The current bootstrap trainer is intentionally limited:
 
+- shared schedule, batching, checkpoint scanning, and head-loss math now live in `TransformerCore.jl`,
 - it is **Lux-backed**,
-- it uses `Optimisers.AdamW` and `NNlib.logsoftmax`,
+- it uses `Optimisers.AdamW`,
 - it currently optimizes the LM head only through `LuxHeadOnlyOpenMythos`,
+- `DeepSeekv4.jl` now has a parallel `LuxHeadOnlyDeepSeekV4` head-only trainer and smoke script,
 - the core model internals are still manual Julia blocks,
-- the first trainable DeepSeek milestone is still upcoming,
 - full-model autodiff/distributed training is still future work.
 
 ## 8. What to read next

@@ -41,10 +41,10 @@ The OpenMythos package includes a parity-tested core model stack:
 The current state is:
 
 - `OpenMythos.jl/` is the recurrent-depth package with parity-oriented model code and a head-only bootstrap training path.
-- `DeepSeekv4.jl/` is an architecture-first package with CSA/HCA, mHC, MoE routing, MTP, cache smoke paths, and tiny-config tests.
-- `TransformerCore.jl/` holds the shared primitive layer.
+- `DeepSeekv4.jl/` is an architecture-first package with CSA/HCA, mHC, MoE routing, MTP, cache smoke paths, tiny-config tests, and a head-only bootstrap training path.
+- `TransformerCore.jl/` holds the shared primitive and training-utility layer.
 
-The next milestone is to generalize training surfaces across model families without prematurely forcing all model internals into Lux layers.
+The next milestone is to deepen training/runtime capability without prematurely forcing all model internals into Lux layers.
 
 ## Chosen stack
 
@@ -133,7 +133,7 @@ Status: done for the current tiny-config architecture-first milestone.
 - land the first trainable DeepSeek milestone,
 - keep the initial surface simple enough to remain readable and testable.
 
-Status: next active engineering task.
+Status: done.
 
 ### Phase 6: advanced systems work
 
@@ -143,7 +143,7 @@ Status: next active engineering task.
 - FP4 quantization-aware training,
 - production-scale long-context serving.
 
-Status: explicitly deferred until the training foundation exists.
+Status: next deferred phase.
 
 ## Validation strategy
 
@@ -151,7 +151,7 @@ Status: explicitly deferred until the training foundation exists.
 | --- | --- |
 | `TransformerCore.jl` | primitive smoke and invariant tests |
 | `OpenMythos.jl` | translated parity tests plus tokenizer/training smoke tests |
-| `DeepSeekv4.jl` | tiny-config architecture and generation smoke tests |
+| `DeepSeekv4.jl` | tiny-config architecture, generation, and head-only training smoke tests |
 
 ## Explicit deferrals
 
@@ -167,7 +167,6 @@ These should not block the current Julia milestone:
 
 The best next vertical slice is:
 
-1. generalize loss, batching, and checkpoint envelopes where they are already shared in spirit,
-2. keep model-family-specific hidden-state computation inside each package,
-3. land a first trainable DeepSeek head-only or similarly narrow milestone,
-4. add tests that prove the shared training surface works across at least two model families.
+1. choose which advanced systems slice is worth landing first,
+2. decide whether full-model training or runtime/distribution work should come before optimizer research,
+3. preserve the shared training seam while expanding beyond head-only optimization.
