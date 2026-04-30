@@ -10,6 +10,7 @@ This package currently targets:
 - DeepSeek-style MoE routing surfaces,
 - MTP output heads and generation smoke paths,
 - chunked prefill plus serializable KV-cache envelopes for cached generation reuse,
+- lower-allocation buffer-backed cache growth behind the existing generation API,
 - a Lux-backed head-only bootstrap training surface for tiny configs.
 
 ## Quickstart

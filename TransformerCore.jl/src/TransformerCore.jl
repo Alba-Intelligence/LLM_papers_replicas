@@ -98,6 +98,7 @@ end
 include("norms.jl")
 include("rope.jl")
 include("training_utils.jl")
+include("cache_buffers.jl")
 include("kv_cache.jl")
 
 export _sigmoid,

@@ -127,7 +127,8 @@ The current implementation is intentionally correctness-first and tiny-config-fi
 - `RMSNorm`,
 - RoPE precomputation and application,
 - shared schedule/batching/checkpoint-discovery/head-loss helpers,
-- `KVCacheEnvelope`, `save_kv_cache`, and `load_kv_cache`.
+- `KVCacheEnvelope`, `save_kv_cache`, `load_kv_cache`,
+- growable axis-append cache buffers used by both model families.
 
 That package should remain architecture-agnostic. Recurrence, CSA/HCA, mHC, training wrappers, and routing policies stay in the model-family packages until a genuinely stable shared abstraction exists.
 
@@ -137,14 +138,16 @@ The first cross-package long-context runtime seam is now shared rather than mode
 
 - `TransformerCore.KVCacheEnvelope` wraps a mutable `Dict{String, Any}` cache plus the current cached prefix length,
 - both model families expose `chunked_prefill` to build that envelope in prompt-sized chunks,
-- both `generate` entrypoints can continue from an existing envelope instead of rebuilding the prompt cache from scratch.
+- both `generate` entrypoints can continue from an existing envelope instead of rebuilding the prompt cache from scratch,
+- cache growth now uses shared growable axis buffers instead of repeated full `cat(...; dims=2)` copies.
 
 The underlying cache payloads are still family-specific:
 
 - OpenMythos GQA stores full K/V tensors, while MLA stores compressed latent cache pieces,
-- DeepSeek CSA and HCA store their own compressed attention state.
+- DeepSeek CSA and HCA store their own compressed attention state,
+- those payloads now live inside buffer-backed cache entries so decode/prefill appends reuse storage rather than reallocating the whole prefix every step.
 
-That is intentional. The shared abstraction is the outer runtime contract, not a forced uniform inner cache layout.
+That is intentional. The shared abstraction is the outer runtime contract plus the reusable growth primitive, not a forced uniform inner cache layout.
 
 ### OpenMythos runtime note
 

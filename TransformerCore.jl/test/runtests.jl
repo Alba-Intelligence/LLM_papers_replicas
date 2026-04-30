@@ -62,3 +62,17 @@ end
         @test loaded.cache["layer0"]["v"] == env.cache["layer0"]["v"]
     end
 end
+
+@testset "AxisAppendBuffer" begin
+    chunk1 = reshape(Float32.(1:6), 1, 2, 3)
+    chunk2 = reshape(Float32.(7:12), 1, 2, 3)
+    buffer = TransformerCore.filled_axis_buffer(chunk1; axis=2)
+    @test size(TransformerCore.buffer_view(buffer)) == (1, 2, 3)
+    original_capacity = size(buffer.data, 2)
+
+    TransformerCore.append_axis_buffer!(buffer, chunk2)
+    @test size(TransformerCore.buffer_view(buffer)) == (1, 4, 3)
+    @test Array(TransformerCore.buffer_view(buffer))[:, 1:2, :] == chunk1
+    @test Array(TransformerCore.buffer_view(buffer))[:, 3:4, :] == chunk2
+    @test size(buffer.data, 2) >= max(4, original_capacity)
+end

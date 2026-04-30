@@ -21,6 +21,24 @@ function _attention(q::AbstractArray, k::AbstractArray, v::AbstractArray, mask)
     return out
 end
 
+function _gq_cache_entry(prev)
+    if prev isa NamedTuple{(:k, :v)}
+        return prev
+    elseif prev isa AbstractDict
+        return (k=filled_axis_buffer(prev["k"]; axis=2), v=filled_axis_buffer(prev["v"]; axis=2))
+    end
+    throw(ArgumentError("unsupported GQ cache entry type $(typeof(prev))"))
+end
+
+function _mla_cache_entry(prev)
+    if prev isa NamedTuple{(:c_kv, :k_rope)}
+        return prev
+    elseif prev isa AbstractDict
+        return (c_kv=filled_axis_buffer(prev["c_kv"]; axis=2), k_rope=filled_axis_buffer(prev["k_rope"]; axis=2))
+    end
+    throw(ArgumentError("unsupported MLA cache entry type $(typeof(prev))"))
+end
+
 struct GQAttention{T<:AbstractFloat}
     n_heads::Int
     n_kv_heads::Int
@@ -56,12 +74,17 @@ function (attn::GQAttention)(x::AbstractArray, freqs_cis::AbstractMatrix; mask=n
     k = apply_rope(k, freqs_cis)
 
     if kv_cache !== nothing
-        if haskey(kv_cache, cache_key)
-            prev = kv_cache[cache_key]
-            k = cat(prev["k"], k; dims=2)
-            v = cat(prev["v"], v; dims=2)
+        entry = if haskey(kv_cache, cache_key)
+            prev = _gq_cache_entry(kv_cache[cache_key])
+            append_axis_buffer!(prev.k, k)
+            append_axis_buffer!(prev.v, v)
+            prev
+        else
+            (k=filled_axis_buffer(k; axis=2), v=filled_axis_buffer(v; axis=2))
         end
-        kv_cache[cache_key] = Dict("k" => copy(k), "v" => copy(v))
+        kv_cache[cache_key] = entry
+        k = buffer_view(entry.k)
+        v = buffer_view(entry.v)
     end
 
     if attn.groups > 1
@@ -130,12 +153,17 @@ function (attn::MLAttention)(x::AbstractArray, freqs_cis::AbstractMatrix; mask=n
     k_rope = apply_rope(k_rope, freqs_cis)
 
     if kv_cache !== nothing
-        if haskey(kv_cache, cache_key)
-            prev = kv_cache[cache_key]
-            c_kv = cat(prev["c_kv"], c_kv; dims=2)
-            k_rope = cat(prev["k_rope"], k_rope; dims=2)
+        entry = if haskey(kv_cache, cache_key)
+            prev = _mla_cache_entry(kv_cache[cache_key])
+            append_axis_buffer!(prev.c_kv, c_kv)
+            append_axis_buffer!(prev.k_rope, k_rope)
+            prev
+        else
+            (c_kv=filled_axis_buffer(c_kv; axis=2), k_rope=filled_axis_buffer(k_rope; axis=2))
         end
-        kv_cache[cache_key] = Dict("c_kv" => copy(c_kv), "k_rope" => copy(k_rope))
+        kv_cache[cache_key] = entry
+        c_kv = buffer_view(entry.c_kv)
+        k_rope = buffer_view(entry.k_rope)
     end
 
     s = size(c_kv, 2)

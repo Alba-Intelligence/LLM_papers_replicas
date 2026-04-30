@@ -115,6 +115,31 @@ function _eligible_compressed_blocks(abs_pos::Int, compression::Int, nblocks::In
     return clamp(fld(abs_pos - 2, compression), 0, nblocks)
 end
 
+function _csa_cache_entry(prev)
+    if prev isa NamedTuple{(:ca, :cb, :za, :zb, :kia, :kib)}
+        return prev
+    elseif prev isa AbstractDict
+        return (
+            ca=filled_axis_buffer(prev["ca"]; axis=2),
+            cb=filled_axis_buffer(prev["cb"]; axis=2),
+            za=filled_axis_buffer(prev["za"]; axis=2),
+            zb=filled_axis_buffer(prev["zb"]; axis=2),
+            kia=filled_axis_buffer(prev["kia"]; axis=2),
+            kib=filled_axis_buffer(prev["kib"]; axis=2),
+        )
+    end
+    throw(ArgumentError("unsupported CSA cache entry type $(typeof(prev))"))
+end
+
+function _hca_cache_entry(prev)
+    if prev isa NamedTuple{(:c, :z)}
+        return prev
+    elseif prev isa AbstractDict
+        return (c=filled_axis_buffer(prev["c"]; axis=2), z=filled_axis_buffer(prev["z"]; axis=2))
+    end
+    throw(ArgumentError("unsupported HCA cache entry type $(typeof(prev))"))
+end
+
 struct CompressedSparseAttention{T<:AbstractFloat}
     n_heads::Int
     head_dim::Int
@@ -211,23 +236,32 @@ function (attn::CompressedSparseAttention)(x::AbstractArray{T, 3}, freqs_cis::Ab
     kia = kia_cur
     kib = kib_cur
     if kv_cache !== nothing
-        if haskey(kv_cache, cache_key)
-            prev = kv_cache[cache_key]
-            ca = cat(prev["ca"], ca_cur; dims=2)
-            cb = cat(prev["cb"], cb_cur; dims=2)
-            za = cat(prev["za"], za_cur; dims=2)
-            zb = cat(prev["zb"], zb_cur; dims=2)
-            kia = cat(prev["kia"], kia_cur; dims=2)
-            kib = cat(prev["kib"], kib_cur; dims=2)
+        entry = if haskey(kv_cache, cache_key)
+            prev = _csa_cache_entry(kv_cache[cache_key])
+            append_axis_buffer!(prev.ca, ca_cur)
+            append_axis_buffer!(prev.cb, cb_cur)
+            append_axis_buffer!(prev.za, za_cur)
+            append_axis_buffer!(prev.zb, zb_cur)
+            append_axis_buffer!(prev.kia, kia_cur)
+            append_axis_buffer!(prev.kib, kib_cur)
+            prev
+        else
+            (
+                ca=filled_axis_buffer(ca_cur; axis=2),
+                cb=filled_axis_buffer(cb_cur; axis=2),
+                za=filled_axis_buffer(za_cur; axis=2),
+                zb=filled_axis_buffer(zb_cur; axis=2),
+                kia=filled_axis_buffer(kia_cur; axis=2),
+                kib=filled_axis_buffer(kib_cur; axis=2),
+            )
         end
-        kv_cache[cache_key] = Dict(
-            "ca" => copy(ca),
-            "cb" => copy(cb),
-            "za" => copy(za),
-            "zb" => copy(zb),
-            "kia" => copy(kia),
-            "kib" => copy(kib),
-        )
+        kv_cache[cache_key] = entry
+        ca = buffer_view(entry.ca)
+        cb = buffer_view(entry.cb)
+        za = buffer_view(entry.za)
+        zb = buffer_view(entry.zb)
+        kia = buffer_view(entry.kia)
+        kib = buffer_view(entry.kib)
     end
 
     out_heads = zeros(T, b, t, attn.n_heads, attn.head_dim)
@@ -341,12 +375,17 @@ function (attn::HeavilyCompressedAttention)(x::AbstractArray{T, 3}, freqs_cis::A
     c = c_cur
     z = z_cur
     if kv_cache !== nothing
-        if haskey(kv_cache, cache_key)
-            prev = kv_cache[cache_key]
-            c = cat(prev["c"], c_cur; dims=2)
-            z = cat(prev["z"], z_cur; dims=2)
+        entry = if haskey(kv_cache, cache_key)
+            prev = _hca_cache_entry(kv_cache[cache_key])
+            append_axis_buffer!(prev.c, c_cur)
+            append_axis_buffer!(prev.z, z_cur)
+            prev
+        else
+            (c=filled_axis_buffer(c_cur; axis=2), z=filled_axis_buffer(z_cur; axis=2))
         end
-        kv_cache[cache_key] = Dict("c" => copy(c), "z" => copy(z))
+        kv_cache[cache_key] = entry
+        c = buffer_view(entry.c)
+        z = buffer_view(entry.z)
     end
 
     out_heads = zeros(T, b, t, attn.n_heads, attn.head_dim)

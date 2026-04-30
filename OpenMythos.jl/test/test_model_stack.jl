@@ -44,9 +44,9 @@ mla_cfg(; kwargs...) = gqa_cfg(; attn_type="mla", kwargs...)
 
     cache = Dict{String, Any}()
     attn(x, freqs[1:T, :]; kv_cache=cache, cache_key="layer0")
-    first_len = size(cache["layer0"]["k"], 2)
+    first_len = size(OpenMythos.TransformerCore.buffer_view(cache["layer0"].k), 2)
     attn(x, freqs[1:T, :]; kv_cache=cache, cache_key="layer0")
-    @test size(cache["layer0"]["k"], 2) == first_len + T
+    @test size(OpenMythos.TransformerCore.buffer_view(cache["layer0"].k), 2) == first_len + T
 
     mask = zeros(Float32, 1, 1, T, T)
     for i in 1:T, j in (i + 1):T
@@ -67,13 +67,13 @@ end
 
     cache = Dict{String, Any}()
     attn(x, freqs[1:T, :]; kv_cache=cache, cache_key="mla0")
-    @test haskey(cache["mla0"], "c_kv")
-    @test haskey(cache["mla0"], "k_rope")
-    @test size(cache["mla0"]["c_kv"], 3) == cfg.kv_lora_rank
+    @test hasproperty(cache["mla0"], :c_kv)
+    @test hasproperty(cache["mla0"], :k_rope)
+    @test size(OpenMythos.TransformerCore.buffer_view(cache["mla0"].c_kv), 3) == cfg.kv_lora_rank
 
-    first_len = size(cache["mla0"]["c_kv"], 2)
+    first_len = size(OpenMythos.TransformerCore.buffer_view(cache["mla0"].c_kv), 2)
     attn(x, freqs[1:T, :]; kv_cache=cache, cache_key="mla0")
-    @test size(cache["mla0"]["c_kv"], 2) == first_len + T
+    @test size(OpenMythos.TransformerCore.buffer_view(cache["mla0"].c_kv), 2) == first_len + T
 end
 
 @testset "Expert and MoEFFN" begin
@@ -164,9 +164,9 @@ end
 
     cache = Dict{String, Any}()
     model(ids; kv_cache=cache)
-    mla_entries = [v for v in values(cache) if haskey(v, "c_kv")]
+    mla_entries = [v for v in values(cache) if hasproperty(v, :c_kv)]
     @test !isempty(mla_entries)
-    @test all(size(entry["c_kv"], 3) == cfg.kv_lora_rank for entry in mla_entries)
+    @test all(size(OpenMythos.TransformerCore.buffer_view(entry.c_kv), 3) == cfg.kv_lora_rank for entry in mla_entries)
 end
 
 @testset "Attention type swap" begin
@@ -185,6 +185,9 @@ end
     OpenMythos.OpenMythos(cfg_gqa)(ids[1:1, :]; kv_cache=cache_gqa)
     OpenMythos.OpenMythos(cfg_mla)(ids[1:1, :]; kv_cache=cache_mla)
 
-    cache_bytes(cache) = sum(sizeof(t) for entry in values(cache) for t in values(entry))
+    cache_bytes(cache) = sum(
+        length(OpenMythos.TransformerCore.buffer_view(t)) * sizeof(eltype(OpenMythos.TransformerCore.buffer_view(t)))
+        for entry in values(cache) for t in values(entry)
+    )
     @test cache_bytes(cache_mla) < cache_bytes(cache_gqa)
 end

@@ -101,7 +101,7 @@ continued = generate(model, ids; max_new_tokens=4, n_loops=2, envelope=loaded)
 
 The same `chunked_prefill`, `save_kv_cache`, `load_kv_cache`, and `generate(...; envelope=...)` pattern also works in `DeepSeekV4.jl`.
 
-This is a reference runtime seam, not a production serving stack: caches are still ordinary Julia dictionaries under the envelope.
+This is a reference runtime seam, not a production serving stack: the envelope still owns a Julia dictionary, but the per-layer cache payloads now use growable buffer-backed entries rather than full-tensor copies on every append.
 
 ## 6. Open the notebook example
 
@@ -214,7 +214,7 @@ The current runtime seam is also intentionally lightweight:
 
 - `KVCacheEnvelope` provides a shared outer cache contract,
 - both packages support `chunked_prefill`,
-- cache payloads are still family-specific `Dict{String, Any}` structures,
+- cache payloads are still family-specific runtime entries under a `Dict{String, Any}` envelope, now backed by growable append buffers,
 - paged attention and production cache allocators are still future work.
 
 ## 9. What to read next

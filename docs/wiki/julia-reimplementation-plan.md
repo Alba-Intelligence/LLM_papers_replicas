@@ -42,7 +42,7 @@ The current state is:
 
 - `OpenMythos.jl/` is the recurrent-depth package with parity-oriented model code and a head-only bootstrap training path.
 - `DeepSeekv4.jl/` is an architecture-first package with CSA/HCA, mHC, MoE routing, MTP, chunked-prefill-aware generation, tiny-config tests, and a head-only bootstrap training path.
-- `TransformerCore.jl/` holds the shared primitive, training-utility, and first runtime-envelope layer.
+- `TransformerCore.jl/` holds the shared primitive, training-utility, runtime-envelope, and growable cache-buffer layer.
 
 The next milestone is to deepen full-model training and runtime internals without prematurely forcing all model internals into Lux layers.
 
@@ -142,14 +142,15 @@ Status: done.
   - cache save/load,
   - chunked prefill,
   - envelope-aware generation for both model families,
+  - growable axis buffers replacing repeated cache concatenation in attention paths,
 - later work:
   - Muon and hybrid ZeRO,
   - contextual or expert parallelism,
   - deterministic fused kernels,
   - FP4 quantization-aware training,
-  - lower-allocation and production-scale long-context serving.
+  - paged/preallocated and production-scale long-context serving.
 
-Status: in progress; the first runtime-foundation slice is done.
+Status: in progress; the runtime-envelope and lower-allocation cache-buffer slices are done.
 
 ## Validation strategy
 
@@ -174,5 +175,5 @@ These should not block the current Julia milestone:
 The best next vertical slice is:
 
 1. expand beyond head-only optimization without collapsing the current shared seams,
-2. decide whether lower-allocation cache internals or runtime/distribution work should land next,
+2. decide whether full-model training expansion or runtime/distribution work should land next,
 3. preserve the shared runtime envelope while deeper serving work remains model-specific underneath.

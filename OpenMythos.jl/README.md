@@ -10,7 +10,8 @@ The replica now includes:
 - tokenizer parity through a pragmatic Hugging Face bridge,
 - an optional Python-vs-Julia parity harness for selected utilities,
 - a Lux-backed bootstrap training path with checkpointing and local/FineWeb smoke data flows,
-- chunked prefill plus serializable KV-cache envelopes for cached generation reuse.
+- chunked prefill plus serializable KV-cache envelopes for cached generation reuse,
+- lower-allocation buffer-backed cache growth behind the existing generation API.
 
 The current training surface is intentionally **head-only**: the core model implementation remains manual and parity-oriented, while the bootstrap trainer uses `Lux.jl` and `Optimisers.jl` on top of schedule, batching, checkpoint, and loss helpers now shared through `TransformerCore.jl`.
 
@@ -103,7 +104,7 @@ ids2 = generate(model, ids; max_new_tokens=4, n_loops=2, envelope=load_kv_cache(
 
 - full-model gradient-based training beyond the head-only bootstrap layer,
 - distributed training/runtime behavior,
-- lower-allocation KV cache internals,
+- paged or preallocated KV cache internals,
 - experimental `moda.py` parity,
 - performance-focused optimization work.
 
