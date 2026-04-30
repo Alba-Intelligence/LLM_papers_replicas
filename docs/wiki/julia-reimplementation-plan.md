@@ -2,7 +2,7 @@
 
 ## Goal
 
-Rebuild the main OpenMythos model family in Julia while preserving the behavioral core of the Python reference and using Julia-native libraries where possible.
+Grow this repository as a shared Julia workspace that can host multiple model families without losing the architectural core of either one.
 
 ## Current implementation status
 
@@ -38,7 +38,13 @@ The OpenMythos package includes a parity-tested core model stack:
 - `LTIInjection`
 - `ACTHalting`
 
-The tracked roadmap items are now in place. Future work centers on full-model gradient-based training, distributed runtime behavior, and later performance work.
+The current state is:
+
+- `OpenMythos.jl/` is the recurrent-depth package with parity-oriented model code and a head-only bootstrap training path.
+- `DeepSeekv4.jl/` is an architecture-first package with CSA/HCA, mHC, MoE routing, MTP, cache smoke paths, and tiny-config tests.
+- `TransformerCore.jl/` holds the shared primitive layer.
+
+The next milestone is to generalize training surfaces across model families without prematurely forcing all model internals into Lux layers.
 
 ## Chosen stack
 
@@ -86,105 +92,82 @@ docs/
 
 ## Phase plan
 
-### Phase 1: package scaffold
+### Phase 1: workspace split
 
-- Create `Project.toml`.
-- Create `src/OpenMythos.jl` and module includes.
-- Add `test/runtests.jl`.
-- Set up a minimal `docs/` structure that can grow into `Documenter.jl`.
+- move the original package into `OpenMythos.jl/`,
+- create `DeepSeekv4.jl/`,
+- keep `docs/wiki/` shared at the root.
 
 Status: done.
 
-### Phase 2: numerical primitives
+### Phase 2: shared-core extraction
 
-Port the pieces with clear local invariants:
+- move architecture-agnostic helpers into `TransformerCore.jl/`,
+- keep only truly reusable primitives there,
+- rewire both model packages to consume the shared package.
 
-- `MythosConfig`
-- `RMSNorm`
-- `precompute_rope_freqs`
-- `apply_rope`
-- `loop_index_embedding`
-- `LTIInjection`
-- `ACTHalting`
-- `LoRAAdapter`
+Status: done.
 
-These should be validated against the Python tests first because they are the most portable and the least dependent on framework-level details.
+### Phase 3: OpenMythos parity-first implementation
 
-Status: done for the initial primitive set listed above.
+- port the recurrent model stack,
+- keep tokenizer and batching parity pragmatic,
+- establish the current head-only Lux-backed bootstrap trainer.
 
-### Phase 3: attention and FFN blocks
+Status: done for the current bootstrap milestone.
 
-- Implement `GQAttention` first as the simpler attention path.
-- Implement `MLAttention` next because it is the default path in the reference.
-- Implement dense `Expert`.
-- Implement `MoEFFN`.
-- Implement `TransformerBlock`.
+### Phase 4: DeepSeek V4 architecture-first implementation
 
-At this stage, focus on correctness and shape parity rather than full performance parity with PyTorch or Flash Attention.
+- add `DeepSeekV4Config`,
+- implement CSA/HCA hybrid attention,
+- implement mHC residual mixing,
+- implement routed/shared/hash MoE surfaces,
+- implement MTP heads and cache-aware generation smoke paths.
 
-Status: done for the current GQA/MLA + FFN stack.
+Status: done for the current tiny-config architecture-first milestone.
 
-### Phase 4: recurrent block and full model
+### Phase 5: training foundation
 
-- Implement `RecurrentBlock`.
-- Implement `OpenMythos`.
-- Implement generation and KV-cache handling.
-- Port variant presets from `variants.py`.
+- generalize the current training helpers into model-family-neutral entry points,
+- define a shared loss/checkpoint/batch story that does not assume recurrent OpenMythos internals,
+- land the first trainable DeepSeek milestone,
+- keep the initial surface simple enough to remain readable and testable.
 
-The biggest behavioral checkpoints here are:
+Status: next active engineering task.
 
-- ACT weighting,
-- loop-index handling,
-- cache key separation across recurrent depth,
-- safe behavior when `n_loops` exceeds trained loop embeddings.
+### Phase 6: advanced systems work
 
-Status: done for forward/generate parity on small test configurations.
+- Muon and hybrid ZeRO,
+- contextual or expert parallelism,
+- deterministic fused kernels,
+- FP4 quantization-aware training,
+- production-scale long-context serving.
 
-### Phase 5: tokenizer and data access
+Status: explicitly deferred until the training foundation exists.
 
-- Start with a pragmatic tokenizer bridge if needed:
-  - temporary `PythonCall.jl` wrapper around Hugging Face tokenizers, or
-  - a native tokenizer library if parity is good enough early.
-- Recreate the dataset pipeline only after model parity exists.
-- Treat distributed training and exact FSDP feature parity as later milestones.
+## Validation strategy
 
-Status: tokenizer bridge, token chunking helpers, local-text batching, and optional FineWeb-Edu batch loading are done.
-
-### Phase 6: training recipe
-
-- Translate the 3B FineWeb-Edu script into a Julia training script only after the model is stable.
-- Keep the first Julia training target much smaller than the Python 3B recipe.
-- Design checkpointing and resume behavior in Julia-native terms rather than imitating PyTorch internals too literally.
-
-Status: bootstrap path done with a Lux explicit layer, `Optimisers.AdamW`, `NNlib.logsoftmax`, warmup/cosine scheduling, resumable checkpoints, and a Julia `OpenMythos.jl/scripts/train_3b_fineweb_edu.jl` entrypoint.
-
-## Test translation plan
-
-The Python suite suggests this translation order:
-
-| Python source | Julia target |
+| Area | Validation surface |
 | --- | --- |
-| `tests/test_main.py` RoPE and RMSNorm checks | `test_norms.jl`, `test_rope.jl` |
-| `tests/test_main.py` block/model checks | `test_attention_*.jl`, `test_moe.jl`, `test_recurrent.jl`, `test_model.jl` |
-| `tests/test_tokenizer.py` | `test_tokenizer.jl` |
-| `tests/test_rope_debug.py` | optional Julia debug harness, not a first-class test |
+| `TransformerCore.jl` | primitive smoke and invariant tests |
+| `OpenMythos.jl` | translated parity tests plus tokenizer/training smoke tests |
+| `DeepSeekv4.jl` | tiny-config architecture and generation smoke tests |
 
 ## Explicit deferrals
 
-These should not block the first Julia milestone:
+These should not block the current Julia milestone:
 
 - `open_mythos/moda.py`
 - benchmark scripts in `tests/`
 - full-scale distributed training parity
 - Flash Attention-specific optimization work
+- DeepSeek production runtime features
 
-## First implementation slice
+## Immediate next slice
 
-If work starts immediately, the best first vertical slice is:
+The best next vertical slice is:
 
-1. package scaffold,
-2. config + RMSNorm + RoPE,
-3. invariant tests,
-4. GQA path,
-5. recurrent block,
-6. small end-to-end forward pass on a tiny config.
+1. generalize loss, batching, and checkpoint envelopes where they are already shared in spirit,
+2. keep model-family-specific hidden-state computation inside each package,
+3. land a first trainable DeepSeek head-only or similarly narrow milestone,
+4. add tests that prove the shared training surface works across at least two model families.

@@ -1,6 +1,10 @@
-# Python Reference Map
+# OpenMythos Python Reference Map
 
-This page is the bridge between the current Python project and the future Julia layout.
+This page is the bridge between the upstream Python OpenMythos project and the Julia workspace.
+
+It is intentionally about the **OpenMythos** reference tree in `reference/OpenMythos`.
+
+DeepSeek V4 source mapping lives in [DeepSeek V4 reference map](deepseek-v4-reference-map.md).
 
 ## Source-of-truth order
 
@@ -20,7 +24,7 @@ This page is the bridge between the current Python project and the future Julia 
 | `open_mythos/variants.py` | Named configuration presets | `OpenMythos.jl/src/variants.jl` | High |
 | `tests/test_main.py` | Invariant-heavy model tests | `OpenMythos.jl/test/` parity tests | Highest |
 | `tests/test_tokenizer.py` | Tokenizer behavior checks | `OpenMythos.jl/test/test_tokenizer.jl` | High |
-| `docs/open_mythos.md` | Architecture reference | `docs/wiki/` and future API docs | High |
+| `docs/open_mythos.md` | Architecture reference | `docs/wiki/architecture.md` and package docs | High |
 | `training/3b_fine_web_edu.py` | FSDP training recipe | `OpenMythos.jl/src/training.jl` plus `OpenMythos.jl/scripts/train_3b_fineweb_edu.jl` Lux-backed bootstrap path | High |
 | `docs/datasets.md` | Dataset recommendations | wiki / training docs | Medium |
 | `open_mythos/moda.py` | MoDA + DeepSeek MoE branch | separate later module or deferred experiment | Low |
@@ -34,18 +38,19 @@ OpenMythos.jl/
   src/
     OpenMythos.jl
     config.jl
-    norms.jl
-    rope.jl
-    attention/
-      gqa.jl
-      mla.jl
-    moe.jl
-    recurrent.jl
-    training.jl
+    attention.jl
+    ffn.jl
     blocks.jl
+    recurrent.jl
     model.jl
+    training.jl
     variants.jl
     tokenizer.jl
+TransformerCore.jl/
+  src/
+    TransformerCore.jl
+    norms.jl
+    rope.jl
 DeepSeekv4.jl/
   src/
     DeepSeekV4.jl
@@ -59,10 +64,11 @@ DeepSeekv4.jl/
 
 ## Practical reading notes
 
-- `main.py` is dense but coherent: most of the port can be planned from that one file.
+- `main.py` is dense but coherent: most of the OpenMythos port can be planned from that one file.
 - `docs/open_mythos.md` is the fastest way to understand the recurrent block before reading code.
 - `README.md` contains both useful implementation clues and broader theory/speculation; use it carefully.
 - `moda.py` is not the same model family as the main `OpenMythos` path and should not distort the first Julia milestone.
+- The Julia workspace now separates shared generic code into `TransformerCore.jl/`, so not every Python concept maps directly into `OpenMythos.jl/src/`.
 
 ## Commands that currently exist
 

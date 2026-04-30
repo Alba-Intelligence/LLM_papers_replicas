@@ -18,11 +18,12 @@ It is intentionally concept-first: the goal is to explain what the Python projec
 
 1. [Usage](usage.md) - how to actually run the current Julia package.
 2. [Architecture](architecture.md) - the model we are actually porting.
-3. [Python reference map](python-reference-map.md) - which Python files matter and how they translate into Julia work.
-4. [References](references.md) - papers, datasets, and implementation references already cited by the Python project.
-5. [DeepSeek V4 architecture](deepseek-v4-architecture.md) - the current DeepSeek V4 package surface and its deliberate deferrals.
-6. [Multi-package workspace](multi-model-repo-plan.md) - how the Julia workspace is split across packages.
-7. [Julia reimplementation plan](julia-reimplementation-plan.md) - target module layout, libraries, and implementation phases.
+3. [Python reference map](python-reference-map.md) - which Python OpenMythos files matter and how they translate into Julia work.
+4. [DeepSeek V4 reference map](deepseek-v4-reference-map.md) - which external DeepSeek materials map to which Julia files.
+5. [References](references.md) - papers, datasets, and implementation references now used across both model families.
+6. [DeepSeek V4 architecture](deepseek-v4-architecture.md) - the current DeepSeek V4 package surface and its deliberate deferrals.
+7. [Multi-package workspace](multi-model-repo-plan.md) - how the Julia workspace is split across packages.
+8. [Julia reimplementation plan](julia-reimplementation-plan.md) - current status and the remaining engineering phases.
 
 There is also a small Pluto notebook example at `OpenMythos.jl/notebooks/small_example.jl`.
 
@@ -77,8 +78,9 @@ That path is intentionally limited to **head-only** optimization for now.
 
 ## Future work
 
-The current roadmap items are complete. The main remaining directions are:
+The next concrete engineering target is the training foundation. After that, the main remaining directions are:
 
+- model-family-neutral training entry points,
 - full-model gradient-based training beyond the head-only Lux layer,
 - distributed training/runtime behavior,
 - deeper performance work,

@@ -9,7 +9,20 @@ This page shows the current user-facing workflow for the Julia workspace.
 - Shared low-level primitives live in `TransformerCore.jl/`.
 - Keep using the shared wiki from the repository root.
 
-## 1. Construct a tiny model
+## 1. Run package tests
+
+```bash
+cd TransformerCore.jl
+julia --project=. -q -e 'using Pkg; Pkg.test()'
+
+cd ../OpenMythos.jl
+OPENMYTHOS_TEST_TOKENIZER_MODEL_ID=gpt2 julia --project=. -q -e 'using Pkg; Pkg.test()'
+
+cd ../DeepSeekv4.jl
+julia --project=. -q -e 'using Pkg; Pkg.test()'
+```
+
+## 2. Construct a tiny OpenMythos model
 
 For smoke runs and quick experimentation, prefer the bootstrap-sized config helpers over the large reference presets.
 
@@ -30,7 +43,26 @@ Expected shape:
 (1, 16, 256)
 ```
 
-## 2. Use the tokenizer
+## 3. Construct a tiny DeepSeek V4 model
+
+```julia
+using DeepSeekV4
+
+cfg = deepseek_v4_tiny()
+model = DeepSeekV4Model(cfg)
+input_ids = reshape(collect(0:7), 1, :)
+
+logits = model(input_ids)
+size(logits)
+```
+
+Expected shape:
+
+```text
+(1, 8, cfg.vocab_size)
+```
+
+## 4. Use the tokenizer
 
 The tokenizer currently shells out through Hugging Face tooling for parity and practicality.
 
@@ -49,7 +81,7 @@ Useful entry points:
 - `detokenize(tok, ids)`
 - `vocab_size(tok)`
 
-## 3. Open the notebook example
+## 5. Open the notebook example
 
 There is a small Pluto notebook in:
 
@@ -73,7 +105,7 @@ The notebook demonstrates:
 - a forward pass,
 - short random-weight generation.
 
-## 4. Run the bootstrap training script
+## 6. Run the bootstrap training script
 
 The training entrypoint is:
 
@@ -116,14 +148,7 @@ OPENMYTHOS_FINEWEB_BATCHES=8 \
 julia --project=. scripts/train_3b_fineweb_edu.jl
 ```
 
-## 5. Run the DeepSeek V4 package smoke tests
-
-```bash
-cd DeepSeekv4.jl
-julia --project=. -q -e 'using Pkg; Pkg.test()'
-```
-
-## 6. Understand the training scope
+## 7. Understand the training scope
 
 The current bootstrap trainer is intentionally limited:
 
@@ -131,10 +156,13 @@ The current bootstrap trainer is intentionally limited:
 - it uses `Optimisers.AdamW` and `NNlib.logsoftmax`,
 - it currently optimizes the LM head only through `LuxHeadOnlyOpenMythos`,
 - the core model internals are still manual Julia blocks,
+- the first trainable DeepSeek milestone is still upcoming,
 - full-model autodiff/distributed training is still future work.
 
-## 7. What to read next
+## 8. What to read next
 
 1. [Architecture](architecture.md)
 2. [Python reference map](python-reference-map.md)
-3. [Julia reimplementation plan](julia-reimplementation-plan.md)
+3. [DeepSeek V4 architecture](deepseek-v4-architecture.md)
+4. [DeepSeek V4 reference map](deepseek-v4-reference-map.md)
+5. [Julia reimplementation plan](julia-reimplementation-plan.md)

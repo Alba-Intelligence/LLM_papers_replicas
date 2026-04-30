@@ -1,6 +1,17 @@
-# References Pulled from the Python Codebase
+# References
 
-This page consolidates references already cited in the Python reference project so the Julia port can reuse them consistently.
+This page consolidates the references currently shaping the Julia workspace:
+
+- citations inherited from the Python OpenMythos project,
+- DeepSeek V4 materials used for the new package,
+- dataset and implementation references that inform future training/runtime work.
+
+## DeepSeek V4 materials
+
+| Topic | Reference | URL | Used for |
+| --- | --- | --- | --- |
+| DeepSeek V4 technical note | DeepSeek V4 PDF | https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf | `DeepSeekv4.jl/`, DeepSeek wiki pages, architecture planning |
+| DeepSeek V4 introduction | YouTube introduction video | https://www.youtube.com/watch?v=q8holiIirgo | architecture planning and terminology cross-checking |
 
 ## Architecture and reasoning
 
@@ -18,6 +29,7 @@ This page consolidates references already cited in the Python reference project 
 
 | Topic | Reference | URL | Referenced in |
 | --- | --- | --- | --- |
+| DeepSeek V4 predecessor attention lineage | DeepSeek-V2 | https://arxiv.org/abs/2405.04434 | `docs/open_mythos.md`, `open_mythos/main.py`, DeepSeek V4 implementation context |
 | MLA | DeepSeek-V2 | https://arxiv.org/abs/2405.04434 | `docs/open_mythos.md`, `open_mythos/main.py` |
 | GQA | Ainslie et al., 2023 | https://arxiv.org/abs/2305.13245 | `README.md`, `docs/open_mythos.md`, `open_mythos/main.py` |
 | Flash Attention 2 | Dao et al., 2023 | cited by name in repo | `README.md`, `open_mythos/main.py` |
@@ -49,6 +61,8 @@ This page consolidates references already cited in the Python reference project 
 | --- | --- | --- |
 | Python reference repository | https://github.com/The-Swarm-Corporation/OpenMythos | `pyproject.toml`, citation block in `README.md` |
 | PyPI package | https://pypi.org/project/open-mythos/ | `README.md` |
+| DeepSeek V4 model page | https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro | DeepSeek package planning |
+| DeepSeek API/news summary | https://api-docs.deepseek.com/news/news250929 | DeepSeek release context |
 
 ## Discussion threads cited in the Python README
 
@@ -61,4 +75,3 @@ This page consolidates references already cited in the Python reference project 
 | davidad on loop index embedding | https://x.com/davidad/status/2044453231913537927 |
 | Chris Hayduk on looped transformer controversy | https://x.com/ChrisHayduk/status/2045947623572688943 |
 | Sigrid Jin summary thread | https://x.com/realsigridjin/status/2046012743778766875 |
-

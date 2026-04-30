@@ -1,8 +1,29 @@
 # Architecture
 
-## What the Python reference implements
+## Workspace-level view
 
-The main implementation lives in `reference/OpenMythos/open_mythos/main.py` and builds a decoder-only language model around a looped middle block.
+The repository now carries two model families plus a shared primitive layer:
+
+```text
+TransformerCore.jl
+  -> generic tensor helpers
+  -> RMSNorm
+  -> RoPE
+
+OpenMythos.jl
+  -> recurrent-depth language model
+
+DeepSeekv4.jl
+  -> architecture-first DeepSeek V4 stack
+```
+
+The shared wiki stays at the repository root because the important design questions span package boundaries.
+
+## OpenMythos architecture
+
+The authoritative OpenMythos implementation still lives in `reference/OpenMythos/open_mythos/main.py`.
+
+It builds a decoder-only language model around a looped middle block:
 
 ```text
 Input IDs
@@ -16,11 +37,11 @@ Input IDs
 
 The key invariant is that the encoded prelude output `e` is frozen and injected into every recurrent step. The recurrent hidden state is not left to drift on its own.
 
-## Main components
+### OpenMythos main components
 
-### 1. `MythosConfig`
+#### 1. `MythosConfig`
 
-`MythosConfig` carries nearly all architecture choices:
+`MythosConfig` carries the main architecture choices:
 
 - model width and sequence limits,
 - recurrent loop count,
@@ -30,50 +51,89 @@ The key invariant is that the encoded prelude output `e` is frozen and injected 
 - LoRA rank,
 - RoPE settings.
 
-For the Julia port, this should become a single typed config object rather than many loosely coupled keyword arguments.
+#### 2. Prelude and Coda
 
-### 2. Prelude and Coda
-
-Prelude and Coda are ordinary pre-norm transformer stacks that run once. They use:
+Prelude and Coda are standard pre-norm transformer stacks that run once. They use:
 
 - RMSNorm,
 - the selected attention backend,
 - dense SwiGLU-style FFNs.
 
-They are important structurally, but not novel by themselves.
+#### 3. Recurrent Block
 
-### 3. Recurrent Block
+The recurrent block is the architectural center of gravity.
 
-The recurrent block is what makes OpenMythos distinct.
+Per loop iteration, the model:
 
-Per loop iteration, the Python code does:
+1. injects a loop-index embedding into the hidden state,
+2. combines hidden state with the frozen encoded input `e`,
+3. applies one transformer block with MoE FFN,
+4. adds a depth-wise LoRA delta,
+5. updates the state with an LTI-stable injection rule,
+6. computes ACT halting probabilities and accumulates a weighted output.
 
-1. inject a loop-index embedding into the hidden state,
-2. combine hidden state with the frozen encoded input `e`,
-3. apply one transformer block with MoE FFN,
-4. add a depth-wise LoRA delta,
-5. update the state with an LTI-stable injection rule,
-6. compute ACT halting probabilities and accumulate a weighted output.
+This is why OpenMythos remains its own package rather than being folded into a generic transformer stack.
 
-This means the Julia port should not start from "generic transformer.jl" and bolt recurrence on later. The recurrence logic is the model.
+#### 4. Attention backends
 
-### 4. Attention backends
-
-The reference supports two attention modes:
-
-| Backend | Python class | Role in the port |
+| Backend | Julia type | Role |
 | --- | --- | --- |
-| GQA | `GQAttention` | Simpler baseline path; good first Julia attention target |
-| MLA | `MLAttention` | Higher-priority for parity because it is the default path in the reference |
+| GQA | `GQAttention` | simpler baseline path |
+| MLA | `MLAttention` | higher-priority parity path |
 
-Both backends use RoPE and KV caching, but the cache representation differs:
+Both use RoPE and KV caching, but the cache structure differs:
 
 - GQA caches full K and V tensors with fewer KV heads than Q heads.
 - MLA caches a compressed latent representation and reconstructs parts of K and V on demand.
 
+## DeepSeek V4 architecture
+
+`DeepSeekv4.jl/` is a separate package because DeepSeek V4 is a different model family, not an OpenMythos variant.
+
+The current Julia package models the paper at the architecture-first level:
+
+```text
+Input IDs
+  -> token embedding
+  -> non-recurrent DeepSeek block stack
+       -> CSA / HCA hybrid attention
+       -> mHC residual mixing
+       -> routed/shared/hash MoE FFN
+  -> readout mixing
+  -> RMSNorm
+  -> LM head + MTP heads
+```
+
+### DeepSeek-specific components
+
+- `DeepSeekV4Config`
+- `CompressedSparseAttention`
+- `HeavilyCompressedAttention`
+- `ManifoldHyperConnections`
+- `HashMoEFFN`
+- `DeepSeekV4Block`
+- `DeepSeekV4Model`
+- `mtp_logits`
+
+The current implementation is intentionally correctness-first and tiny-config-first. It is not yet a production-scale training or serving system.
+
+## Shared primitive layer
+
+`TransformerCore.jl/` currently holds the code that is obviously reusable across both packages:
+
+- feature-last tensor helpers,
+- embedding and categorical sampling helpers,
+- row/column softmax helpers,
+- `RMSNorm`,
+- RoPE precomputation and application.
+
+That package should remain architecture-agnostic. Recurrence, CSA/HCA, mHC, training wrappers, and routing policies stay in the model-family packages until a genuinely stable shared abstraction exists.
+
 ## Why the tests matter
 
-The strongest cues for a Julia port are not the training scripts. They are the invariants encoded in `tests/test_main.py`:
+The strongest implementation cues are still invariant tests rather than scale-oriented training scripts.
+
+For OpenMythos, `reference/OpenMythos/tests/test_main.py` describes the minimum behavioral bar:
 
 - RMSNorm shape and RMS properties,
 - RoPE shape, norm preservation, and relative-position behavior,
@@ -82,11 +142,16 @@ The strongest cues for a Julia port are not the training scripts. They are the i
 - LoRA depth handling,
 - recurrent block output shape and stability assumptions.
 
-Those tests describe the minimum correctness bar for the Julia code.
+For DeepSeek V4, the Julia package currently uses tiny-config invariants:
 
-## What is primary vs secondary
+- forward logits shape,
+- MTP output shape,
+- cache smoke behavior,
+- generation smoke behavior.
 
-### Primary port target
+## What remains primary vs deferred
+
+### Primary OpenMythos parity target
 
 - `open_mythos/main.py`
 - `open_mythos/tokenizer.py`
@@ -95,14 +160,17 @@ Those tests describe the minimum correctness bar for the Julia code.
 - `tests/test_tokenizer.py`
 - `docs/open_mythos.md`
 
-### Secondary target
+### Primary DeepSeek V4 target
 
-- `training/3b_fine_web_edu.py`
-- `docs/datasets.md`
+- the DeepSeek V4 technical note,
+- the introduction video,
+- the current `DeepSeekv4.jl/` source and tests.
 
-### Experimental / defer until core parity exists
+### Explicit deferrals
 
 - `open_mythos/moda.py`
-- `examples/moda_example.py`
-- benchmark scripts in `tests/`
-
+- benchmark scripts in `reference/OpenMythos/tests/`
+- Muon and hybrid ZeRO
+- FP4 QAT
+- contextual parallelism
+- production million-token serving work
