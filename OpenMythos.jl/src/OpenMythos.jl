@@ -28,11 +28,17 @@ using TransformerCore: _sigmoid,
                        text_next_token_pairs,
                        batch_next_token_pairs,
                        latest_checkpoint,
-                       _head_loss_and_grad
+                       _head_loss_and_grad,
+                       KVCacheEnvelope,
+                       save_kv_cache,
+                       load_kv_cache
 
-function _causal_mask(seq_len::Integer, ::Type{T}=Float32) where {T<:AbstractFloat}
-    mask = zeros(T, 1, 1, seq_len, seq_len)
-    for i in 1:seq_len, j in (i + 1):seq_len
+function _causal_mask(seq_len::Integer, prefix_len::Integer=0, ::Type{T}=Float32) where {T<:AbstractFloat}
+    seq_len >= 0 || throw(ArgumentError("seq_len must be non-negative"))
+    prefix_len >= 0 || throw(ArgumentError("prefix_len must be non-negative"))
+    total_len = Int(prefix_len) + Int(seq_len)
+    mask = zeros(T, 1, 1, seq_len, total_len)
+    for i in 1:seq_len, j in (Int(prefix_len) + i + 1):total_len
         mask[1, 1, i, j] = T(-Inf)
     end
     return mask
@@ -77,12 +83,16 @@ export MythosConfig,
        text_next_token_pairs,
        batch_next_token_pairs,
        fineweb_edu_batches,
+       KVCacheEnvelope,
+       save_kv_cache,
+       load_kv_cache,
        LuxHeadOnlyOpenMythos,
        HeadOnlyTrainerState,
        head_only_logits,
        head_only_loss,
        train_head_only_step!,
        train_head_only!,
+       chunked_prefill,
        latest_checkpoint,
        save_head_only_checkpoint,
        load_head_only_checkpoint,

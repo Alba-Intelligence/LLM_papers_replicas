@@ -125,9 +125,30 @@ The current implementation is intentionally correctness-first and tiny-config-fi
 - embedding and categorical sampling helpers,
 - row/column softmax helpers,
 - `RMSNorm`,
-- RoPE precomputation and application.
+- RoPE precomputation and application,
+- shared schedule/batching/checkpoint-discovery/head-loss helpers,
+- `KVCacheEnvelope`, `save_kv_cache`, and `load_kv_cache`.
 
 That package should remain architecture-agnostic. Recurrence, CSA/HCA, mHC, training wrappers, and routing policies stay in the model-family packages until a genuinely stable shared abstraction exists.
+
+## Runtime foundations
+
+The first cross-package long-context runtime seam is now shared rather than model-specific:
+
+- `TransformerCore.KVCacheEnvelope` wraps a mutable `Dict{String, Any}` cache plus the current cached prefix length,
+- both model families expose `chunked_prefill` to build that envelope in prompt-sized chunks,
+- both `generate` entrypoints can continue from an existing envelope instead of rebuilding the prompt cache from scratch.
+
+The underlying cache payloads are still family-specific:
+
+- OpenMythos GQA stores full K/V tensors, while MLA stores compressed latent cache pieces,
+- DeepSeek CSA and HCA store their own compressed attention state.
+
+That is intentional. The shared abstraction is the outer runtime contract, not a forced uniform inner cache layout.
+
+### OpenMythos runtime note
+
+OpenMythos now uses a prefix-aware causal mask during cached multi-token prefill. That keeps chunked prefill behavior aligned with ordinary full-prompt generation even when a later chunk attends over an already-populated cache prefix.
 
 ## Why the tests matter
 
@@ -174,3 +195,4 @@ For DeepSeek V4, the Julia package currently uses tiny-config invariants:
 - FP4 QAT
 - contextual parallelism
 - production million-token serving work
+- paged/preallocated KV cache internals

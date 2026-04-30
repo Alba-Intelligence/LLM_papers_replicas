@@ -26,7 +26,10 @@ using TransformerCore: _sigmoid,
                        text_next_token_pairs,
                        batch_next_token_pairs,
                        latest_checkpoint,
-                       _head_loss_and_grad
+                       _head_loss_and_grad,
+                       KVCacheEnvelope,
+                       save_kv_cache,
+                       load_kv_cache
 
 include("config.jl")
 include("ffn.jl")
@@ -57,6 +60,9 @@ export DeepSeekV4Config,
        text_next_token_pairs,
        batch_next_token_pairs,
        latest_checkpoint,
+       KVCacheEnvelope,
+       save_kv_cache,
+       load_kv_cache,
        bootstrap_deepseek_training_config,
        LuxHeadOnlyDeepSeekV4,
        DeepSeekHeadTrainerState,
@@ -66,6 +72,7 @@ export DeepSeekV4Config,
        train_deepseek_head_only!,
        save_deepseek_checkpoint,
        load_deepseek_checkpoint,
+       chunked_prefill,
        deepseek_v4_tiny,
        deepseek_v4_flash,
        deepseek_v4_pro

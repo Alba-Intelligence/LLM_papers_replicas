@@ -32,7 +32,7 @@ function _forward_hidden(model::OpenMythos, input_ids::AbstractMatrix{<:Integer}
     x = _embed_tokens(input_ids, model.embed)
     freqs_all = model.cfg.attn_type == "mla" ? model.freqs_cis_mla : model.freqs_cis
     freqs = freqs_all[(start_pos + 1):(start_pos + t), :]
-    mask = t > 1 ? _causal_mask(t, Float32) : nothing
+    mask = t > 1 ? _causal_mask(t, start_pos, Float32) : nothing
 
     for (i, layer) in enumerate(model.prelude)
         x = layer(x, freqs; mask=mask, kv_cache=kv_cache, cache_key="prelude_$(i - 1)")
@@ -53,21 +53,51 @@ function (model::OpenMythos)(input_ids::AbstractMatrix{<:Integer}; n_loops::Unio
     return _linear_feature_last(hidden, model.head)
 end
 
-function generate(model::OpenMythos, input_ids::AbstractMatrix{<:Integer}; max_new_tokens::Integer=64, n_loops::Integer=8, temperature::Real=1.0, top_k::Integer=50, rng::AbstractRNG=Random.default_rng())
+function chunked_prefill(
+    model::OpenMythos,
+    input_ids::AbstractMatrix{<:Integer};
+    chunk_size::Integer,
+    n_loops::Union{Nothing, Integer}=nothing,
+    envelope::KVCacheEnvelope=KVCacheEnvelope(),
+)
+    chunk_size > 0 || throw(ArgumentError("chunk_size must be positive"))
+    size(input_ids, 2) <= 1 && return envelope
+
+    prefix = @view input_ids[:, 1:(end - 1)]
+    total_t = size(prefix, 2)
+    start = 1
+    while start <= total_t
+        stop = min(start + Int(chunk_size) - 1, total_t)
+        chunk = @view prefix[:, start:stop]
+        _forward_hidden(model, chunk; n_loops=n_loops, kv_cache=envelope.cache, start_pos=envelope.start_pos)
+        envelope.start_pos += size(chunk, 2)
+        start = stop + 1
+    end
+    return envelope
+end
+
+function generate(model::OpenMythos, input_ids::AbstractMatrix{<:Integer}; max_new_tokens::Integer=64, n_loops::Integer=8, temperature::Real=1.0, top_k::Integer=50, rng::AbstractRNG=Random.default_rng(), envelope::Union{Nothing, KVCacheEnvelope}=nothing)
     ids = copy(input_ids)
-    kv_cache = Dict{String, Any}()
+    kv_cache = envelope === nothing ? Dict{String, Any}() : envelope.cache
+    has_prefill = envelope !== nothing && (!isempty(envelope.cache) || envelope.start_pos > 0)
     prompt_len = size(ids, 2)
 
     for step in 1:max_new_tokens
         if step == 1
-            cur_ids = ids
-            start_pos = 0
+            if has_prefill
+                cur_ids = ids[:, end:end]
+                start_pos = envelope.start_pos
+            else
+                cur_ids = ids
+                start_pos = 0
+            end
         else
             cur_ids = ids[:, end:end]
             start_pos = prompt_len + step - 2
         end
 
         logits = model(cur_ids; n_loops=n_loops, kv_cache=kv_cache, start_pos=start_pos)
+        envelope !== nothing && (envelope.start_pos = start_pos + size(cur_ids, 2))
         logits = logits[:, end, :] ./ Float32(temperature)
 
         if top_k > 0 && top_k < size(logits, 2)

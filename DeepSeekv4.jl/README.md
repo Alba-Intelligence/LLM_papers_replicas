@@ -9,6 +9,7 @@ This package currently targets:
 - manifold-constrained hyper-connections,
 - DeepSeek-style MoE routing surfaces,
 - MTP output heads and generation smoke paths,
+- chunked prefill plus serializable KV-cache envelopes for cached generation reuse,
 - a Lux-backed head-only bootstrap training surface for tiny configs.
 
 ## Quickstart
@@ -28,5 +29,19 @@ julia --project=. scripts/train_deepseek_tiny.jl
 ```
 
 This script currently builds local byte-encoded batches for a simple trainable smoke path.
+
+### Chunked prefill and cache reuse
+
+```julia
+using DeepSeekV4
+
+cfg = deepseek_v4_tiny()
+model = DeepSeekV4Model(cfg)
+ids = reshape(collect(0:7), 1, :)
+
+env = chunked_prefill(model, ids; chunk_size=3)
+save_kv_cache(env, "cache/deepseek_prefill.jls")
+ids2 = generate(model, ids; max_new_tokens=4, envelope=load_kv_cache("cache/deepseek_prefill.jls"))
+```
 
 The shared wiki for this repository remains in `../docs/wiki/`.

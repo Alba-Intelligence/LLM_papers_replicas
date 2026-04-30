@@ -676,7 +676,7 @@ uuid = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
 version = "1.0.3"
 
 [[deps.TransformerCore]]
-deps = ["LinearAlgebra", "Random", "Statistics"]
+deps = ["LinearAlgebra", "Random", "Serialization", "Statistics"]
 path = "../TransformerCore.jl"
 uuid = "b57a3b10-0dc6-488f-8532-4c1c16641fe1"
 version = "0.1.0"

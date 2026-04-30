@@ -2,7 +2,7 @@
 
 julia_version = "1.12.6"
 manifest_format = "2.0"
-project_hash = "abf153ecf1f3f58a3dceefdd0b1c443ff817f3b5"
+project_hash = "51d091db9022aadf43b632a3edcf5e3565052947"
 
 [[deps.Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
@@ -36,6 +36,10 @@ version = "1.11.0"
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 version = "0.7.0"
 
+[[deps.Serialization]]
+uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
+version = "1.11.0"
+
 [[deps.Statistics]]
 deps = ["LinearAlgebra"]
 git-tree-sha1 = "ae3bb1eb3bba077cd276bc5cfc337cc65c3075c0"
@@ -49,7 +53,7 @@ version = "1.11.1"
     SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [[deps.TransformerCore]]
-deps = ["LinearAlgebra", "Random", "Statistics"]
+deps = ["LinearAlgebra", "Random", "Serialization", "Statistics"]
 path = "."
 uuid = "b57a3b10-0dc6-488f-8532-4c1c16641fe1"
 version = "0.1.0"

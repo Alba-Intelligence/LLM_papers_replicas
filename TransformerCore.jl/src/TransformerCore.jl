@@ -2,6 +2,7 @@ module TransformerCore
 
 using LinearAlgebra
 using Random
+using Serialization
 using Statistics
 
 _sigmoid(x) = inv(one(x) + exp(-x))
@@ -97,6 +98,7 @@ end
 include("norms.jl")
 include("rope.jl")
 include("training_utils.jl")
+include("kv_cache.jl")
 
 export _sigmoid,
        _silu,
@@ -118,6 +120,9 @@ export _sigmoid,
        text_next_token_pairs,
        batch_next_token_pairs,
        latest_checkpoint,
-       _head_loss_and_grad
+       _head_loss_and_grad,
+       KVCacheEnvelope,
+       save_kv_cache,
+       load_kv_cache
 
 end

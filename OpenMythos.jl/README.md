@@ -9,7 +9,8 @@ The replica now includes:
 - the core model stack (`MythosConfig`, attention backends, MoE, recurrent block, `OpenMythos`, generation),
 - tokenizer parity through a pragmatic Hugging Face bridge,
 - an optional Python-vs-Julia parity harness for selected utilities,
-- a Lux-backed bootstrap training path with checkpointing and local/FineWeb smoke data flows.
+- a Lux-backed bootstrap training path with checkpointing and local/FineWeb smoke data flows,
+- chunked prefill plus serializable KV-cache envelopes for cached generation reuse.
 
 The current training surface is intentionally **head-only**: the core model implementation remains manual and parity-oriented, while the bootstrap trainer uses `Lux.jl` and `Optimisers.jl` on top of schedule, batching, checkpoint, and loss helpers now shared through `TransformerCore.jl`.
 
@@ -75,6 +76,20 @@ OPENMYTHOS_FINEWEB_BATCHES=8 \
 julia --project=. scripts/train_3b_fineweb_edu.jl
 ```
 
+### Chunked prefill and cache reuse
+
+```julia
+using OpenMythos
+
+cfg = bootstrap_training_config(256; seq_len=16, attn_type="gqa")
+model = OpenMythos(cfg)
+ids = reshape(collect(0:7), 1, :)
+
+env = chunked_prefill(model, ids; chunk_size=3, n_loops=2)
+save_kv_cache(env, "cache/openmythos_prefill.jls")
+ids2 = generate(model, ids; max_new_tokens=4, n_loops=2, envelope=load_kv_cache("cache/openmythos_prefill.jls"))
+```
+
 ## Repository map
 
 - `src/` - Julia package implementation
@@ -88,6 +103,7 @@ julia --project=. scripts/train_3b_fineweb_edu.jl
 
 - full-model gradient-based training beyond the head-only bootstrap layer,
 - distributed training/runtime behavior,
+- lower-allocation KV cache internals,
 - experimental `moda.py` parity,
 - performance-focused optimization work.
 

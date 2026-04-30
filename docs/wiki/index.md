@@ -9,10 +9,11 @@ It is intentionally concept-first: the goal is to explain what the Python projec
 - The root repository is now a multi-package workspace.
 - `OpenMythos.jl/` contains the recurrent OpenMythos Julia package with its own `Project.toml`, `src/`, `test/`, and `Manifest.toml`.
 - `DeepSeekv4.jl/` contains the new DeepSeek V4 Julia package.
-- `TransformerCore.jl/` contains reusable feature-last tensor helpers, `RMSNorm`, RoPE utilities, and the current shared schedule/batching/head-loss utilities.
+- `TransformerCore.jl/` contains reusable feature-last tensor helpers, `RMSNorm`, RoPE utilities, shared training helpers, and the first shared KV-cache envelope utilities.
 - The authoritative implementation today is the Python reference at `reference/OpenMythos`.
 - The implemented Julia slice now covers the OpenMythos primitive layer and main model stack, plus an architecture-first DeepSeek V4 package with tiny-config CSA/HCA, mHC, MTP, generation smoke paths, and a first trainable head-only bootstrap milestone.
-- The tracked roadmap items are now in place; future work focuses on deeper training/runtime capability rather than missing repository basics.
+- The first advanced-systems runtime slice is now in place: shared cache envelopes, cache save/load, and chunked-prefill-aware generation for both model families.
+- Future work now focuses on deeper full-model training, lower-allocation runtime internals, and distributed/performance work rather than missing repository basics.
 
 ## Reading order
 
@@ -78,11 +79,23 @@ The Julia replica now has a real bootstrap training path:
 
 That path is intentionally limited to **head-only** optimization for now.
 
+## Runtime status
+
+The workspace now also has a first reusable long-context runtime seam:
+
+- `TransformerCore.KVCacheEnvelope` to hold a mutable cache dictionary plus `start_pos`,
+- `save_kv_cache` and `load_kv_cache` for serialized cache reuse,
+- `chunked_prefill` in both `OpenMythos.jl` and `DeepSeekv4.jl`,
+- envelope-aware `generate` methods that can resume from a prefetched prompt state.
+
+This is still a lightweight reference runtime. It does not yet include paged attention, preallocated KV slabs, or production-scale cache management.
+
 ## Future work
 
 The training foundation is now in place. The main remaining directions are:
 
 - full-model gradient-based training beyond the head-only Lux layer,
+- lower-allocation cache internals and longer-context serving work,
 - distributed training/runtime behavior,
 - deeper performance work,
 - optional future documentation/API expansion as those land.

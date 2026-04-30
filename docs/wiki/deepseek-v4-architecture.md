@@ -18,6 +18,7 @@ Its current surface focuses on a readable tiny-config path rather than productio
 - `MoEFFN`
 - `mtp_logits`
 - `generate`
+- `chunked_prefill`
 - tiny and paper-inspired variant constructors
 
 ## Architectural interpretation
@@ -42,6 +43,17 @@ The package currently models the paper at the level most useful for a first Juli
 - **MTP surface**
   - multiple prediction heads exposed through `mtp_logits`.
 
+## Runtime surface
+
+The package now has a first reusable long-context runtime surface shared with `OpenMythos.jl`:
+
+- `chunked_prefill(model, ids; chunk_size=...)`,
+- `generate(model, ids; envelope=...)`,
+- `TransformerCore.KVCacheEnvelope`,
+- `save_kv_cache` and `load_kv_cache`.
+
+This keeps the outer runtime contract aligned across both model families while leaving the internal CSA/HCA cache payloads family-specific.
+
 ## Explicitly deferred
 
 The current package does **not** yet attempt full V4 systems parity. These remain later phases:
@@ -49,8 +61,8 @@ The current package does **not** yet attempt full V4 systems parity. These remai
 - Muon and hybrid ZeRO,
 - FP4 quantization-aware training,
 - contextual parallelism,
-- on-disk KV cache reuse,
 - deterministic fused kernels,
+- paged or production-scale KV cache internals,
 - million-token production serving.
 
 ## Training surface

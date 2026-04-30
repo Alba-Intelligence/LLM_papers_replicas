@@ -41,10 +41,10 @@ The OpenMythos package includes a parity-tested core model stack:
 The current state is:
 
 - `OpenMythos.jl/` is the recurrent-depth package with parity-oriented model code and a head-only bootstrap training path.
-- `DeepSeekv4.jl/` is an architecture-first package with CSA/HCA, mHC, MoE routing, MTP, cache smoke paths, tiny-config tests, and a head-only bootstrap training path.
-- `TransformerCore.jl/` holds the shared primitive and training-utility layer.
+- `DeepSeekv4.jl/` is an architecture-first package with CSA/HCA, mHC, MoE routing, MTP, chunked-prefill-aware generation, tiny-config tests, and a head-only bootstrap training path.
+- `TransformerCore.jl/` holds the shared primitive, training-utility, and first runtime-envelope layer.
 
-The next milestone is to deepen training/runtime capability without prematurely forcing all model internals into Lux layers.
+The next milestone is to deepen full-model training and runtime internals without prematurely forcing all model internals into Lux layers.
 
 ## Chosen stack
 
@@ -137,13 +137,19 @@ Status: done.
 
 ### Phase 6: advanced systems work
 
-- Muon and hybrid ZeRO,
-- contextual or expert parallelism,
-- deterministic fused kernels,
-- FP4 quantization-aware training,
-- production-scale long-context serving.
+- first long-context runtime slice:
+  - `KVCacheEnvelope`,
+  - cache save/load,
+  - chunked prefill,
+  - envelope-aware generation for both model families,
+- later work:
+  - Muon and hybrid ZeRO,
+  - contextual or expert parallelism,
+  - deterministic fused kernels,
+  - FP4 quantization-aware training,
+  - lower-allocation and production-scale long-context serving.
 
-Status: next deferred phase.
+Status: in progress; the first runtime-foundation slice is done.
 
 ## Validation strategy
 
@@ -161,12 +167,12 @@ These should not block the current Julia milestone:
 - benchmark scripts in `tests/`
 - full-scale distributed training parity
 - Flash Attention-specific optimization work
-- DeepSeek production runtime features
+- DeepSeek production runtime features beyond the current cache-envelope reference seam
 
 ## Immediate next slice
 
 The best next vertical slice is:
 
-1. choose which advanced systems slice is worth landing first,
-2. decide whether full-model training or runtime/distribution work should come before optimizer research,
-3. preserve the shared training seam while expanding beyond head-only optimization.
+1. expand beyond head-only optimization without collapsing the current shared seams,
+2. decide whether lower-allocation cache internals or runtime/distribution work should land next,
+3. preserve the shared runtime envelope while deeper serving work remains model-specific underneath.

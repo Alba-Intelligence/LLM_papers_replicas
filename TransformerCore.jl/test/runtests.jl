@@ -40,3 +40,25 @@ end
     @test loss ≈ log(3.0f0)
     @test size(grad) == size(head)
 end
+
+@testset "KVCacheEnvelope" begin
+    env = KVCacheEnvelope()
+    @test isempty(env.cache)
+    @test env.start_pos == 0
+    @test_throws ArgumentError KVCacheEnvelope(Dict{String, Any}(), -1)
+
+    mktempdir() do dir
+        path = joinpath(dir, "cache.jls")
+        env.cache["layer0"] = Dict("k" => randn(Float32, 1, 2, 3), "v" => randn(Float32, 1, 2, 3))
+        env.start_pos = 7
+        save_kv_cache(env, path)
+        @test isfile(path)
+        @test !isfile(path * ".tmp")
+
+        loaded = load_kv_cache(path)
+        @test loaded.start_pos == env.start_pos
+        @test keys(loaded.cache) == keys(env.cache)
+        @test loaded.cache["layer0"]["k"] == env.cache["layer0"]["k"]
+        @test loaded.cache["layer0"]["v"] == env.cache["layer0"]["v"]
+    end
+end

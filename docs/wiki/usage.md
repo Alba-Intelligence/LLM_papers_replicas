@@ -81,7 +81,29 @@ Useful entry points:
 - `detokenize(tok, ids)`
 - `vocab_size(tok)`
 
-## 5. Open the notebook example
+## 5. Reuse a prefetched KV cache
+
+Both model packages now expose the same lightweight runtime workflow:
+
+```julia
+using OpenMythos
+
+cfg = bootstrap_training_config(256; seq_len=16, attn_type="gqa")
+model = OpenMythos(cfg)
+ids = reshape(collect(0:7), 1, :)
+
+env = chunked_prefill(model, ids; chunk_size=3, n_loops=2)
+save_kv_cache(env, "cache/openmythos_prefill.jls")
+
+loaded = load_kv_cache("cache/openmythos_prefill.jls")
+continued = generate(model, ids; max_new_tokens=4, n_loops=2, envelope=loaded)
+```
+
+The same `chunked_prefill`, `save_kv_cache`, `load_kv_cache`, and `generate(...; envelope=...)` pattern also works in `DeepSeekV4.jl`.
+
+This is a reference runtime seam, not a production serving stack: caches are still ordinary Julia dictionaries under the envelope.
+
+## 6. Open the notebook example
 
 There is a small Pluto notebook in:
 
@@ -105,7 +127,7 @@ The notebook demonstrates:
 - a forward pass,
 - short random-weight generation.
 
-## 6. Run the bootstrap training scripts
+## 7. Run the bootstrap training scripts
 
 The OpenMythos training entrypoint is:
 
@@ -176,7 +198,7 @@ DEEPSEEK_V4_TRAIN_SEQ_LEN=32 \
 julia --project=. scripts/train_deepseek_tiny.jl
 ```
 
-## 7. Understand the training scope
+## 8. Understand the current training and runtime scope
 
 The current bootstrap trainer is intentionally limited:
 
@@ -188,7 +210,14 @@ The current bootstrap trainer is intentionally limited:
 - the core model internals are still manual Julia blocks,
 - full-model autodiff/distributed training is still future work.
 
-## 8. What to read next
+The current runtime seam is also intentionally lightweight:
+
+- `KVCacheEnvelope` provides a shared outer cache contract,
+- both packages support `chunked_prefill`,
+- cache payloads are still family-specific `Dict{String, Any}` structures,
+- paged attention and production cache allocators are still future work.
+
+## 9. What to read next
 
 1. [Architecture](architecture.md)
 2. [Python reference map](python-reference-map.md)
