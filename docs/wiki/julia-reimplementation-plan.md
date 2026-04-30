@@ -46,6 +46,12 @@ The current state is:
 
 The next milestone is to deepen full-model training and runtime internals without prematurely forcing all model internals into Lux layers.
 
+For future DeepSeek planning, keep the source priority explicit:
+
+- the official DeepSeek V4 note is still the implementation authority,
+- the Kili article plus Engram/mHC/V3 references are useful for lineage and future experiments,
+- speculative pre-release analyses should guide questions, not silently redefine the target architecture.
+
 ## Chosen stack
 
 | Concern | Julia library |
@@ -176,4 +182,5 @@ The best next vertical slice is:
 
 1. expand beyond head-only optimization without collapsing the current shared seams,
 2. decide whether full-model training expansion or runtime/distribution work should land next,
-3. preserve the shared runtime envelope while deeper serving work remains model-specific underneath.
+3. preserve the shared runtime envelope while deeper serving work remains model-specific underneath,
+4. treat Engram-style conditional memory as an optional future DeepSeek research branch rather than an assumed immediate requirement.

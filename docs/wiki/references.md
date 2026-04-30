@@ -13,6 +13,19 @@ This page consolidates the references currently shaping the Julia workspace:
 | DeepSeek V4 technical note | DeepSeek V4 PDF | https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf | `DeepSeekv4.jl/`, DeepSeek wiki pages, architecture planning |
 | DeepSeek V4 introduction | YouTube introduction video | https://www.youtube.com/watch?v=q8holiIirgo | architecture planning and terminology cross-checking |
 
+## DeepSeek V4 lineage and secondary sources
+
+These references help explain the late-2025 / early-2026 research trajectory around DeepSeek V4, but they are **secondary** to the official V4 technical note. Use them for context, tradeoff analysis, and future-planning ideas rather than as binding implementation spec.
+
+| Topic | Reference | URL | Used for |
+| --- | --- | --- | --- |
+| Pre-release V4 analysis | Kili Technology DeepSeek V4 article | https://kili-technology.com/blog/data-story-deepseek-v4 | DeepSeek roadmap context, data/training interpretation, speculative lineage notes |
+| Conditional memory | Engram paper | https://arxiv.org/abs/2601.07372 | future DeepSeek research branch, memory/compute separation context |
+| Conditional memory implementation | Engram official repo | https://github.com/deepseek-ai/Engram | architecture sketches and demo code for conditional-memory experiments |
+| Residual stability at scale | mHC paper | https://arxiv.org/abs/2512.24880 | residual-mixing lineage and scaling-stability context |
+| DeepSeek training lineage | DeepSeek-V3 technical report | https://arxiv.org/html/2412.19437v1 | MLA/MoE/MTP lineage, data construction, SFT/RL and systems context |
+| Sparse-attention release speculation | Tom's Hardware on Engram / memory offload | https://www.tomshardware.com/tech-industry/artificial-intelligence/deepseek-touts-memory-breakthrough-engram | secondary commentary on host-memory/offloading implications |
+
 ## Architecture and reasoning
 
 | Topic | Reference | URL | Referenced in |

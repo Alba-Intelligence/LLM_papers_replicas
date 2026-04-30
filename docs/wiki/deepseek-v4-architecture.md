@@ -6,6 +6,18 @@
 
 Its current surface focuses on a readable tiny-config path rather than production-scale serving or distributed training.
 
+## Source hierarchy
+
+The official DeepSeek V4 technical note remains the primary source for this package.
+
+Secondary materials such as the Kili Technology DeepSeek V4 article, the Engram paper/repo, the mHC paper, and the DeepSeek-V3 report are still useful, but for a different reason:
+
+- they help explain the research lineage around DeepSeek's late-2025 / early-2026 work,
+- they clarify how DeepSeek thinks about data curation, long-context runtime, and stability at scale,
+- they can inform future Julia experiments.
+
+But they should **not** override the official V4 note when the sources disagree. In particular, the Kili article is explicitly pre-release and speculative about which ideas made it into the shipped V4 architecture.
+
 ## Implemented package surface
 
 - `DeepSeekV4Config`
@@ -43,6 +55,8 @@ The package currently models the paper at the level most useful for a first Juli
 - **MTP surface**
   - multiple prediction heads exposed through `mtp_logits`.
 
+This matches the current official-note-first scope. It does **not** yet add a separate Engram-style conditional-memory branch, because the late-2025 Engram work is better treated as DeepSeek research lineage unless the official V4 materials or later evidence make that dependency explicit.
+
 ## Runtime surface
 
 The package now has a first reusable long-context runtime surface shared with `OpenMythos.jl`:
@@ -64,6 +78,12 @@ The current package does **not** yet attempt full V4 systems parity. These remai
 - deterministic fused kernels,
 - paged or production-scale KV cache internals,
 - million-token production serving.
+
+Additional research branches suggested by secondary references also remain deferred unless later sources justify them directly:
+
+- Engram-style conditional memory / host-memory lookup,
+- explicit data-path separation between knowledge-heavy and reasoning-heavy training flows,
+- speculative DeepSeek Sparse Attention variants inferred from leaks or commentary rather than official documentation.
 
 ## Training surface
 
