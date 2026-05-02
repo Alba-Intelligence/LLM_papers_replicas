@@ -20,6 +20,14 @@ function _attention(q::AbstractArray, k::AbstractArray, v::AbstractArray, mask)
     return cat([reshape(batch, 1, size(batch, 1), size(batch, 2), size(batch, 3)) for batch in batches]...; dims=1)
 end
 
+_buffer_capacity_hint(kv_capacity::Union{Nothing, Integer}, chunk_len::Integer) =
+    kv_capacity === nothing ? nothing : max(Int(kv_capacity), Int(chunk_len))
+
+function _reserve_buffer_capacity!(buffer::AxisAppendBuffer, kv_capacity::Union{Nothing, Integer})
+    kv_capacity === nothing || ensure_axis_capacity!(buffer, Int(kv_capacity))
+    return buffer
+end
+
 function _gq_cache_entry(prev)
     if prev isa NamedTuple{(:k, :v)}
         return prev
@@ -63,7 +71,7 @@ function GQAttention(cfg::MythosConfig; rng::AbstractRNG=Random.default_rng(), T
     )
 end
 
-function (attn::GQAttention)(x::AbstractArray, freqs_cis::AbstractMatrix; mask=nothing, kv_cache::Union{Nothing, AbstractDict}=nothing, cache_key::String="default")
+function (attn::GQAttention)(x::AbstractArray, freqs_cis::AbstractMatrix; mask=nothing, kv_cache::Union{Nothing, AbstractDict}=nothing, kv_capacity::Union{Nothing, Integer}=nothing, cache_key::String="default")
     b, t, _ = size(x)
     q = reshape(_linear_feature_last(x, attn.wq), b, t, attn.n_heads, attn.head_dim)
     k = reshape(_linear_feature_last(x, attn.wk), b, t, attn.n_kv_heads, attn.head_dim)
@@ -75,11 +83,16 @@ function (attn::GQAttention)(x::AbstractArray, freqs_cis::AbstractMatrix; mask=n
     if kv_cache !== nothing
         entry = if haskey(kv_cache, cache_key)
             prev = _gq_cache_entry(kv_cache[cache_key])
+            _reserve_buffer_capacity!(prev.k, kv_capacity)
+            _reserve_buffer_capacity!(prev.v, kv_capacity)
             append_axis_buffer!(prev.k, k)
             append_axis_buffer!(prev.v, v)
             prev
         else
-            (k=filled_axis_buffer(k; axis=2), v=filled_axis_buffer(v; axis=2))
+            (
+                k=filled_axis_buffer(k; axis=2, capacity=_buffer_capacity_hint(kv_capacity, size(k, 2))),
+                v=filled_axis_buffer(v; axis=2, capacity=_buffer_capacity_hint(kv_capacity, size(v, 2))),
+            )
         end
         kv_cache[cache_key] = entry
         k = buffer_view(entry.k)
@@ -136,7 +149,7 @@ function MLAttention(cfg::MythosConfig; rng::AbstractRNG=Random.default_rng(), T
     )
 end
 
-function (attn::MLAttention)(x::AbstractArray, freqs_cis::AbstractMatrix; mask=nothing, kv_cache::Union{Nothing, AbstractDict}=nothing, cache_key::String="default")
+function (attn::MLAttention)(x::AbstractArray, freqs_cis::AbstractMatrix; mask=nothing, kv_cache::Union{Nothing, AbstractDict}=nothing, kv_capacity::Union{Nothing, Integer}=nothing, cache_key::String="default")
     b, t, _ = size(x)
 
     c_q = attn.q_norm(_linear_feature_last(x, attn.q_down))
@@ -154,11 +167,16 @@ function (attn::MLAttention)(x::AbstractArray, freqs_cis::AbstractMatrix; mask=n
     if kv_cache !== nothing
         entry = if haskey(kv_cache, cache_key)
             prev = _mla_cache_entry(kv_cache[cache_key])
+            _reserve_buffer_capacity!(prev.c_kv, kv_capacity)
+            _reserve_buffer_capacity!(prev.k_rope, kv_capacity)
             append_axis_buffer!(prev.c_kv, c_kv)
             append_axis_buffer!(prev.k_rope, k_rope)
             prev
         else
-            (c_kv=filled_axis_buffer(c_kv; axis=2), k_rope=filled_axis_buffer(k_rope; axis=2))
+            (
+                c_kv=filled_axis_buffer(c_kv; axis=2, capacity=_buffer_capacity_hint(kv_capacity, size(c_kv, 2))),
+                k_rope=filled_axis_buffer(k_rope; axis=2, capacity=_buffer_capacity_hint(kv_capacity, size(k_rope, 2))),
+            )
         end
         kv_cache[cache_key] = entry
         c_kv = buffer_view(entry.c_kv)

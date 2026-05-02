@@ -151,6 +151,7 @@ Status: done.
   - chunked prefill,
   - envelope-aware generation for both model families,
   - growable axis buffers replacing repeated cache concatenation in attention paths,
+  - envelope-level capacity hints for preallocated cache growth,
 - later work:
   - Muon and hybrid ZeRO,
   - contextual or expert parallelism,
@@ -158,7 +159,7 @@ Status: done.
   - FP4 quantization-aware training,
   - paged/preallocated and production-scale long-context serving.
 
-Status: in progress; the runtime-envelope and lower-allocation cache-buffer slices are done.
+Status: in progress; the runtime-envelope, lower-allocation cache-buffer, and preallocated-capacity slices are done.
 
 ## Validation strategy
 
@@ -182,7 +183,7 @@ These should not block the current Julia milestone:
 
 The best next vertical slice is:
 
-1. add paged or preallocated KV-cache internals beneath the current shared envelope API,
+1. add true paged KV-cache internals beneath the current shared envelope API,
 2. broaden full-model training beyond the current dense OpenMythos bootstrap slice,
 3. preserve the shared runtime envelope while deeper serving work remains model-specific underneath,
 4. treat Engram-style conditional memory as an optional future DeepSeek research branch rather than an assumed immediate requirement.

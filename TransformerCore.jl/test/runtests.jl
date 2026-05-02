@@ -45,18 +45,27 @@ end
     env = KVCacheEnvelope()
     @test isempty(env.cache)
     @test env.start_pos == 0
+    @test env.capacity_hint == 0
     @test_throws ArgumentError KVCacheEnvelope(Dict{String, Any}(), -1)
+    @test_throws ArgumentError KVCacheEnvelope(Dict{String, Any}(), 0, -1)
+
+    hinted = KVCacheEnvelope(; capacity_hint=5)
+    reserve_kv_capacity!(hinted, 8)
+    reserve_kv_capacity!(hinted, 3)
+    @test hinted.capacity_hint == 8
 
     mktempdir() do dir
         path = joinpath(dir, "cache.jls")
         env.cache["layer0"] = Dict("k" => randn(Float32, 1, 2, 3), "v" => randn(Float32, 1, 2, 3))
         env.start_pos = 7
+        env.capacity_hint = 11
         save_kv_cache(env, path)
         @test isfile(path)
         @test !isfile(path * ".tmp")
 
         loaded = load_kv_cache(path)
         @test loaded.start_pos == env.start_pos
+        @test loaded.capacity_hint == env.capacity_hint
         @test keys(loaded.cache) == keys(env.cache)
         @test loaded.cache["layer0"]["k"] == env.cache["layer0"]["k"]
         @test loaded.cache["layer0"]["v"] == env.cache["layer0"]["v"]
@@ -66,13 +75,13 @@ end
 @testset "AxisAppendBuffer" begin
     chunk1 = reshape(Float32.(1:6), 1, 2, 3)
     chunk2 = reshape(Float32.(7:12), 1, 2, 3)
-    buffer = TransformerCore.filled_axis_buffer(chunk1; axis=2)
+    buffer = TransformerCore.filled_axis_buffer(chunk1; axis=2, capacity=6)
     @test size(TransformerCore.buffer_view(buffer)) == (1, 2, 3)
-    original_capacity = size(buffer.data, 2)
+    @test size(buffer.data, 2) == 6
 
     TransformerCore.append_axis_buffer!(buffer, chunk2)
     @test size(TransformerCore.buffer_view(buffer)) == (1, 4, 3)
     @test Array(TransformerCore.buffer_view(buffer))[:, 1:2, :] == chunk1
     @test Array(TransformerCore.buffer_view(buffer))[:, 3:4, :] == chunk2
-    @test size(buffer.data, 2) >= max(4, original_capacity)
+    @test size(buffer.data, 2) == 6
 end

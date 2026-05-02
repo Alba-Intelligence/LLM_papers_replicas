@@ -24,10 +24,10 @@ function DeepSeekV4Block(cfg::DeepSeekV4Config, layer_index::Integer; rng::Abstr
     )
 end
 
-function (block::DeepSeekV4Block)(X::AbstractArray{T, 4}, token_ids::AbstractMatrix{<:Integer}, freqs_cis::AbstractMatrix; kv_cache::Union{Nothing, AbstractDict}=nothing, start_pos::Integer=0) where {T<:AbstractFloat}
+function (block::DeepSeekV4Block)(X::AbstractArray{T, 4}, token_ids::AbstractMatrix{<:Integer}, freqs_cis::AbstractMatrix; kv_cache::Union{Nothing, AbstractDict}=nothing, start_pos::Integer=0, kv_capacity::Union{Nothing, Integer}=nothing) where {T<:AbstractFloat}
     cache_key = "deepseek_layer_$(block.layer_index - 1)"
     return block.mix(X, x -> begin
-        h = x .+ block.attn(block.attn_norm(x), freqs_cis; kv_cache=kv_cache, cache_key=cache_key, start_pos=start_pos)
+        h = x .+ block.attn(block.attn_norm(x), freqs_cis; kv_cache=kv_cache, kv_capacity=kv_capacity, cache_key=cache_key, start_pos=start_pos)
         if block.ffn isa HashMoEFFN
             return h .+ block.ffn(block.ffn_norm(h), token_ids)
         end
@@ -69,24 +69,24 @@ function _deepseek_init_state(x::AbstractArray{T, 3}, n_streams::Integer) where 
     return X
 end
 
-function deepseek_hidden(model::DeepSeekV4Model, input_ids::AbstractMatrix{<:Integer}; kv_cache::Union{Nothing, AbstractDict}=nothing, start_pos::Integer=0)
+function deepseek_hidden(model::DeepSeekV4Model, input_ids::AbstractMatrix{<:Integer}; kv_cache::Union{Nothing, AbstractDict}=nothing, start_pos::Integer=0, kv_capacity::Union{Nothing, Integer}=nothing)
     t = size(input_ids, 2)
     x = _embed_tokens(input_ids, model.embed)
     freqs = model.freqs_cis[(start_pos + 1):(start_pos + t), :]
     X = _deepseek_init_state(x, model.cfg.n_hyper_connections)
     for block in model.blocks
-        X = block(X, input_ids, freqs; kv_cache=kv_cache, start_pos=start_pos)
+        X = block(X, input_ids, freqs; kv_cache=kv_cache, start_pos=start_pos, kv_capacity=kv_capacity)
     end
     return model.norm(mhc_readout(model.readout, X))
 end
 
-function (model::DeepSeekV4Model)(input_ids::AbstractMatrix{<:Integer}; kv_cache::Union{Nothing, AbstractDict}=nothing, start_pos::Integer=0)
-    hidden = deepseek_hidden(model, input_ids; kv_cache=kv_cache, start_pos=start_pos)
+function (model::DeepSeekV4Model)(input_ids::AbstractMatrix{<:Integer}; kv_cache::Union{Nothing, AbstractDict}=nothing, start_pos::Integer=0, kv_capacity::Union{Nothing, Integer}=nothing)
+    hidden = deepseek_hidden(model, input_ids; kv_cache=kv_cache, start_pos=start_pos, kv_capacity=kv_capacity)
     return _linear_feature_last(hidden, model.head)
 end
 
-function mtp_logits(model::DeepSeekV4Model, input_ids::AbstractMatrix{<:Integer}; kv_cache::Union{Nothing, AbstractDict}=nothing, start_pos::Integer=0)
-    hidden = deepseek_hidden(model, input_ids; kv_cache=kv_cache, start_pos=start_pos)
+function mtp_logits(model::DeepSeekV4Model, input_ids::AbstractMatrix{<:Integer}; kv_cache::Union{Nothing, AbstractDict}=nothing, start_pos::Integer=0, kv_capacity::Union{Nothing, Integer}=nothing)
+    hidden = deepseek_hidden(model, input_ids; kv_cache=kv_cache, start_pos=start_pos, kv_capacity=kv_capacity)
     outputs = [_linear_feature_last(hidden, head) for head in model.mtp_heads]
     return cat([reshape(out, size(out, 1), size(out, 2), 1, size(out, 3)) for out in outputs]...; dims=3)
 end
@@ -102,11 +102,12 @@ function chunked_prefill(
 
     prefix = @view input_ids[:, 1:(end - 1)]
     total_t = size(prefix, 2)
+    reserve_kv_capacity!(envelope, envelope.start_pos + total_t)
     start = 1
     while start <= total_t
         stop = min(start + Int(chunk_size) - 1, total_t)
         chunk = @view prefix[:, start:stop]
-        deepseek_hidden(model, chunk; kv_cache=envelope.cache, start_pos=envelope.start_pos)
+        deepseek_hidden(model, chunk; kv_cache=envelope.cache, start_pos=envelope.start_pos, kv_capacity=envelope.capacity_hint)
         envelope.start_pos += size(chunk, 2)
         start = stop + 1
     end
@@ -118,6 +119,7 @@ function generate(model::DeepSeekV4Model, input_ids::AbstractMatrix{<:Integer}; 
     kv_cache = envelope === nothing ? Dict{String, Any}() : envelope.cache
     has_prefill = envelope !== nothing && (!isempty(envelope.cache) || envelope.start_pos > 0)
     prompt_len = size(ids, 2)
+    envelope !== nothing && reserve_kv_capacity!(envelope, prompt_len + Int(max_new_tokens) - 1)
     for step in 1:max_new_tokens
         if step == 1
             if has_prefill
@@ -131,7 +133,7 @@ function generate(model::DeepSeekV4Model, input_ids::AbstractMatrix{<:Integer}; 
             cur_ids = ids[:, end:end]
             start_pos = prompt_len + step - 2
         end
-        logits = model(cur_ids; kv_cache=kv_cache, start_pos=start_pos)
+        logits = model(cur_ids; kv_cache=kv_cache, start_pos=start_pos, kv_capacity=(envelope === nothing ? nothing : envelope.capacity_hint))
         envelope !== nothing && (envelope.start_pos = start_pos + size(cur_ids, 2))
         logits = logits[:, end, :] ./ Float32(temperature)
         if top_k > 0 && top_k < size(logits, 2)

@@ -99,9 +99,15 @@ loaded = load_kv_cache("cache/openmythos_prefill.jls")
 continued = generate(model, ids; max_new_tokens=4, n_loops=2, envelope=loaded)
 ```
 
-The same `chunked_prefill`, `save_kv_cache`, `load_kv_cache`, and `generate(...; envelope=...)` pattern also works in `DeepSeekV4.jl`.
+The same `chunked_prefill`, `save_kv_cache`, `load_kv_cache`, and `generate(...; envelope=...)` pattern also works in `DeepSeekV4.jl`. If you want the cache to reserve space ahead of decode growth, construct the envelope with a capacity hint:
 
-This is a reference runtime seam, not a production serving stack: the envelope still owns a Julia dictionary, but the per-layer cache payloads now use growable buffer-backed entries rather than full-tensor copies on every append.
+```julia
+env = KVCacheEnvelope(; capacity_hint=256)
+env = chunked_prefill(model, ids; chunk_size=8, envelope=env)
+continued = generate(model, ids; max_new_tokens=32, envelope=env)
+```
+
+This is a reference runtime seam, not a production serving stack: the envelope still owns a Julia dictionary, but the per-layer cache payloads now use growable buffer-backed entries and can reserve capacity ahead of time rather than growing from minimal allocations on every decode step.
 
 ## 6. Open the notebook example
 
@@ -215,8 +221,8 @@ The current runtime seam is also intentionally lightweight:
 
 - `KVCacheEnvelope` provides a shared outer cache contract,
 - both packages support `chunked_prefill`,
-- cache payloads are still family-specific runtime entries under a `Dict{String, Any}` envelope, now backed by growable append buffers,
-- paged attention and production cache allocators are still future work.
+- cache payloads are still family-specific runtime entries under a `Dict{String, Any}` envelope, now backed by growable append buffers with optional preallocated capacity hints,
+- true paged attention and production cache allocators are still future work.
 
 ## 9. What to read next
 

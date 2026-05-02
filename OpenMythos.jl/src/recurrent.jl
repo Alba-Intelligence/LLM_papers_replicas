@@ -99,7 +99,7 @@ function RecurrentBlock(cfg::MythosConfig; rng::AbstractRNG=Random.default_rng()
     )
 end
 
-function (recurrent::RecurrentBlock)(h::AbstractArray{T, 3}, e::AbstractArray{T, 3}, freqs_cis::AbstractMatrix; mask=nothing, n_loops::Union{Nothing, Integer}=nothing, kv_cache::Union{Nothing, AbstractDict}=nothing) where {T}
+function (recurrent::RecurrentBlock)(h::AbstractArray{T, 3}, e::AbstractArray{T, 3}, freqs_cis::AbstractMatrix; mask=nothing, n_loops::Union{Nothing, Integer}=nothing, kv_cache::Union{Nothing, AbstractDict}=nothing, kv_capacity::Union{Nothing, Integer}=nothing) where {T}
     loops = something(n_loops, recurrent.cfg.max_loop_iters)
     b, t, d = size(h)
     halted = falses(b, t)
@@ -110,7 +110,7 @@ function (recurrent::RecurrentBlock)(h::AbstractArray{T, 3}, e::AbstractArray{T,
         h_loop = loop_index_embedding(h, loop_t, recurrent.loop_dim)
         combined = recurrent.norm(h_loop .+ e)
         cache_key = "recurrent_loop_$(loop_t)"
-        trans_out = recurrent.block(combined, freqs_cis; mask=mask, kv_cache=kv_cache, cache_key=cache_key)
+        trans_out = recurrent.block(combined, freqs_cis; mask=mask, kv_cache=kv_cache, kv_capacity=kv_capacity, cache_key=cache_key)
         trans_out = trans_out .+ recurrent.lora(trans_out, loop_t)
         h = recurrent.injection(h, e, trans_out)
 

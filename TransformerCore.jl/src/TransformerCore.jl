@@ -103,7 +103,9 @@ export _sigmoid,
        batch_next_token_pairs,
        latest_checkpoint,
        _head_loss_and_grad,
+       ensure_axis_capacity!,
        KVCacheEnvelope,
+       reserve_kv_capacity!,
        save_kv_cache,
        load_kv_cache
 

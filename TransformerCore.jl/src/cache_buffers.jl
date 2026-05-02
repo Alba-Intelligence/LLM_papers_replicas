@@ -20,8 +20,8 @@ function AxisAppendBuffer(chunk::AbstractArray{T, N}, axis::Integer=2; capacity:
     return AxisAppendBuffer(Array{T}(undef, Tuple(dims)), 0, axis)
 end
 
-function filled_axis_buffer(chunk::AbstractArray{T, N}; axis::Integer=2) where {T, N}
-    buffer = AxisAppendBuffer(chunk, axis)
+function filled_axis_buffer(chunk::AbstractArray{T, N}; axis::Integer=2, capacity::Union{Nothing, Integer}=nothing) where {T, N}
+    buffer = AxisAppendBuffer(chunk, axis; capacity=capacity)
     append_axis_buffer!(buffer, chunk)
     return buffer
 end

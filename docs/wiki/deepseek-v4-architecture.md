@@ -66,7 +66,7 @@ The package now has a first reusable long-context runtime surface shared with `O
 - `TransformerCore.KVCacheEnvelope`,
 - `save_kv_cache` and `load_kv_cache`.
 
-This keeps the outer runtime contract aligned across both model families while leaving the internal CSA/HCA cache payloads family-specific.
+This keeps the outer runtime contract aligned across both model families while leaving the internal CSA/HCA cache payloads family-specific. The shared envelope now also supports capacity hints so DeepSeek cache buffers can reserve decode space ahead of time without changing the inner compressed-cache layout.
 
 ## Explicitly deferred
 

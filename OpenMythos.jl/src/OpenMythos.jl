@@ -32,9 +32,11 @@ using TransformerCore: _sigmoid,
                        _head_loss_and_grad,
                        AxisAppendBuffer,
                        filled_axis_buffer,
+                       ensure_axis_capacity!,
                        append_axis_buffer!,
                        buffer_view,
                        KVCacheEnvelope,
+                       reserve_kv_capacity!,
                        save_kv_cache,
                        load_kv_cache
 

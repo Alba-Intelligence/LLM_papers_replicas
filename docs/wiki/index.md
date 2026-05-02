@@ -88,9 +88,10 @@ The workspace now also has a first reusable long-context runtime seam:
 - `save_kv_cache` and `load_kv_cache` for serialized cache reuse,
 - `chunked_prefill` in both `OpenMythos.jl` and `DeepSeekv4.jl`,
 - envelope-aware `generate` methods that can resume from a prefetched prompt state,
-- growable buffer-backed cache entries that avoid full-tensor concatenation on every append.
+- growable buffer-backed cache entries that avoid full-tensor concatenation on every append,
+- envelope-level capacity hints that let both model families preallocate cache buffers before decode growth begins.
 
-This is still a lightweight reference runtime. It does not yet include paged attention, preallocated KV slabs, or production-scale cache management.
+This is still a lightweight reference runtime. It now includes preallocated buffer capacity hints, but it does not yet include true paged attention or production-scale cache management.
 
 ## Future work
 

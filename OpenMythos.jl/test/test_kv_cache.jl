@@ -1,5 +1,7 @@
 using Random
 
+cache_capacities(cache) = [size(buf.data, buf.axis) for entry in values(cache) for buf in values(entry)]
+
 @testset "OpenMythos KV cache envelope" begin
     Random.seed!(31)
     cfg = bootstrap_training_config(64; seq_len=16, attn_type="gqa")
@@ -8,11 +10,14 @@ using Random
 
     baseline = generate(model, ids; max_new_tokens=4, n_loops=2, rng=MersenneTwister(1))
 
-    env = chunked_prefill(model, ids; chunk_size=3, n_loops=2)
+    env = chunked_prefill(model, ids; chunk_size=3, n_loops=2, envelope=KVCacheEnvelope(; capacity_hint=size(ids, 2) + 4))
     @test env.start_pos == size(ids, 2) - 1
+    @test !isempty(cache_capacities(env.cache))
+    @test all(>=(env.capacity_hint), cache_capacities(env.cache))
     with_prefill = generate(model, ids; max_new_tokens=4, n_loops=2, rng=MersenneTwister(1), envelope=env)
     @test with_prefill == baseline
     @test env.start_pos == size(with_prefill, 2) - 1
+    @test all(>=(env.capacity_hint), cache_capacities(env.cache))
 
     mktempdir() do dir
         path = joinpath(dir, "openmythos_cache.jls")

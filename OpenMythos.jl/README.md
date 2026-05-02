@@ -11,7 +11,7 @@ The replica now includes:
 - an optional Python-vs-Julia parity harness for selected utilities,
 - bootstrap training paths with checkpointing and local/FineWeb smoke data flows,
 - chunked prefill plus serializable KV-cache envelopes for cached generation reuse,
-- lower-allocation buffer-backed cache growth behind the existing generation API.
+- lower-allocation buffer-backed cache growth plus envelope-level preallocation hints behind the existing generation API.
 
 The current training surface is intentionally staged: `OpenMythos.jl` now has both the original **Lux-backed head-only** bootstrap path and a first **dense full-model** bootstrap path for tiny GQA configs (`n_experts == 1`, `n_shared_experts == 0`, `n_experts_per_tok == 1`), while the broader sparse/DeepSeek full-model story remains future work.
 

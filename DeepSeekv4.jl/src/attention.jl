@@ -95,6 +95,14 @@ function _attention_with_sink(query::AbstractVector{T}, keys::AbstractMatrix{T},
     return vec(transpose(probs) * values)
 end
 
+_buffer_capacity_hint(kv_capacity::Union{Nothing, Integer}, chunk_len::Integer) =
+    kv_capacity === nothing ? nothing : max(Int(kv_capacity), Int(chunk_len))
+
+function _reserve_buffer_capacity!(buffer::AxisAppendBuffer, kv_capacity::Union{Nothing, Integer})
+    kv_capacity === nothing || ensure_axis_capacity!(buffer, Int(kv_capacity))
+    return buffer
+end
+
 function _grouped_output_projection(outputs::AbstractArray{T, 4}, group_projs::Vector{Matrix{T}}, wo::AbstractMatrix{T}) where {T<:AbstractFloat}
     b, t, h, d = size(outputs)
     ngroups = length(group_projs)
@@ -203,7 +211,7 @@ function CompressedSparseAttention(cfg::DeepSeekV4Config; rng::AbstractRNG=Rando
     )
 end
 
-function (attn::CompressedSparseAttention)(x::AbstractArray{T, 3}, freqs_cis::AbstractMatrix; mask=nothing, kv_cache::Union{Nothing, AbstractDict}=nothing, cache_key::String="default", start_pos::Integer=0) where {T<:AbstractFloat}
+function (attn::CompressedSparseAttention)(x::AbstractArray{T, 3}, freqs_cis::AbstractMatrix; mask=nothing, kv_cache::Union{Nothing, AbstractDict}=nothing, kv_capacity::Union{Nothing, Integer}=nothing, cache_key::String="default", start_pos::Integer=0) where {T<:AbstractFloat}
     b, t, _ = size(x)
     c_q = _linear_feature_last(x, attn.q_down)
     q = reshape(_linear_feature_last(c_q, attn.q_up), b, t, attn.n_heads, attn.head_dim)
@@ -238,6 +246,12 @@ function (attn::CompressedSparseAttention)(x::AbstractArray{T, 3}, freqs_cis::Ab
     if kv_cache !== nothing
         entry = if haskey(kv_cache, cache_key)
             prev = _csa_cache_entry(kv_cache[cache_key])
+            _reserve_buffer_capacity!(prev.ca, kv_capacity)
+            _reserve_buffer_capacity!(prev.cb, kv_capacity)
+            _reserve_buffer_capacity!(prev.za, kv_capacity)
+            _reserve_buffer_capacity!(prev.zb, kv_capacity)
+            _reserve_buffer_capacity!(prev.kia, kv_capacity)
+            _reserve_buffer_capacity!(prev.kib, kv_capacity)
             append_axis_buffer!(prev.ca, ca_cur)
             append_axis_buffer!(prev.cb, cb_cur)
             append_axis_buffer!(prev.za, za_cur)
@@ -247,12 +261,12 @@ function (attn::CompressedSparseAttention)(x::AbstractArray{T, 3}, freqs_cis::Ab
             prev
         else
             (
-                ca=filled_axis_buffer(ca_cur; axis=2),
-                cb=filled_axis_buffer(cb_cur; axis=2),
-                za=filled_axis_buffer(za_cur; axis=2),
-                zb=filled_axis_buffer(zb_cur; axis=2),
-                kia=filled_axis_buffer(kia_cur; axis=2),
-                kib=filled_axis_buffer(kib_cur; axis=2),
+                ca=filled_axis_buffer(ca_cur; axis=2, capacity=_buffer_capacity_hint(kv_capacity, size(ca_cur, 2))),
+                cb=filled_axis_buffer(cb_cur; axis=2, capacity=_buffer_capacity_hint(kv_capacity, size(cb_cur, 2))),
+                za=filled_axis_buffer(za_cur; axis=2, capacity=_buffer_capacity_hint(kv_capacity, size(za_cur, 2))),
+                zb=filled_axis_buffer(zb_cur; axis=2, capacity=_buffer_capacity_hint(kv_capacity, size(zb_cur, 2))),
+                kia=filled_axis_buffer(kia_cur; axis=2, capacity=_buffer_capacity_hint(kv_capacity, size(kia_cur, 2))),
+                kib=filled_axis_buffer(kib_cur; axis=2, capacity=_buffer_capacity_hint(kv_capacity, size(kib_cur, 2))),
             )
         end
         kv_cache[cache_key] = entry
@@ -359,7 +373,7 @@ function HeavilyCompressedAttention(cfg::DeepSeekV4Config; rng::AbstractRNG=Rand
     )
 end
 
-function (attn::HeavilyCompressedAttention)(x::AbstractArray{T, 3}, freqs_cis::AbstractMatrix; mask=nothing, kv_cache::Union{Nothing, AbstractDict}=nothing, cache_key::String="default", start_pos::Integer=0) where {T<:AbstractFloat}
+function (attn::HeavilyCompressedAttention)(x::AbstractArray{T, 3}, freqs_cis::AbstractMatrix; mask=nothing, kv_cache::Union{Nothing, AbstractDict}=nothing, kv_capacity::Union{Nothing, Integer}=nothing, cache_key::String="default", start_pos::Integer=0) where {T<:AbstractFloat}
     b, t, _ = size(x)
     c_q = _linear_feature_last(x, attn.q_down)
     q = reshape(_linear_feature_last(c_q, attn.q_up), b, t, attn.n_heads, attn.head_dim)
@@ -377,11 +391,16 @@ function (attn::HeavilyCompressedAttention)(x::AbstractArray{T, 3}, freqs_cis::A
     if kv_cache !== nothing
         entry = if haskey(kv_cache, cache_key)
             prev = _hca_cache_entry(kv_cache[cache_key])
+            _reserve_buffer_capacity!(prev.c, kv_capacity)
+            _reserve_buffer_capacity!(prev.z, kv_capacity)
             append_axis_buffer!(prev.c, c_cur)
             append_axis_buffer!(prev.z, z_cur)
             prev
         else
-            (c=filled_axis_buffer(c_cur; axis=2), z=filled_axis_buffer(z_cur; axis=2))
+            (
+                c=filled_axis_buffer(c_cur; axis=2, capacity=_buffer_capacity_hint(kv_capacity, size(c_cur, 2))),
+                z=filled_axis_buffer(z_cur; axis=2, capacity=_buffer_capacity_hint(kv_capacity, size(z_cur, 2))),
+            )
         end
         kv_cache[cache_key] = entry
         c = buffer_view(entry.c)

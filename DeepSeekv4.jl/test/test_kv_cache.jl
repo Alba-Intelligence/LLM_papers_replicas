@@ -1,5 +1,7 @@
 using Random
 
+cache_capacities(cache) = [size(buf.data, buf.axis) for entry in values(cache) for buf in values(entry)]
+
 @testset "DeepSeekV4 KV cache envelope" begin
     Random.seed!(41)
     cfg = bootstrap_deepseek_training_config(64; seq_len=16)
@@ -8,11 +10,14 @@ using Random
 
     baseline = generate(model, ids; max_new_tokens=4, rng=MersenneTwister(4))
 
-    env = chunked_prefill(model, ids; chunk_size=3)
+    env = chunked_prefill(model, ids; chunk_size=3, envelope=KVCacheEnvelope(; capacity_hint=size(ids, 2) + 4))
     @test env.start_pos == size(ids, 2) - 1
+    @test !isempty(cache_capacities(env.cache))
+    @test all(>=(env.capacity_hint), cache_capacities(env.cache))
     with_prefill = generate(model, ids; max_new_tokens=4, rng=MersenneTwister(4), envelope=env)
     @test with_prefill == baseline
     @test env.start_pos == size(with_prefill, 2) - 1
+    @test all(>=(env.capacity_hint), cache_capacities(env.cache))
 
     mktempdir() do dir
         path = joinpath(dir, "deepseek_cache.jls")
