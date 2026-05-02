@@ -1,6 +1,8 @@
 using Random
+using TransformerCore
 
-cache_capacities(cache) = [size(buf.data, buf.axis) for entry in values(cache) for buf in values(entry)]
+cache_capacities(cache) = [TransformerCore.buffer_capacity(buf) for entry in values(cache) for buf in values(entry)]
+cache_pages(cache) = [TransformerCore.buffer_page_count(buf) for entry in values(cache) for buf in values(entry)]
 
 @testset "DeepSeekV4 KV cache envelope" begin
     Random.seed!(41)
@@ -14,6 +16,7 @@ cache_capacities(cache) = [size(buf.data, buf.axis) for entry in values(cache) f
     @test env.start_pos == size(ids, 2) - 1
     @test !isempty(cache_capacities(env.cache))
     @test all(>=(env.capacity_hint), cache_capacities(env.cache))
+    @test any(>(1), cache_pages(env.cache))
     with_prefill = generate(model, ids; max_new_tokens=4, rng=MersenneTwister(4), envelope=env)
     @test with_prefill == baseline
     @test env.start_pos == size(with_prefill, 2) - 1

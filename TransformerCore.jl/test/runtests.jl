@@ -77,11 +77,13 @@ end
     chunk2 = reshape(Float32.(7:12), 1, 2, 3)
     buffer = TransformerCore.filled_axis_buffer(chunk1; axis=2, capacity=6)
     @test size(TransformerCore.buffer_view(buffer)) == (1, 2, 3)
-    @test size(buffer.data, 2) == 6
+    @test TransformerCore.buffer_capacity(buffer) == 6
+    @test TransformerCore.buffer_page_count(buffer) == 3
 
     TransformerCore.append_axis_buffer!(buffer, chunk2)
     @test size(TransformerCore.buffer_view(buffer)) == (1, 4, 3)
     @test Array(TransformerCore.buffer_view(buffer))[:, 1:2, :] == chunk1
     @test Array(TransformerCore.buffer_view(buffer))[:, 3:4, :] == chunk2
-    @test size(buffer.data, 2) == 6
+    @test TransformerCore.buffer_capacity(buffer) == 6
+    @test TransformerCore.buffer_page_count(buffer) == 3
 end

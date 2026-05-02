@@ -1,6 +1,7 @@
 using Random
 
-cache_capacities(cache) = [size(buf.data, buf.axis) for entry in values(cache) for buf in values(entry)]
+cache_capacities(cache) = [OpenMythos.TransformerCore.buffer_capacity(buf) for entry in values(cache) for buf in values(entry)]
+cache_pages(cache) = [OpenMythos.TransformerCore.buffer_page_count(buf) for entry in values(cache) for buf in values(entry)]
 
 @testset "OpenMythos KV cache envelope" begin
     Random.seed!(31)
@@ -14,6 +15,7 @@ cache_capacities(cache) = [size(buf.data, buf.axis) for entry in values(cache) f
     @test env.start_pos == size(ids, 2) - 1
     @test !isempty(cache_capacities(env.cache))
     @test all(>=(env.capacity_hint), cache_capacities(env.cache))
+    @test any(>(1), cache_pages(env.cache))
     with_prefill = generate(model, ids; max_new_tokens=4, n_loops=2, rng=MersenneTwister(1), envelope=env)
     @test with_prefill == baseline
     @test env.start_pos == size(with_prefill, 2) - 1

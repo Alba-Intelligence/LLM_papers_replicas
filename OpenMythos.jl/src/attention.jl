@@ -23,7 +23,7 @@ end
 _buffer_capacity_hint(kv_capacity::Union{Nothing, Integer}, chunk_len::Integer) =
     kv_capacity === nothing ? nothing : max(Int(kv_capacity), Int(chunk_len))
 
-function _reserve_buffer_capacity!(buffer::AxisAppendBuffer, kv_capacity::Union{Nothing, Integer})
+function _reserve_buffer_capacity!(buffer, kv_capacity::Union{Nothing, Integer})
     kv_capacity === nothing || ensure_axis_capacity!(buffer, Int(kv_capacity))
     return buffer
 end
@@ -46,6 +46,11 @@ function _mla_cache_entry(prev)
     throw(ArgumentError("unsupported MLA cache entry type $(typeof(prev))"))
 end
 
+"""
+    GQAttention{T}
+
+Grouped-query attention module used by OpenMythos when `cfg.attn_type == "gqa"`.
+"""
 struct GQAttention{T<:AbstractFloat}
     n_heads::Int
     n_kv_heads::Int
@@ -71,6 +76,11 @@ function GQAttention(cfg::MythosConfig; rng::AbstractRNG=Random.default_rng(), T
     )
 end
 
+"""
+    attn(x, freqs_cis; mask=nothing, kv_cache=nothing, kv_capacity=nothing, cache_key="default")
+
+Apply grouped-query attention to a feature-last hidden-state tensor.
+"""
 function (attn::GQAttention)(x::AbstractArray, freqs_cis::AbstractMatrix; mask=nothing, kv_cache::Union{Nothing, AbstractDict}=nothing, kv_capacity::Union{Nothing, Integer}=nothing, cache_key::String="default")
     b, t, _ = size(x)
     q = reshape(_linear_feature_last(x, attn.wq), b, t, attn.n_heads, attn.head_dim)
@@ -113,6 +123,11 @@ function (attn::GQAttention)(x::AbstractArray, freqs_cis::AbstractMatrix; mask=n
     return _linear_feature_last(out, attn.wo)
 end
 
+"""
+    MLAttention{T}
+
+Multi-head latent attention module used by OpenMythos when `cfg.attn_type == "mla"`.
+"""
 struct MLAttention{T<:AbstractFloat}
     n_heads::Int
     kv_lora_rank::Int
@@ -149,6 +164,11 @@ function MLAttention(cfg::MythosConfig; rng::AbstractRNG=Random.default_rng(), T
     )
 end
 
+"""
+    attn(x, freqs_cis; mask=nothing, kv_cache=nothing, kv_capacity=nothing, cache_key="default")
+
+Apply MLA attention to a feature-last hidden-state tensor.
+"""
 function (attn::MLAttention)(x::AbstractArray, freqs_cis::AbstractMatrix; mask=nothing, kv_cache::Union{Nothing, AbstractDict}=nothing, kv_capacity::Union{Nothing, Integer}=nothing, cache_key::String="default")
     b, t, _ = size(x)
 

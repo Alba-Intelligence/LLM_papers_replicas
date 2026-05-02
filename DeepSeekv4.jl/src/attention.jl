@@ -98,7 +98,7 @@ end
 _buffer_capacity_hint(kv_capacity::Union{Nothing, Integer}, chunk_len::Integer) =
     kv_capacity === nothing ? nothing : max(Int(kv_capacity), Int(chunk_len))
 
-function _reserve_buffer_capacity!(buffer::AxisAppendBuffer, kv_capacity::Union{Nothing, Integer})
+function _reserve_buffer_capacity!(buffer, kv_capacity::Union{Nothing, Integer})
     kv_capacity === nothing || ensure_axis_capacity!(buffer, Int(kv_capacity))
     return buffer
 end
@@ -148,6 +148,12 @@ function _hca_cache_entry(prev)
     throw(ArgumentError("unsupported HCA cache entry type $(typeof(prev))"))
 end
 
+"""
+    CompressedSparseAttention{T}
+
+Compressed sparse attention block that mixes compressed historical memory with a
+recent dense local window.
+"""
 struct CompressedSparseAttention{T<:AbstractFloat}
     n_heads::Int
     head_dim::Int
@@ -211,6 +217,11 @@ function CompressedSparseAttention(cfg::DeepSeekV4Config; rng::AbstractRNG=Rando
     )
 end
 
+"""
+    attn(x, freqs_cis; mask=nothing, kv_cache=nothing, kv_capacity=nothing, cache_key="default", start_pos=0)
+
+Apply compressed sparse attention to hidden states `x`.
+"""
 function (attn::CompressedSparseAttention)(x::AbstractArray{T, 3}, freqs_cis::AbstractMatrix; mask=nothing, kv_cache::Union{Nothing, AbstractDict}=nothing, kv_capacity::Union{Nothing, Integer}=nothing, cache_key::String="default", start_pos::Integer=0) where {T<:AbstractFloat}
     b, t, _ = size(x)
     c_q = _linear_feature_last(x, attn.q_down)
@@ -278,6 +289,8 @@ function (attn::CompressedSparseAttention)(x::AbstractArray{T, 3}, freqs_cis::Ab
         kib = buffer_view(entry.kib)
     end
 
+    # Each decode position mixes a small recent dense window with a top-k subset
+    # of compressed historical blocks chosen by the learned indexer.
     out_heads = zeros(T, b, t, attn.n_heads, attn.head_dim)
     indexer_weights = _linear_feature_last(x, attn.q_index_weight)
     for bi in 1:b
@@ -331,6 +344,12 @@ function (attn::CompressedSparseAttention)(x::AbstractArray{T, 3}, freqs_cis::Ab
     return _grouped_output_projection(out_heads, attn.group_projs, attn.wo)
 end
 
+"""
+    HeavilyCompressedAttention{T}
+
+Heavily compressed attention block that attends over compressed history plus a
+small dense local window.
+"""
 struct HeavilyCompressedAttention{T<:AbstractFloat}
     n_heads::Int
     head_dim::Int
@@ -373,6 +392,11 @@ function HeavilyCompressedAttention(cfg::DeepSeekV4Config; rng::AbstractRNG=Rand
     )
 end
 
+"""
+    attn(x, freqs_cis; mask=nothing, kv_cache=nothing, kv_capacity=nothing, cache_key="default", start_pos=0)
+
+Apply heavily compressed attention to hidden states `x`.
+"""
 function (attn::HeavilyCompressedAttention)(x::AbstractArray{T, 3}, freqs_cis::AbstractMatrix; mask=nothing, kv_cache::Union{Nothing, AbstractDict}=nothing, kv_capacity::Union{Nothing, Integer}=nothing, cache_key::String="default", start_pos::Integer=0) where {T<:AbstractFloat}
     b, t, _ = size(x)
     c_q = _linear_feature_last(x, attn.q_down)
@@ -407,6 +431,8 @@ function (attn::HeavilyCompressedAttention)(x::AbstractArray{T, 3}, freqs_cis::A
         z = buffer_view(entry.z)
     end
 
+    # HCA keeps all distant context in compressed form and only preserves a small
+    # uncompressed suffix near the current decode position.
     out_heads = zeros(T, b, t, attn.n_heads, attn.head_dim)
     for bi in 1:b
         c_seq = Array(@view c[bi, :, :])
