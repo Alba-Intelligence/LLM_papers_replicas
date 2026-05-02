@@ -13,9 +13,9 @@ The replica now includes:
 - chunked prefill plus serializable KV-cache envelopes for cached generation reuse,
 - lower-allocation buffer-backed cache growth plus envelope-level preallocation hints behind the existing generation API,
 - true paged cache-buffer internals beneath the shared envelope API,
-- a broadened dense full-model bootstrap slice that now supports both GQA and MLA attention plus optional shared experts.
+- a broadened full-model bootstrap slice that now supports both GQA and MLA attention plus small sparse routed-expert configs with optional shared experts.
 
-The current training surface is intentionally staged: `OpenMythos.jl` now has both the original **Lux-backed head-only** bootstrap path and a broader **dense full-model** bootstrap path for tiny single-routed-expert configs (`n_experts == 1`, `n_experts_per_tok == 1`) across both GQA and MLA attention, with optional shared experts. The broader sparse/DeepSeek full-model story remains future work.
+The current training surface is intentionally staged: `OpenMythos.jl` now has both the original **Lux-backed head-only** bootstrap path and a broader **full-model** bootstrap path for small GQA/MLA configs, including tiny sparse routed-expert setups with optional shared experts. The broader DeepSeek full-model story remains future work.
 
 ## Quickstart
 
@@ -91,6 +91,20 @@ OPENMYTHOS_TRAIN_SEQ_LEN=32 \
 julia --project=. scripts/train_3b_fineweb_edu.jl
 ```
 
+To exercise a small sparse full-model slice:
+
+```bash
+OPENMYTHOS_TRAIN_MODE=full_model \
+OPENMYTHOS_TRAIN_ATTN_TYPE=gqa \
+OPENMYTHOS_TRAIN_N_EXPERTS=4 \
+OPENMYTHOS_TRAIN_SHARED_EXPERTS=1 \
+OPENMYTHOS_TRAIN_EXPERTS_PER_TOKEN=2 \
+OPENMYTHOS_TRAIN_TOKENIZER_MODEL_ID=gpt2 \
+OPENMYTHOS_TRAIN_TOTAL_STEPS=4 \
+OPENMYTHOS_TRAIN_SEQ_LEN=32 \
+julia --project=. scripts/train_3b_fineweb_edu.jl
+```
+
 For an optional FineWeb-Edu-backed smoke run:
 
 ```bash
@@ -126,7 +140,7 @@ ids2 = generate(model, ids; max_new_tokens=4, n_loops=2, envelope=load_kv_cache(
 
 ## What is still deferred
 
-- broader sparse/full-model training beyond the current dense OpenMythos bootstrap slice,
+- DeepSeek full-model training beyond the current OpenMythos bootstrap slice,
 - distributed training/runtime behavior,
 - page-aware attention kernels and deeper cache lifecycle/runtime work,
 - experimental `moda.py` parity,

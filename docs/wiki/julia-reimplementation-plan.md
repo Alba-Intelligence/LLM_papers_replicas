@@ -43,12 +43,12 @@ The OpenMythos package includes a parity-tested core model stack:
 
 The current state is:
 
-- `OpenMythos.jl/` is the recurrent-depth package with parity-oriented model code, a head-only Lux bootstrap trainer, and a broadened dense tiny-config full-model bootstrap trainer that now supports both GQA and MLA attention plus optional shared experts.
+- `OpenMythos.jl/` is the recurrent-depth package with parity-oriented model code, a head-only Lux bootstrap trainer, and a broadened tiny-config full-model bootstrap trainer that now supports both GQA and MLA attention plus small sparse routed-expert configs with optional shared experts.
 - `DeepSeekv4.jl/` is an architecture-first package with CSA/HCA, mHC, MoE routing, MTP, chunked-prefill-aware generation, tiny-config tests, and a head-only bootstrap training path.
 - `TransformerCore.jl/` holds the shared primitive, training-utility, runtime-envelope, and paged/growable cache-buffer layer.
 - the workspace source now carries public-API docstrings and a shared Documenter build for the multi-package surface.
 
-The next milestone is to extend full-model training into sparse-routing and DeepSeek territory without prematurely forcing all model internals into Lux layers.
+The next milestone is to bring the same full-model-training honesty to DeepSeek without prematurely forcing all model internals into Lux layers.
 
 For future DeepSeek planning, keep the source priority explicit:
 
@@ -185,7 +185,7 @@ These should not block the current Julia milestone:
 
 The best next vertical slice is:
 
-1. extend full-model training beyond the current dense OpenMythos GQA/MLA slice into sparse-routing and/or DeepSeek paths,
+1. extend full-model training beyond the current OpenMythos bootstrap surface into DeepSeek full-model paths,
 2. preserve the shared runtime envelope while page-aware attention and deeper serving work remain model-specific underneath,
 3. expand distributed/runtime work once the single-process story is deeper,
 4. treat Engram-style conditional memory as an optional future DeepSeek research branch rather than an assumed immediate requirement.

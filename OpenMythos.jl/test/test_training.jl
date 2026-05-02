@@ -166,6 +166,37 @@ end
     end
 end
 
+@testset "Full-model trainer supports sparse routed experts" begin
+    Random.seed!(18)
+    cfg = bootstrap_full_model_training_config(32; seq_len=4, attn_type="gqa", n_experts=4, n_shared_experts=1, n_experts_per_tok=2)
+    @test cfg.n_experts == 4
+    @test cfg.n_shared_experts == 1
+    @test cfg.n_experts_per_tok == 2
+
+    model = OpenMythos.OpenMythos(cfg; rng=MersenneTwister(18))
+    schedule = WarmupCosineSchedule(0, 3, 0.01f0, 0.01f0)
+    state = FullModelTrainerState(model; schedule=schedule, weight_decay=0.0, n_loops=cfg.max_loop_iters)
+
+    x = reshape([1, 2, 3, 4], 1, :)
+    y = reshape([2, 3, 4, 5], 1, :)
+
+    initial_loss = full_model_loss(state, x, y)
+    for _ in 1:3
+        train_full_model_step!(state, x, y)
+    end
+    final_loss = full_model_loss(state, x, y)
+
+    @test final_loss < initial_loss
+
+    mktempdir() do dir
+        path = save_full_model_checkpoint(state, dir; keep_last=1)
+        restored = load_full_model_checkpoint(path)
+        @test restored.model.cfg.n_experts == 4
+        @test restored.model.cfg.n_shared_experts == 1
+        @test restored.model.cfg.n_experts_per_tok == 2
+    end
+end
+
 @testset "Full-model checkpoint roundtrip and pruning" begin
     Random.seed!(15)
     cfg = bootstrap_full_model_training_config(24; seq_len=4)

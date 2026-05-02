@@ -163,7 +163,9 @@ Useful environment variables:
 | `OPENMYTHOS_TRAIN_SEQ_LEN` | sequence length | `32` |
 | `OPENMYTHOS_TRAIN_BATCH_SIZE` | batch size | `2` |
 | `OPENMYTHOS_TRAIN_ATTN_TYPE` | attention backend (`gqa` or `mla`) | `gqa` |
+| `OPENMYTHOS_TRAIN_N_EXPERTS` | routed experts in full-model mode | `1` |
 | `OPENMYTHOS_TRAIN_SHARED_EXPERTS` | shared experts in full-model mode | `0` |
+| `OPENMYTHOS_TRAIN_EXPERTS_PER_TOKEN` | routed experts selected per token in full-model mode | `1` |
 | `OPENMYTHOS_TRAIN_CKPT_DIR` | checkpoint directory | `checkpoints` |
 | `OPENMYTHOS_USE_FINEWEB_EDU` | use FineWeb-Edu batch bridge | `0` |
 | `OPENMYTHOS_FINEWEB_SUBSET` | FineWeb-Edu subset | `sample-10BT` |
@@ -226,7 +228,7 @@ The current bootstrap trainer is intentionally limited:
 - the original bootstrap path is **Lux-backed**,
 - it uses `Optimisers.AdamW`,
 - `OpenMythos.jl` now also has a dense full-model bootstrap mode via `OPENMYTHOS_TRAIN_MODE=full_model`,
-- that full-model mode currently supports tiny single-routed-expert configs across both `gqa` and `mla`, with optional shared experts,
+- that full-model mode currently supports small GQA/MLA configs, including tiny sparse routed-expert setups with optional shared experts,
 - `DeepSeekv4.jl` now has a parallel `LuxHeadOnlyDeepSeekV4` head-only trainer and smoke script,
 - the core model internals are still manual Julia blocks,
 - broader sparse/full-model autodiff and distributed training are still future work.

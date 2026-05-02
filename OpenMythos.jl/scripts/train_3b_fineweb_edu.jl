@@ -13,7 +13,9 @@ const TRAIN_TEXT = get(ENV, "OPENMYTHOS_TRAIN_TEXT", "")
 const CKPT_DIR = get(ENV, "OPENMYTHOS_TRAIN_CKPT_DIR", "checkpoints")
 const TRAIN_MODE = lowercase(get(ENV, "OPENMYTHOS_TRAIN_MODE", "head_only"))
 const TRAIN_ATTN_TYPE = lowercase(get(ENV, "OPENMYTHOS_TRAIN_ATTN_TYPE", "gqa"))
+const TRAIN_N_EXPERTS = parse(Int, get(ENV, "OPENMYTHOS_TRAIN_N_EXPERTS", "1"))
 const TRAIN_SHARED_EXPERTS = parse(Int, get(ENV, "OPENMYTHOS_TRAIN_SHARED_EXPERTS", "0"))
+const TRAIN_EXPERTS_PER_TOKEN = parse(Int, get(ENV, "OPENMYTHOS_TRAIN_EXPERTS_PER_TOKEN", "1"))
 
 const SEQ_LEN = parse(Int, get(ENV, "OPENMYTHOS_TRAIN_SEQ_LEN", "32"))
 const BATCH_SIZE = parse(Int, get(ENV, "OPENMYTHOS_TRAIN_BATCH_SIZE", "2"))
@@ -64,7 +66,9 @@ function main()
             OpenMythos.vocab_size(tokenizer);
             seq_len=SEQ_LEN,
             attn_type=TRAIN_ATTN_TYPE,
+            n_experts=TRAIN_N_EXPERTS,
             n_shared_experts=TRAIN_SHARED_EXPERTS,
+            n_experts_per_tok=TRAIN_EXPERTS_PER_TOKEN,
         ) :
         bootstrap_training_config(OpenMythos.vocab_size(tokenizer); seq_len=SEQ_LEN, attn_type=TRAIN_ATTN_TYPE)
     model = OpenMythos.OpenMythos(cfg; rng=MersenneTwister(RNG_SEED))
@@ -85,7 +89,7 @@ function main()
     println("Tokenizer model: $(TOKENIZER_MODEL_ID)")
     println("Vocab size: $(OpenMythos.vocab_size(tokenizer)) | seq_len: $(SEQ_LEN) | batch_size: $(BATCH_SIZE) | total_steps: $(TOTAL_STEPS)")
     println("Training mode: $(TRAIN_MODE == \"full_model\" ? \"dense full-model bootstrap\" : \"Lux-backed head-only bootstrap\")")
-    println("Attention backend: $(TRAIN_ATTN_TYPE)$(TRAIN_MODE == \"full_model\" ? \" | shared experts: $(cfg.n_shared_experts)\" : \"\")")
+    println("Attention backend: $(TRAIN_ATTN_TYPE)$(TRAIN_MODE == \"full_model\" ? \" | routed experts: $(cfg.n_experts) | shared experts: $(cfg.n_shared_experts) | experts/token: $(cfg.n_experts_per_tok)\" : \"\")")
     latest !== nothing && println("Resuming from $(latest)")
 
     metrics = if TRAIN_MODE == "full_model"

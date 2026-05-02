@@ -32,25 +32,29 @@ function bootstrap_training_config(vocab_size::Integer; seq_len::Integer=128, at
 end
 
 """
-    bootstrap_full_model_training_config(vocab_size; seq_len=64, attn_type="gqa", n_shared_experts=0)
+    bootstrap_full_model_training_config(vocab_size; seq_len=64, attn_type="gqa", n_experts=1, n_shared_experts=0, n_experts_per_tok=1)
 
 Return a constrained dense OpenMythos configuration suitable for the current
 full-model bootstrap trainer.
 
-The trainer now supports both dense GQA and dense MLA variants while still
-requiring a single routed expert (`n_experts == 1`, `n_experts_per_tok == 1`).
-Shared experts remain optional.
+The trainer now supports both GQA and MLA variants across small dense or sparse
+OpenMythos bootstrap configs. Shared experts remain optional.
 """
 function bootstrap_full_model_training_config(
     vocab_size::Integer;
     seq_len::Integer=64,
     attn_type::String="gqa",
+    n_experts::Integer=1,
     n_shared_experts::Integer=0,
+    n_experts_per_tok::Integer=1,
 )
     attn_type in ("gqa", "mla") || throw(ArgumentError("full-model bootstrap currently supports only gqa or mla attention"))
     vocab_size > 0 || throw(ArgumentError("vocab_size must be positive"))
     seq_len > 0 || throw(ArgumentError("seq_len must be positive"))
+    n_experts > 0 || throw(ArgumentError("n_experts must be positive"))
     n_shared_experts >= 0 || throw(ArgumentError("n_shared_experts must be non-negative"))
+    n_experts_per_tok > 0 || throw(ArgumentError("n_experts_per_tok must be positive"))
+    n_experts_per_tok <= n_experts || throw(ArgumentError("n_experts_per_tok must be <= n_experts"))
     return MythosConfig(
         vocab_size=Int(vocab_size),
         dim=64,
@@ -66,9 +70,9 @@ function bootstrap_full_model_training_config(
         qk_rope_head_dim=8,
         qk_nope_head_dim=8,
         v_head_dim=8,
-        n_experts=1,
+        n_experts=Int(n_experts),
         n_shared_experts=Int(n_shared_experts),
-        n_experts_per_tok=1,
+        n_experts_per_tok=Int(n_experts_per_tok),
         expert_dim=16,
         lora_rank=4,
         act_threshold=0.99f0,
@@ -219,9 +223,10 @@ end
 
 function _validate_full_model_cfg(cfg::MythosConfig)
     cfg.attn_type in ("gqa", "mla") || throw(ArgumentError("full-model training currently supports only gqa or mla attention"))
-    cfg.n_experts == 1 || throw(ArgumentError("full-model training currently requires n_experts == 1"))
+    cfg.n_experts > 0 || throw(ArgumentError("full-model training requires n_experts > 0"))
     cfg.n_shared_experts >= 0 || throw(ArgumentError("full-model training requires n_shared_experts >= 0"))
-    cfg.n_experts_per_tok == 1 || throw(ArgumentError("full-model training currently requires n_experts_per_tok == 1"))
+    cfg.n_experts_per_tok > 0 || throw(ArgumentError("full-model training requires n_experts_per_tok > 0"))
+    cfg.n_experts_per_tok <= cfg.n_experts || throw(ArgumentError("full-model training requires n_experts_per_tok <= n_experts"))
     return cfg
 end
 
