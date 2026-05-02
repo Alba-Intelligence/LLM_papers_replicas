@@ -1,3 +1,9 @@
+"""
+    precompute_rope_freqs(dim, max_len; theta=500_000f0)
+
+Precompute complex RoPE frequencies for a head dimension `dim` and maximum
+sequence length `max_len`.
+"""
 function precompute_rope_freqs(dim::Integer, max_len::Integer; theta::Real=500_000.0f0)
     dim > 0 || throw(ArgumentError("dim must be positive"))
     iseven(dim) || throw(ArgumentError("dim must be even"))
@@ -11,6 +17,12 @@ function precompute_rope_freqs(dim::Integer, max_len::Integer; theta::Real=500_0
     return ComplexF32.(cos.(angles), sin.(angles))
 end
 
+"""
+    apply_rope(x, freqs_cis)
+
+Apply rotary position embeddings to a 4-D tensor shaped as
+`(batch, time, heads, head_dim)`.
+"""
 function apply_rope(x::AbstractArray{T, 4}, freqs_cis::AbstractMatrix{<:Complex}) where {T<:AbstractFloat}
     b, t, h, d = size(x)
     iseven(d) || throw(ArgumentError("head dimension must be even"))

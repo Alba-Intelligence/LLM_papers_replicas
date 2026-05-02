@@ -1,3 +1,8 @@
+"""
+    ManifoldHyperConnections{T}
+
+Residual-stream mixing module inspired by manifold hyper connections.
+"""
 struct ManifoldHyperConnections{T<:AbstractFloat}
     n_streams::Int
     norm::RMSNorm{T}
@@ -72,11 +77,18 @@ function _mhc_collapse_streams(X::AbstractArray{T, 4}, A::AbstractArray{T, 3}) w
     return out
 end
 
+"""Collapse multi-stream state `X` into one readout stream."""
 function mhc_readout(mhc::ManifoldHyperConnections{T}, X::AbstractArray{T, 4}) where {T<:AbstractFloat}
     A, _, _ = _mhc_params(mhc, X)
     return _mhc_collapse_streams(X, A)
 end
 
+"""
+    mhc(X, layer_fn)
+
+Run one mHC mixing step by collapsing `X`, applying `layer_fn`, and writing the
+update back into the residual manifold.
+"""
 function (mhc::ManifoldHyperConnections{T})(X::AbstractArray{T, 4}, layer_fn::Function) where {T<:AbstractFloat}
     b, t, s, d = size(X)
     A, Bm, C = _mhc_params(mhc, X)

@@ -1,3 +1,4 @@
+"""Return the tiny DeepSeek V4 preset used for tests and smoke runs."""
 deepseek_v4_tiny() = DeepSeekV4Config(
     vocab_size=512,
     dim=64,
@@ -22,6 +23,7 @@ deepseek_v4_tiny() = DeepSeekV4Config(
     n_hyper_connections=2,
 )
 
+"""Return the larger Flash-style DeepSeek V4 preset."""
 deepseek_v4_flash() = DeepSeekV4Config(
     vocab_size=102_400,
     dim=7_168,
@@ -47,6 +49,7 @@ deepseek_v4_flash() = DeepSeekV4Config(
     n_hyper_connections=4,
 )
 
+"""Return the larger Pro-style DeepSeek V4 preset."""
 deepseek_v4_pro() = DeepSeekV4Config(
     vocab_size=102_400,
     dim=8_192,

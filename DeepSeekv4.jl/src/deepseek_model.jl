@@ -1,3 +1,9 @@
+"""
+    DeepSeekV4Block
+
+Single DeepSeek V4 block combining mHC mixing, compressed attention, and an MoE
+feed-forward stage.
+"""
 struct DeepSeekV4Block
     layer_index::Int
     mix::ManifoldHyperConnections{Float32}
@@ -24,6 +30,7 @@ function DeepSeekV4Block(cfg::DeepSeekV4Config, layer_index::Integer; rng::Abstr
     )
 end
 
+"""Apply one DeepSeek V4 block to the multi-stream hidden state `X`."""
 function (block::DeepSeekV4Block)(X::AbstractArray{T, 4}, token_ids::AbstractMatrix{<:Integer}, freqs_cis::AbstractMatrix; kv_cache::Union{Nothing, AbstractDict}=nothing, start_pos::Integer=0, kv_capacity::Union{Nothing, Integer}=nothing) where {T<:AbstractFloat}
     cache_key = "deepseek_layer_$(block.layer_index - 1)"
     return block.mix(X, x -> begin
@@ -35,6 +42,12 @@ function (block::DeepSeekV4Block)(X::AbstractArray{T, 4}, token_ids::AbstractMat
     end)
 end
 
+"""
+    DeepSeekV4Model{T}
+
+Full DeepSeek V4 model with compressed-attention blocks, mHC readout, LM head,
+and multi-token prediction heads.
+"""
 struct DeepSeekV4Model{T<:AbstractFloat}
     cfg::DeepSeekV4Config
     embed::Matrix{T}
@@ -69,6 +82,7 @@ function _deepseek_init_state(x::AbstractArray{T, 3}, n_streams::Integer) where 
     return X
 end
 
+"""Return the final hidden states produced by `model` for `input_ids`."""
 function deepseek_hidden(model::DeepSeekV4Model, input_ids::AbstractMatrix{<:Integer}; kv_cache::Union{Nothing, AbstractDict}=nothing, start_pos::Integer=0, kv_capacity::Union{Nothing, Integer}=nothing)
     t = size(input_ids, 2)
     x = _embed_tokens(input_ids, model.embed)
@@ -80,17 +94,25 @@ function deepseek_hidden(model::DeepSeekV4Model, input_ids::AbstractMatrix{<:Int
     return model.norm(mhc_readout(model.readout, X))
 end
 
+"""Run the model forward and return token logits."""
 function (model::DeepSeekV4Model)(input_ids::AbstractMatrix{<:Integer}; kv_cache::Union{Nothing, AbstractDict}=nothing, start_pos::Integer=0, kv_capacity::Union{Nothing, Integer}=nothing)
     hidden = deepseek_hidden(model, input_ids; kv_cache=kv_cache, start_pos=start_pos, kv_capacity=kv_capacity)
     return _linear_feature_last(hidden, model.head)
 end
 
+"""Return the stacked multi-token-prediction logits for `model`."""
 function mtp_logits(model::DeepSeekV4Model, input_ids::AbstractMatrix{<:Integer}; kv_cache::Union{Nothing, AbstractDict}=nothing, start_pos::Integer=0, kv_capacity::Union{Nothing, Integer}=nothing)
     hidden = deepseek_hidden(model, input_ids; kv_cache=kv_cache, start_pos=start_pos, kv_capacity=kv_capacity)
     outputs = [_linear_feature_last(hidden, head) for head in model.mtp_heads]
     return cat([reshape(out, size(out, 1), size(out, 2), 1, size(out, 3)) for out in outputs]...; dims=3)
 end
 
+"""
+    chunked_prefill(model, input_ids; chunk_size, envelope=KVCacheEnvelope())
+
+Run a prompt prefix through the model in chunks and accumulate the resulting
+cache state into `envelope`.
+"""
 function chunked_prefill(
     model::DeepSeekV4Model,
     input_ids::AbstractMatrix{<:Integer};
@@ -114,6 +136,12 @@ function chunked_prefill(
     return envelope
 end
 
+"""
+    generate(model, input_ids; max_new_tokens=64, temperature=1.0, top_k=50, rng=Random.default_rng(), envelope=nothing)
+
+Autoregressively sample continuations from `model`, optionally resuming from a
+prefilled `KVCacheEnvelope`.
+"""
 function generate(model::DeepSeekV4Model, input_ids::AbstractMatrix{<:Integer}; max_new_tokens::Integer=64, temperature::Real=1.0, top_k::Integer=50, rng::AbstractRNG=Random.default_rng(), envelope::Union{Nothing, KVCacheEnvelope}=nothing)
     ids = copy(input_ids)
     kv_cache = envelope === nothing ? Dict{String, Any}() : envelope.cache

@@ -1,3 +1,8 @@
+"""
+    Expert{T}
+
+SwiGLU-style dense expert used by DeepSeek V4 feed-forward blocks.
+"""
 struct Expert{T<:AbstractFloat}
     gate::Matrix{T}
     up::Matrix{T}
@@ -12,18 +17,25 @@ function Expert(dim::Integer, expert_dim::Integer; rng::AbstractRNG=Random.defau
     )
 end
 
+"""Apply an `Expert` to a single feature vector."""
 function (expert::Expert)(x::AbstractVector)
     gate = expert.gate * x
     up = expert.up * x
     return expert.down * (_silu.(gate) .* up)
 end
 
+"""Apply an `Expert` to a feature-last tensor."""
 function (expert::Expert)(x::AbstractArray)
     gate = _linear_feature_last(x, expert.gate)
     up = _linear_feature_last(x, expert.up)
     return _linear_feature_last(_silu.(gate) .* up, expert.down)
 end
 
+"""
+    MoEFFN{T}
+
+Standard routed Mixture-of-Experts feed-forward block for DeepSeek V4 layers.
+"""
 struct MoEFFN{T<:AbstractFloat}
     n_experts::Int
     n_shared::Int
@@ -70,6 +82,7 @@ function MoEFFN(cfg::DeepSeekV4Config; rng::AbstractRNG=Random.default_rng(), T:
     )
 end
 
+"""Apply the routed MoE block to a `(batch, time, dim)` tensor."""
 function (moe::MoEFFN)(x::AbstractArray{T, 3}) where {T}
     b, t, d = size(x)
     token_matrix = reshape(permutedims(x, (3, 1, 2)), d, :)'
@@ -97,6 +110,11 @@ function (moe::MoEFFN)(x::AbstractArray{T, 3}) where {T}
     return permutedims(reshape(out, b, t, d), (1, 2, 3))
 end
 
+"""
+    HashMoEFFN{T}
+
+Hash-routed MoE variant used in the early DeepSeek V4 layers.
+"""
 struct HashMoEFFN{T<:AbstractFloat}
     n_experts::Int
     n_shared::Int
@@ -147,6 +165,7 @@ function _hash_expert_indices(token_id::Integer, n_experts::Int, topk::Int, laye
     return chosen
 end
 
+"""Apply the hash-routed MoE block using `token_ids` to choose routed experts."""
 function (moe::HashMoEFFN)(x::AbstractArray{T, 3}, token_ids::AbstractMatrix{<:Integer}) where {T}
     size(x, 1) == size(token_ids, 1) || throw(DimensionMismatch("batch size mismatch"))
     size(x, 2) == size(token_ids, 2) || throw(DimensionMismatch("sequence length mismatch"))

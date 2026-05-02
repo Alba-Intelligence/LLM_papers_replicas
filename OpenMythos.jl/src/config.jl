@@ -1,5 +1,14 @@
 abstract type AbstractModelConfig end
 
+"""
+    MythosConfig
+
+Configuration for the OpenMythos recurrent-depth transformer.
+
+The fields cover model width, attention backend selection, recurrent depth,
+Mixture-of-Experts settings, LoRA/ACT parameters, and long-context runtime
+limits.
+"""
 Base.@kwdef struct MythosConfig <: AbstractModelConfig
     vocab_size::Int = 32_000
     dim::Int = 2_048

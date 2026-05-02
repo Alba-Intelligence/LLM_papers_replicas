@@ -1,10 +1,15 @@
-const DEFAULT_MODEL_ID = "openai/gpt-oss-20b"
-
+"""Lightweight metadata about a tokenizer loaded through the Python bridge."""
 struct PythonTokenizerHandle
     name_or_path::String
     vocab_size::Int
 end
 
+"""
+    MythosTokenizer
+
+Tokenizer wrapper that delegates to a Hugging Face tokenizer through a small
+Python subprocess bridge.
+"""
 struct MythosTokenizer
     model_id::String
     tokenizer::PythonTokenizerHandle
@@ -73,10 +78,14 @@ function MythosTokenizer(model_id::String=DEFAULT_MODEL_ID; runner::Cmd=_tokeniz
     return MythosTokenizer(model_id, handle, runner)
 end
 
+"""Return the vocabulary size of `tok`."""
 vocab_size(tok::MythosTokenizer) = tok.tokenizer.vocab_size
+"""Tokenize `text` with `tok`."""
 tokenize(tok::MythosTokenizer, text::AbstractString) = encode(tok, text)
+"""Decode token ids back into text with `tok`."""
 detokenize(tok::MythosTokenizer, token_ids::AbstractVector{<:Integer}) = decode(tok, token_ids)
 
+"""Encode `text` into token ids with the underlying Hugging Face tokenizer."""
 function encode(tok::MythosTokenizer, text::AbstractString)
     payload = base64encode(codeunits(text))
     raw = chomp(_run_tokenizer_python("encode", tok.model_id; payload=payload, runner=tok.runner))
@@ -84,6 +93,7 @@ function encode(tok::MythosTokenizer, text::AbstractString)
     return parse.(Int, split(raw, ','))
 end
 
+"""Decode token ids into text with the underlying Hugging Face tokenizer."""
 function decode(tok::MythosTokenizer, token_ids::AbstractVector{<:Integer})
     payload = join(token_ids, ",")
     raw = chomp(_run_tokenizer_python("decode", tok.model_id; payload=payload, runner=tok.runner))

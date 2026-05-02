@@ -1,3 +1,4 @@
+"""Return the OpenMythos 1B preset configuration."""
 mythos_1b() = MythosConfig(
     vocab_size=32_000,
     dim=2_048,
@@ -22,6 +23,7 @@ mythos_1b() = MythosConfig(
     lora_rank=8,
 )
 
+"""Return the OpenMythos 3B preset configuration."""
 mythos_3b() = MythosConfig(
     vocab_size=32_000,
     dim=3_072,
@@ -46,6 +48,7 @@ mythos_3b() = MythosConfig(
     lora_rank=8,
 )
 
+"""Return the OpenMythos 10B preset configuration."""
 mythos_10b() = MythosConfig(
     vocab_size=32_000,
     dim=4_096,
@@ -70,6 +73,7 @@ mythos_10b() = MythosConfig(
     lora_rank=16,
 )
 
+"""Return the OpenMythos 50B preset configuration."""
 mythos_50b() = MythosConfig(
     vocab_size=32_000,
     dim=6_144,
@@ -94,6 +98,7 @@ mythos_50b() = MythosConfig(
     lora_rank=32,
 )
 
+"""Return the OpenMythos 100B preset configuration."""
 mythos_100b() = MythosConfig(
     vocab_size=32_000,
     dim=8_192,
@@ -119,6 +124,7 @@ mythos_100b() = MythosConfig(
     max_output_tokens=131_072,
 )
 
+"""Return the OpenMythos 500B preset configuration."""
 mythos_500b() = MythosConfig(
     vocab_size=100_000,
     dim=12_288,
@@ -144,6 +150,7 @@ mythos_500b() = MythosConfig(
     max_output_tokens=131_072,
 )
 
+"""Return the OpenMythos 1T preset configuration."""
 mythos_1t() = MythosConfig(
     vocab_size=100_000,
     dim=16_384,

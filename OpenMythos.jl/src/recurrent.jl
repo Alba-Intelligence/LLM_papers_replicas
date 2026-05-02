@@ -1,3 +1,9 @@
+"""
+    loop_index_embedding(h, loop_t, loop_dim; theta=10_000f0)
+
+Inject a sinusoidal embedding of the recurrent loop index into the leading
+`loop_dim` hidden features of `h`.
+"""
 function loop_index_embedding(h::AbstractArray, loop_t::Integer, loop_dim::Integer; theta::Real=10_000.0f0)
     loop_dim > 0 || throw(ArgumentError("loop_dim must be positive"))
     iseven(loop_dim) || throw(ArgumentError("loop_dim must be even"))
@@ -12,6 +18,11 @@ function loop_index_embedding(h::AbstractArray, loop_t::Integer, loop_dim::Integ
     return h .+ _feature_broadcast(emb_full, ndims(h))
 end
 
+"""
+    LoRAAdapter{T}
+
+Depth-wise LoRA adapter used inside the recurrent block.
+"""
 struct LoRAAdapter{T<:AbstractFloat}
     down::Matrix{T}
     B::Matrix{T}
@@ -30,6 +41,7 @@ function LoRAAdapter(dim::Integer, rank::Integer, max_loops::Integer; rng::Abstr
     )
 end
 
+"""Apply the recurrent LoRA adapter for loop index `loop_t`."""
 function (adapter::LoRAAdapter)(x::AbstractArray, loop_t::Integer)
     t_idx = clamp(loop_t + 1, 1, size(adapter.scale, 2))
     flat = _flatten_feature_last(x)
@@ -39,6 +51,11 @@ function (adapter::LoRAAdapter)(x::AbstractArray, loop_t::Integer)
     return _unflatten_feature_last(out, size(x))
 end
 
+"""
+    LTIInjection{T}
+
+Linear time-invariant hidden-state injection used to stabilize recurrent updates.
+"""
 struct LTIInjection{T<:AbstractFloat}
     log_A::Vector{T}
     log_dt::Vector{T}
@@ -50,11 +67,17 @@ function LTIInjection(dim::Integer; T::Type{<:AbstractFloat}=Float32)
     return LTIInjection(zeros(T, dim), zeros(T, 1), fill(T(0.1), dim))
 end
 
+"""
+    get_A(inj)
+
+Return the stable recurrent decay factor implied by `inj`.
+"""
 function get_A(inj::LTIInjection)
     raw = exp.(-exp.(clamp.(inj.log_dt .+ inj.log_A, -20, 20)))
     return max.(raw, floatmin(eltype(raw)))
 end
 
+"""Apply the LTI recurrent update to `(h, e, transformer_out)`."""
 function (inj::LTIInjection)(h::AbstractArray, e::AbstractArray, transformer_out::AbstractArray)
     size(h) == size(e) == size(transformer_out) || throw(DimensionMismatch("all inputs must share shape"))
     A = _feature_broadcast(get_A(inj), ndims(h))
@@ -62,6 +85,11 @@ function (inj::LTIInjection)(h::AbstractArray, e::AbstractArray, transformer_out
     return A .* h .+ B .* e .+ transformer_out
 end
 
+"""
+    ACTHalting{T}
+
+Adaptive-computation-time halting head used by the recurrent block.
+"""
 struct ACTHalting{T<:AbstractFloat}
     weight::Matrix{T}
     bias::Vector{T}
@@ -72,11 +100,17 @@ function ACTHalting(dim::Integer; rng::AbstractRNG=Random.default_rng(), T::Type
     return ACTHalting(T.(0.02 .* randn(rng, 1, dim)), zeros(T, 1))
 end
 
+"""Compute per-token halting probabilities for hidden states `h`."""
 function (act::ACTHalting)(h::AbstractArray)
     logits = _linear_feature_last(h, act.weight, act.bias)
     return dropdims(_sigmoid.(logits); dims=ndims(logits))
 end
 
+"""
+    RecurrentBlock
+
+Shared recurrent transformer block at the center of the OpenMythos architecture.
+"""
 struct RecurrentBlock
     cfg::MythosConfig
     block::TransformerBlock
@@ -99,6 +133,11 @@ function RecurrentBlock(cfg::MythosConfig; rng::AbstractRNG=Random.default_rng()
     )
 end
 
+"""
+    recurrent(h, e, freqs_cis; mask=nothing, n_loops=nothing, kv_cache=nothing, kv_capacity=nothing)
+
+Run the recurrent OpenMythos block for the configured number of loop iterations.
+"""
 function (recurrent::RecurrentBlock)(h::AbstractArray{T, 3}, e::AbstractArray{T, 3}, freqs_cis::AbstractMatrix; mask=nothing, n_loops::Union{Nothing, Integer}=nothing, kv_cache::Union{Nothing, AbstractDict}=nothing, kv_capacity::Union{Nothing, Integer}=nothing) where {T}
     loops = something(n_loops, recurrent.cfg.max_loop_iters)
     b, t, d = size(h)
@@ -117,6 +156,8 @@ function (recurrent::RecurrentBlock)(h::AbstractArray{T, 3}, e::AbstractArray{T,
         p = recurrent.act(h)
         still_running = .!halted
         remainder = clamp.(1 .- cumulative_p, 0f0, Inf32)
+        # Once a token is about to cross the ACT threshold, only the remaining
+        # unallocated halting mass contributes to the final weighted output.
         weight = ifelse.(cumulative_p .+ p .>= recurrent.cfg.act_threshold, remainder, p)
         weight = weight .* Float32.(still_running)
         h_out = h_out .+ reshape(weight, b, t, 1) .* h

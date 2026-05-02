@@ -1,3 +1,8 @@
+"""
+    Expert{T}
+
+SwiGLU-style feed-forward expert used by OpenMythos.
+"""
 struct Expert{T<:AbstractFloat}
     gate::Matrix{T}
     up::Matrix{T}
@@ -12,18 +17,25 @@ function Expert(dim::Integer, expert_dim::Integer; rng::AbstractRNG=Random.defau
     )
 end
 
+"""Apply an `Expert` to a single feature vector."""
 function (expert::Expert)(x::AbstractVector)
     gate = expert.gate * x
     up = expert.up * x
     return expert.down * (_silu.(gate) .* up)
 end
 
+"""Apply an `Expert` to a feature-last tensor."""
 function (expert::Expert)(x::AbstractArray)
     gate = _linear_feature_last(x, expert.gate)
     up = _linear_feature_last(x, expert.up)
     return _linear_feature_last(_silu.(gate) .* up, expert.down)
 end
 
+"""
+    MoEFFN{T}
+
+Mixture-of-experts feed-forward network used inside the recurrent OpenMythos block.
+"""
 struct MoEFFN{T<:AbstractFloat}
     n_experts::Int
     n_shared::Int
@@ -70,6 +82,7 @@ function MoEFFN(cfg::MythosConfig; rng::AbstractRNG=Random.default_rng(), T::Typ
     )
 end
 
+"""Apply the MoE feed-forward block to a `(batch, time, dim)` tensor."""
 function (moe::MoEFFN)(x::AbstractArray{T, 3}) where {T}
     if moe.n_experts == 1 && moe.topk == 1
         out = moe.routed_experts[1](x)

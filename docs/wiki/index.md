@@ -12,7 +12,8 @@ It is intentionally concept-first: the goal is to explain what the Python projec
 - `TransformerCore.jl/` contains reusable feature-last tensor helpers, `RMSNorm`, RoPE utilities, shared training helpers, and the first shared KV-cache envelope utilities.
 - The authoritative implementation today is the Python reference at `reference/OpenMythos`.
 - The implemented Julia slice now covers the OpenMythos primitive layer and main model stack, plus an architecture-first DeepSeek V4 package with tiny-config CSA/HCA, mHC, MTP, generation smoke paths, and bootstrap training surfaces that now include both head-only trainers and a first dense full-model OpenMythos slice.
-- The first two advanced-systems runtime slices are now in place: shared cache envelopes plus lower-allocation buffer-backed cache internals behind the same runtime API.
+- The advanced-systems runtime work now includes shared cache envelopes, lower-allocation buffer-backed cache growth, and a first true paged cache-buffer implementation beneath the same outer runtime API.
+- The workspace now also has a shared `Documenter.jl` site under `docs/` in addition to the narrative wiki under `docs/wiki/`.
 - Future work now focuses on deeper full-model training, paged/preallocated serving internals, and distributed/performance work rather than missing repository basics.
 
 ## Reading order
@@ -91,7 +92,7 @@ The workspace now also has a first reusable long-context runtime seam:
 - growable buffer-backed cache entries that avoid full-tensor concatenation on every append,
 - envelope-level capacity hints that let both model families preallocate cache buffers before decode growth begins.
 
-This is still a lightweight reference runtime. It now includes preallocated buffer capacity hints, but it does not yet include true paged attention or production-scale cache management.
+This is still a lightweight reference runtime. It now includes paged cache-buffer internals and preallocated capacity hints, but it does not yet include page-aware attention kernels or production-scale cache management.
 
 ## Future work
 
@@ -102,4 +103,4 @@ The training foundation is now in place. The main remaining directions are:
 - paged/preallocated cache internals and longer-context serving work,
 - distributed training/runtime behavior,
 - deeper performance work,
-- optional future documentation/API expansion as those land.
+- broader training/runtime work on top of the new API-documented source surface.

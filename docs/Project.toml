@@ -1,0 +1,5 @@
+[deps]
+DeepSeekV4 = "6136468a-a80b-492a-8d62-41933f2718fd"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+OpenMythos = "14910245-a25f-4a31-bb4a-c11b32311dac"
+TransformerCore = "b57a3b10-0dc6-488f-8532-4c1c16641fe1"

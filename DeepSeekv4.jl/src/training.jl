@@ -1,3 +1,9 @@
+"""
+    bootstrap_deepseek_training_config(vocab_size; seq_len=64)
+
+Return a small DeepSeek V4 configuration for head-only bootstrap training and
+smoke tests.
+"""
 function bootstrap_deepseek_training_config(vocab_size::Integer; seq_len::Integer=64)
     vocab_size > 0 || throw(ArgumentError("vocab_size must be positive"))
     seq_len > 0 || throw(ArgumentError("seq_len must be positive"))
@@ -26,6 +32,11 @@ function bootstrap_deepseek_training_config(vocab_size::Integer; seq_len::Intege
     )
 end
 
+"""
+    LuxHeadOnlyDeepSeekV4
+
+Lux wrapper that exposes only the DeepSeek V4 LM head as trainable parameters.
+"""
 struct LuxHeadOnlyDeepSeekV4{M<:DeepSeekV4Model} <: Lux.LuxCore.AbstractLuxLayer
     model::M
 end
@@ -38,6 +49,11 @@ function (layer::LuxHeadOnlyDeepSeekV4)(input_ids::AbstractMatrix{<:Integer}, ps
     return _linear_feature_last(hidden, ps.head), st
 end
 
+"""
+    DeepSeekHeadTrainerState{T}
+
+Mutable training state for the Lux-backed DeepSeek V4 head-only bootstrap path.
+"""
 mutable struct DeepSeekHeadTrainerState{T<:AbstractFloat}
     layer::LuxHeadOnlyDeepSeekV4{DeepSeekV4Model{T}}
     head::Matrix{T}
@@ -72,17 +88,20 @@ function DeepSeekHeadTrainerState(
     )
 end
 
+"""Return LM logits from the DeepSeek head-only trainer state."""
 function deepseek_head_logits(state::DeepSeekHeadTrainerState, input_ids::AbstractMatrix{<:Integer})
     logits, _ = Lux.apply(state.layer, input_ids, (head=state.head,), state.lux_state)
     return logits
 end
 
+"""Return sequence cross-entropy for the DeepSeek head-only trainer state."""
 function deepseek_head_loss(state::DeepSeekHeadTrainerState{T}, input_ids::AbstractMatrix{<:Integer}, target_ids::AbstractMatrix{<:Integer}) where {T<:AbstractFloat}
     hidden = deepseek_hidden(state.layer.model, input_ids)
     loss, = _head_loss_and_grad(hidden, state.head, target_ids)
     return loss
 end
 
+"""Take one optimization step in the DeepSeek V4 head-only trainer."""
 function train_deepseek_head_only_step!(state::DeepSeekHeadTrainerState{T}, input_ids::AbstractMatrix{<:Integer}, target_ids::AbstractMatrix{<:Integer}) where {T<:AbstractFloat}
     size(input_ids) == size(target_ids) || throw(ArgumentError("input_ids and target_ids must have the same shape"))
     hidden = deepseek_hidden(state.layer.model, input_ids)
@@ -96,6 +115,7 @@ function train_deepseek_head_only_step!(state::DeepSeekHeadTrainerState{T}, inpu
     return (loss=loss, lr=lr, grad_norm=T(sqrt(sum(abs2, grad))), step=state.step)
 end
 
+"""Serialize the DeepSeek V4 head-only trainer state to a checkpoint directory."""
 function save_deepseek_checkpoint(state::DeepSeekHeadTrainerState, ckpt_dir::AbstractString; keep_last::Integer=3, metadata::AbstractDict=Dict{String, Any}())
     keep_last > 0 || throw(ArgumentError("keep_last must be positive"))
     mkpath(ckpt_dir)
@@ -127,6 +147,7 @@ function save_deepseek_checkpoint(state::DeepSeekHeadTrainerState, ckpt_dir::Abs
     return final_path
 end
 
+"""Restore a DeepSeek V4 head-only trainer state from `path` for `model`."""
 function load_deepseek_checkpoint(path::AbstractString, model::DeepSeekV4Model{T}) where {T<:AbstractFloat}
     payload = open(path, "r") do io
         deserialize(io)
@@ -143,6 +164,7 @@ function load_deepseek_checkpoint(path::AbstractString, model::DeepSeekV4Model{T
     )
 end
 
+"""Run a multi-step DeepSeek V4 head-only training loop over `batches`."""
 function train_deepseek_head_only!(
     state::DeepSeekHeadTrainerState,
     batches::AbstractVector{<:Tuple{<:AbstractMatrix{<:Integer}, <:AbstractMatrix{<:Integer}}};

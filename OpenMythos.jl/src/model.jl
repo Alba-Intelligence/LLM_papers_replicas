@@ -1,3 +1,6 @@
+"""Default tokenizer identifier used by the OpenMythos tokenizer bridge."""
+const DEFAULT_MODEL_ID = "openai/gpt-oss-20b"
+
 struct OpenMythos{T<:AbstractFloat}
     cfg::MythosConfig
     embed::Matrix{T}
@@ -48,11 +51,18 @@ function _forward_hidden(model::OpenMythos, input_ids::AbstractMatrix{<:Integer}
     return model.norm(x)
 end
 
+"""Run the model forward and return token logits for `input_ids`."""
 function (model::OpenMythos)(input_ids::AbstractMatrix{<:Integer}; n_loops::Union{Nothing, Integer}=nothing, kv_cache::Union{Nothing, AbstractDict}=nothing, start_pos::Integer=0, kv_capacity::Union{Nothing, Integer}=nothing)
     hidden = _forward_hidden(model, input_ids; n_loops=n_loops, kv_cache=kv_cache, start_pos=start_pos, kv_capacity=kv_capacity)
     return _linear_feature_last(hidden, model.head)
 end
 
+"""
+    chunked_prefill(model, input_ids; chunk_size, n_loops=nothing, envelope=KVCacheEnvelope())
+
+Run a prompt prefix through the model in chunks and accumulate the resulting
+cache state into `envelope`.
+"""
 function chunked_prefill(
     model::OpenMythos,
     input_ids::AbstractMatrix{<:Integer};
@@ -77,6 +87,12 @@ function chunked_prefill(
     return envelope
 end
 
+"""
+    generate(model, input_ids; max_new_tokens=64, n_loops=8, temperature=1.0, top_k=50, rng=Random.default_rng(), envelope=nothing)
+
+Autoregressively sample continuations from `model`, optionally resuming from a
+prefilled `KVCacheEnvelope`.
+"""
 function generate(model::OpenMythos, input_ids::AbstractMatrix{<:Integer}; max_new_tokens::Integer=64, n_loops::Integer=8, temperature::Real=1.0, top_k::Integer=50, rng::AbstractRNG=Random.default_rng(), envelope::Union{Nothing, KVCacheEnvelope}=nothing)
     ids = copy(input_ids)
     kv_cache = envelope === nothing ? Dict{String, Any}() : envelope.cache

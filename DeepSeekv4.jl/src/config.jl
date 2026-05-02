@@ -1,3 +1,12 @@
+"""
+    DeepSeekV4Config
+
+Configuration for the DeepSeek V4 architecture-first Julia model.
+
+The fields cover compressed-attention parameters, grouped output projection,
+Mixture-of-Experts routing, multi-token prediction heads, manifold hyper
+connections, and long-context runtime limits.
+"""
 Base.@kwdef struct DeepSeekV4Config
     vocab_size::Int = 102_400
     dim::Int = 2_048

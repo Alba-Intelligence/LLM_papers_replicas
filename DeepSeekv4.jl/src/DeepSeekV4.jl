@@ -1,3 +1,13 @@
+"""
+    DeepSeekV4
+
+Julia package for the architecture-first DeepSeek V4 implementation in this
+workspace.
+
+The package currently focuses on the released attention, MoE, mHC, MTP, runtime,
+and bootstrap-training surfaces while sharing common tensor/runtime helpers with
+`TransformerCore.jl`.
+"""
 module DeepSeekV4
 
 using LinearAlgebra

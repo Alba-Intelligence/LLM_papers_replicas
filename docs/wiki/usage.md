@@ -7,7 +7,7 @@ This page shows the current user-facing workflow for the Julia workspace.
 - Run OpenMythos package commands from `OpenMythos.jl/`.
 - Run DeepSeek V4 package commands from `DeepSeekv4.jl/`.
 - Shared low-level primitives and generic training helpers live in `TransformerCore.jl/`.
-- Keep using the shared wiki from the repository root.
+- Use `docs/` for the generated `Documenter.jl` site and `docs/wiki/` for the longer-form narrative docs.
 
 ## 1. Run package tests
 
@@ -22,7 +22,19 @@ cd ../DeepSeekv4.jl
 julia --project=. -q -e 'using Pkg; Pkg.test()'
 ```
 
-## 2. Construct a tiny OpenMythos model
+## 2. Build the API documentation
+
+```bash
+julia --project=docs -q docs/make.jl
+```
+
+This builds the shared `Documenter.jl` site from:
+
+- source docstrings in all three Julia packages,
+- manual overview pages under `docs/src/`,
+- the shared docs environment in `docs/Project.toml`.
+
+## 3. Construct a tiny OpenMythos model
 
 For smoke runs and quick experimentation, prefer the bootstrap-sized config helpers over the large reference presets.
 
@@ -43,7 +55,7 @@ Expected shape:
 (1, 16, 256)
 ```
 
-## 3. Construct a tiny DeepSeek V4 model
+## 4. Construct a tiny DeepSeek V4 model
 
 ```julia
 using DeepSeekV4
@@ -62,7 +74,7 @@ Expected shape:
 (1, 8, cfg.vocab_size)
 ```
 
-## 4. Use the tokenizer
+## 5. Use the tokenizer
 
 The tokenizer currently shells out through Hugging Face tooling for parity and practicality.
 
@@ -81,7 +93,7 @@ Useful entry points:
 - `detokenize(tok, ids)`
 - `vocab_size(tok)`
 
-## 5. Reuse a prefetched KV cache
+## 6. Reuse a prefetched KV cache
 
 Both model packages now expose the same lightweight runtime workflow:
 
@@ -109,7 +121,7 @@ continued = generate(model, ids; max_new_tokens=32, envelope=env)
 
 This is a reference runtime seam, not a production serving stack: the envelope still owns a Julia dictionary, but the per-layer cache payloads now use growable buffer-backed entries and can reserve capacity ahead of time rather than growing from minimal allocations on every decode step.
 
-## 6. Open the notebook example
+## 7. Open the notebook example
 
 There is a small Pluto notebook in:
 
@@ -133,7 +145,7 @@ The notebook demonstrates:
 - a forward pass,
 - short random-weight generation.
 
-## 7. Run the bootstrap training scripts
+## 8. Run the bootstrap training scripts
 
 The OpenMythos training entrypoint is:
 
@@ -204,7 +216,7 @@ DEEPSEEK_V4_TRAIN_SEQ_LEN=32 \
 julia --project=. scripts/train_deepseek_tiny.jl
 ```
 
-## 8. Understand the current training and runtime scope
+## 9. Understand the current training and runtime scope
 
 The current bootstrap trainer is intentionally limited:
 

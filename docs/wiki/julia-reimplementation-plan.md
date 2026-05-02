@@ -11,7 +11,8 @@ The workspace now has:
 - `OpenMythos.jl/` for the original recurrent package,
 - `DeepSeekv4.jl/` for the new DeepSeek V4 package,
 - `TransformerCore.jl/` for shared low-level primitives,
-- `docs/wiki/` as shared workspace documentation.
+- `docs/wiki/` as shared workspace narrative documentation,
+- `docs/` as a shared `Documenter.jl` API site.
 
 The OpenMythos package includes a parity-tested core model stack:
 
@@ -44,9 +45,10 @@ The current state is:
 
 - `OpenMythos.jl/` is the recurrent-depth package with parity-oriented model code, a head-only Lux bootstrap trainer, and a first dense tiny-config full-model bootstrap trainer for OpenMythos itself.
 - `DeepSeekv4.jl/` is an architecture-first package with CSA/HCA, mHC, MoE routing, MTP, chunked-prefill-aware generation, tiny-config tests, and a head-only bootstrap training path.
-- `TransformerCore.jl/` holds the shared primitive, training-utility, runtime-envelope, and growable cache-buffer layer.
+- `TransformerCore.jl/` holds the shared primitive, training-utility, runtime-envelope, and paged/growable cache-buffer layer.
+- the workspace source now carries public-API docstrings and a shared Documenter build for the multi-package surface.
 
-The next milestone is to deepen runtime internals and broaden training coverage beyond the current dense OpenMythos slice without prematurely forcing all model internals into Lux layers.
+The next milestone is to broaden training coverage beyond the current dense OpenMythos slice without prematurely forcing all model internals into Lux layers.
 
 For future DeepSeek planning, keep the source priority explicit:
 
@@ -64,7 +66,7 @@ For future DeepSeek planning, keep the source priority explicit:
 | Optimizers | `Optimisers.jl` |
 | Data loading | `MLUtils.jl` |
 | GPU execution | `CUDA.jl` |
-| Documentation | `Documenter.jl` later, `docs/wiki` now |
+| Documentation | `Documenter.jl` + `docs/wiki` |
 | Serialization | `JLD2.jl` or another Julia-native checkpoint format |
 | Temporary Python interop where needed | `PythonCall.jl` |
 
@@ -159,7 +161,7 @@ Status: done.
   - FP4 quantization-aware training,
   - paged/preallocated and production-scale long-context serving.
 
-Status: in progress; the runtime-envelope, lower-allocation cache-buffer, and preallocated-capacity slices are done.
+Status: in progress; the runtime-envelope, lower-allocation cache-buffer, preallocated-capacity, and true paged-cache-buffer slices are done.
 
 ## Validation strategy
 
@@ -183,7 +185,7 @@ These should not block the current Julia milestone:
 
 The best next vertical slice is:
 
-1. add true paged KV-cache internals beneath the current shared envelope API,
-2. broaden full-model training beyond the current dense OpenMythos bootstrap slice,
-3. preserve the shared runtime envelope while deeper serving work remains model-specific underneath,
+1. broaden full-model training beyond the current dense OpenMythos bootstrap slice,
+2. preserve the shared runtime envelope while page-aware attention and deeper serving work remain model-specific underneath,
+3. expand distributed/runtime work once the single-process story is deeper,
 4. treat Engram-style conditional memory as an optional future DeepSeek research branch rather than an assumed immediate requirement.

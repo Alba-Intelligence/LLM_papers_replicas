@@ -1,3 +1,8 @@
+"""
+    WarmupCosineSchedule{T}
+
+Learning-rate schedule with linear warmup followed by cosine decay.
+"""
 struct WarmupCosineSchedule{T<:AbstractFloat}
     warmup_steps::Int
     total_steps::Int
@@ -20,6 +25,11 @@ function WarmupCosineSchedule(
     return WarmupCosineSchedule{T}(Int(warmup_steps), Int(total_steps), T(max_lr), T(min_lr))
 end
 
+"""
+    learning_rate(schedule, step)
+
+Return the learning rate for `step` under `schedule`.
+"""
 function learning_rate(schedule::WarmupCosineSchedule{T}, step::Integer) where {T}
     step < 0 && throw(ArgumentError("step must be non-negative"))
     if schedule.warmup_steps > 0 && step < schedule.warmup_steps
@@ -35,6 +45,12 @@ function learning_rate(schedule::WarmupCosineSchedule{T}, step::Integer) where {
     return schedule.min_lr + T(0.5) * (schedule.max_lr - schedule.min_lr) * (one(T) + cos(T(pi) * decay))
 end
 
+"""
+    chunk_next_token_pairs(token_ids, seq_len)
+
+Split a flat token stream into `(input, target)` next-token training pairs of
+length `seq_len`.
+"""
 function chunk_next_token_pairs(token_ids::AbstractVector{<:Integer}, seq_len::Integer)
     seq_len > 0 || throw(ArgumentError("seq_len must be positive"))
     pairs = Tuple{Vector{Int}, Vector{Int}}[]
@@ -57,6 +73,12 @@ function _drain_token_buffer!(pairs::Vector{Tuple{Vector{Int}, Vector{Int}}}, bu
     return pairs
 end
 
+"""
+    text_next_token_pairs(texts, encode_fn, seq_len)
+
+Encode `texts` incrementally with `encode_fn` and drain them into next-token
+ `(input, target)` training pairs of length `seq_len`.
+"""
 function text_next_token_pairs(texts::AbstractVector{<:AbstractString}, encode_fn::Function, seq_len::Integer)
     seq_len > 0 || throw(ArgumentError("seq_len must be positive"))
     pairs = Tuple{Vector{Int}, Vector{Int}}[]
@@ -68,6 +90,11 @@ function text_next_token_pairs(texts::AbstractVector{<:AbstractString}, encode_f
     return pairs
 end
 
+"""
+    batch_next_token_pairs(pairs, batch_size; drop_last=false)
+
+Pack token-pair sequences into batched `(x, y)` matrices.
+"""
 function batch_next_token_pairs(
     pairs::AbstractVector{<:Tuple{<:AbstractVector{<:Integer}, <:AbstractVector{<:Integer}}},
     batch_size::Integer;
@@ -101,6 +128,12 @@ function batch_next_token_pairs(
     return batches
 end
 
+"""
+    latest_checkpoint(ckpt_dir)
+
+Return the newest `step_XXXXXXX.jls` checkpoint path in `ckpt_dir`, or `nothing`
+when no matching checkpoint exists.
+"""
 function latest_checkpoint(ckpt_dir::AbstractString)
     isdir(ckpt_dir) || return nothing
     matches = filter(name -> startswith(name, "step_") && endswith(name, ".jls"), readdir(ckpt_dir))
@@ -109,6 +142,15 @@ function latest_checkpoint(ckpt_dir::AbstractString)
     return joinpath(ckpt_dir, last(matches))
 end
 
+"""
+    _head_loss_and_grad(hidden, head, target_ids)
+
+Compute cross-entropy loss and the LM-head weight gradient for a fixed hidden
+state tensor.
+
+This helper is used by the head-only bootstrap training paths in both model
+families.
+"""
 function _head_loss_and_grad(hidden::AbstractArray{T}, head::AbstractMatrix{T}, target_ids::AbstractMatrix{<:Integer}) where {T<:AbstractFloat}
     flat_hidden = _flatten_feature_last(hidden)
     logits = head * flat_hidden

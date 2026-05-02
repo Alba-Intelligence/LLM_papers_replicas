@@ -1,3 +1,9 @@
+"""
+    bootstrap_training_config(vocab_size; seq_len=128, attn_type="gqa")
+
+Return a small OpenMythos configuration for head-only bootstrap training and
+smoke tests.
+"""
 function bootstrap_training_config(vocab_size::Integer; seq_len::Integer=128, attn_type::String="gqa")
     vocab_size > 0 || throw(ArgumentError("vocab_size must be positive"))
     seq_len > 0 || throw(ArgumentError("seq_len must be positive"))
@@ -25,6 +31,12 @@ function bootstrap_training_config(vocab_size::Integer; seq_len::Integer=128, at
     )
 end
 
+"""
+    bootstrap_full_model_training_config(vocab_size; seq_len=64, attn_type="gqa")
+
+Return a constrained dense OpenMythos configuration suitable for the current
+full-model bootstrap trainer.
+"""
 function bootstrap_full_model_training_config(vocab_size::Integer; seq_len::Integer=64, attn_type::String="gqa")
     attn_type == "gqa" || throw(ArgumentError("full-model bootstrap currently supports only gqa attention"))
     vocab_size > 0 || throw(ArgumentError("vocab_size must be positive"))
@@ -147,6 +159,12 @@ function _parse_fineweb_batches(raw::AbstractString, seq_len::Int)
     return batches
 end
 
+"""
+    fineweb_edu_batches(model_id, seq_len, batch_size; subset="sample-10BT", max_batches=8, runner=_fineweb_runner())
+
+Fetch small next-token training batches from FineWeb-Edu through the optional
+Python bridge.
+"""
 function fineweb_edu_batches(model_id::String, seq_len::Integer, batch_size::Integer; subset::String="sample-10BT", max_batches::Integer=8, runner::Cmd=_fineweb_runner())
     raw = _run_fineweb_python(model_id, seq_len, batch_size; subset=subset, max_batches=max_batches, runner=runner)
     return _parse_fineweb_batches(raw, Int(seq_len))
@@ -155,6 +173,11 @@ end
 fineweb_edu_batches(tokenizer::MythosTokenizer, seq_len::Integer, batch_size::Integer; kwargs...) =
     fineweb_edu_batches(tokenizer.model_id, seq_len, batch_size; kwargs...)
 
+"""
+    LuxHeadOnlyOpenMythos
+
+Lux wrapper that exposes only the OpenMythos LM head as trainable parameters.
+"""
 struct LuxHeadOnlyOpenMythos{M<:OpenMythos} <: Lux.LuxCore.AbstractLuxLayer
     model::M
     n_loops::Union{Nothing, Int}
@@ -170,6 +193,11 @@ function (layer::LuxHeadOnlyOpenMythos)(input_ids::AbstractMatrix{<:Integer}, ps
     return _linear_feature_last(hidden, ps.head), st
 end
 
+"""
+    HeadOnlyTrainerState{T}
+
+Mutable training state for the Lux-backed OpenMythos head-only bootstrap path.
+"""
 mutable struct HeadOnlyTrainerState{T<:AbstractFloat}
     layer::LuxHeadOnlyOpenMythos{OpenMythos{T}}
     head::Matrix{T}
@@ -228,6 +256,12 @@ function _full_model_loss(model::OpenMythos{T}, input_ids::AbstractMatrix{<:Inte
     return _sequence_cross_entropy(logits, target_ids)
 end
 
+"""
+    FullModelTrainerState{T}
+
+Mutable training state for the current dense OpenMythos full-model bootstrap
+trainer.
+"""
 mutable struct FullModelTrainerState{T<:AbstractFloat}
     model::OpenMythos{T}
     opt_state
@@ -253,14 +287,17 @@ function FullModelTrainerState(
     return FullModelTrainerState(model, opt_state, schedule, 0, n_loops === nothing ? nothing : Int(n_loops))
 end
 
+"""Return LM logits from the full-model trainer state."""
 function full_model_logits(state::FullModelTrainerState, input_ids::AbstractMatrix{<:Integer}; n_loops::Union{Nothing, Integer}=nothing)
     return state.model(input_ids; n_loops=(n_loops === nothing ? state.n_loops : n_loops))
 end
 
+"""Return sequence cross-entropy for the full-model trainer state."""
 function full_model_loss(state::FullModelTrainerState{T}, input_ids::AbstractMatrix{<:Integer}, target_ids::AbstractMatrix{<:Integer}; n_loops::Union{Nothing, Integer}=nothing) where {T<:AbstractFloat}
     return _full_model_loss(state.model, input_ids, target_ids; n_loops=(n_loops === nothing ? state.n_loops : n_loops))
 end
 
+"""Take one optimization step in the full-model OpenMythos trainer."""
 function train_full_model_step!(state::FullModelTrainerState{T}, input_ids::AbstractMatrix{<:Integer}, target_ids::AbstractMatrix{<:Integer}; n_loops::Union{Nothing, Integer}=nothing) where {T<:AbstractFloat}
     size(input_ids) == size(target_ids) || throw(ArgumentError("input_ids and target_ids must have the same shape"))
     active_loops = n_loops === nothing ? state.n_loops : n_loops
@@ -308,17 +345,20 @@ function _layer_for(state::HeadOnlyTrainerState, n_loops::Union{Nothing, Integer
     return LuxHeadOnlyOpenMythos(state.layer.model; n_loops=n_loops)
 end
 
+"""Return LM logits from the head-only trainer state."""
 function head_only_logits(state::HeadOnlyTrainerState, input_ids::AbstractMatrix{<:Integer}; n_loops::Union{Nothing, Integer}=nothing)
     logits, _ = Lux.apply(_layer_for(state, n_loops), input_ids, (head=state.head,), state.lux_state)
     return logits
 end
 
+"""Return sequence cross-entropy for the head-only trainer state."""
 function head_only_loss(state::HeadOnlyTrainerState{T}, input_ids::AbstractMatrix{<:Integer}, target_ids::AbstractMatrix{<:Integer}; n_loops::Union{Nothing, Integer}=nothing) where {T<:AbstractFloat}
     hidden = _forward_hidden(state.layer.model, input_ids; n_loops=(n_loops === nothing ? state.layer.n_loops : n_loops))
     loss, = _head_loss_and_grad(hidden, state.head, target_ids)
     return loss
 end
 
+"""Take one optimization step in the OpenMythos head-only trainer."""
 function train_head_only_step!(state::HeadOnlyTrainerState{T}, input_ids::AbstractMatrix{<:Integer}, target_ids::AbstractMatrix{<:Integer}; n_loops::Union{Nothing, Integer}=nothing) where {T<:AbstractFloat}
     size(input_ids) == size(target_ids) || throw(ArgumentError("input_ids and target_ids must have the same shape"))
     hidden = _forward_hidden(state.layer.model, input_ids; n_loops=(n_loops === nothing ? state.layer.n_loops : n_loops))
@@ -332,6 +372,7 @@ function train_head_only_step!(state::HeadOnlyTrainerState{T}, input_ids::Abstra
     return (loss=loss, lr=lr, grad_norm=T(sqrt(sum(abs2, grad))), step=state.step)
 end
 
+"""Serialize the head-only trainer state to a checkpoint directory."""
 function save_head_only_checkpoint(state::HeadOnlyTrainerState, ckpt_dir::AbstractString; keep_last::Integer=3, metadata::AbstractDict=Dict{String, Any}())
     keep_last > 0 || throw(ArgumentError("keep_last must be positive"))
     mkpath(ckpt_dir)
@@ -364,6 +405,7 @@ function save_head_only_checkpoint(state::HeadOnlyTrainerState, ckpt_dir::Abstra
     return final_path
 end
 
+"""Serialize the full-model trainer state to a checkpoint directory."""
 function save_full_model_checkpoint(state::FullModelTrainerState, ckpt_dir::AbstractString; keep_last::Integer=3, metadata::AbstractDict=Dict{String, Any}())
     keep_last > 0 || throw(ArgumentError("keep_last must be positive"))
     mkpath(ckpt_dir)
@@ -393,6 +435,7 @@ function save_full_model_checkpoint(state::FullModelTrainerState, ckpt_dir::Abst
     return final_path
 end
 
+"""Restore a head-only trainer state from `path` for `model`."""
 function load_head_only_checkpoint(path::AbstractString, model::OpenMythos{T}) where {T<:AbstractFloat}
     payload = open(path, "r") do io
         deserialize(io)
@@ -410,6 +453,7 @@ function load_head_only_checkpoint(path::AbstractString, model::OpenMythos{T}) w
     )
 end
 
+"""Restore a dense full-model trainer state from `path`."""
 function load_full_model_checkpoint(path::AbstractString)
     payload = open(path, "r") do io
         deserialize(io)
@@ -426,6 +470,7 @@ function load_full_model_checkpoint(path::AbstractString)
     )
 end
 
+"""Run a multi-step head-only OpenMythos training loop over `batches`."""
 function train_head_only!(
     state::HeadOnlyTrainerState,
     batches::AbstractVector{<:Tuple{<:AbstractMatrix{<:Integer}, <:AbstractMatrix{<:Integer}}};
@@ -462,6 +507,7 @@ function train_head_only!(
     return last_metrics
 end
 
+"""Run a multi-step dense full-model OpenMythos training loop over `batches`."""
 function train_full_model!(
     state::FullModelTrainerState,
     batches::AbstractVector{<:Tuple{<:AbstractMatrix{<:Integer}, <:AbstractMatrix{<:Integer}}};
