@@ -37,9 +37,6 @@ end
 
 Return a smaller DeepSeek V4 configuration for the current full-model bootstrap
 training slice.
-
-This path optimizes the main LM logits end to end on tiny configs while leaving
-the auxiliary MTP heads outside the current loss.
 """
 function bootstrap_deepseek_full_model_training_config(vocab_size::Integer; seq_len::Integer=64)
     vocab_size > 0 || throw(ArgumentError("vocab_size must be positive"))
@@ -102,6 +99,24 @@ function _sequence_cross_entropy(logits::AbstractArray{T, 3}, target_ids::Abstra
     return total / T(length(flat_targets))
 end
 
+function _mtp_sequence_cross_entropy(logits::AbstractArray{T, 4}, target_ids::AbstractMatrix{<:Integer}) where {T<:AbstractFloat}
+    size(logits, 1) == size(target_ids, 1) || throw(DimensionMismatch("batch size mismatch"))
+    size(logits, 2) == size(target_ids, 2) || throw(DimensionMismatch("sequence length mismatch"))
+
+    max_heads = min(size(logits, 3), size(target_ids, 2) - 1)
+    max_heads <= 0 && return zero(T)
+
+    total = zero(T)
+    for head_idx in 1:max_heads
+        valid_t = size(target_ids, 2) - head_idx
+        total += _sequence_cross_entropy(
+            @view(logits[:, 1:valid_t, head_idx, :]),
+            @view(target_ids[:, (head_idx + 1):end]),
+        )
+    end
+    return total / T(max_heads)
+end
+
 function _tree_sumsq(x)
     if x === nothing
         return 0.0
@@ -122,8 +137,12 @@ function _tree_sumsq(x)
 end
 
 function _deepseek_full_model_loss(model::DeepSeekV4Model{T}, input_ids::AbstractMatrix{<:Integer}, target_ids::AbstractMatrix{<:Integer}) where {T<:AbstractFloat}
-    logits = model(input_ids)
-    return _sequence_cross_entropy(logits, target_ids)
+    main_loss = _sequence_cross_entropy(model(input_ids), target_ids)
+    if isempty(model.mtp_heads)
+        return main_loss
+    end
+    mtp_loss = _mtp_sequence_cross_entropy(mtp_logits(model, input_ids), target_ids)
+    return (main_loss + mtp_loss) / T(2)
 end
 
 """

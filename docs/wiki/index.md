@@ -79,7 +79,7 @@ The Julia replica now has a real bootstrap training path:
 - a parallel `LuxHeadOnlyDeepSeekV4` bootstrap path plus a first tiny `DeepSeekFullModelTrainerState` path and `DeepSeekv4.jl/scripts/train_deepseek_tiny.jl`,
 - shared schedule, batching, checkpoint discovery, and head-loss helpers in `TransformerCore.jl`.
 
-That training surface is still intentionally constrained: OpenMythos has the broader current full-model slice, while DeepSeek full-model training is still limited to tiny configs and the primary LM logits path rather than auxiliary MTP losses.
+That training surface is still intentionally constrained: OpenMythos has the broader current full-model slice, while DeepSeek full-model training is still limited to tiny configs even though it now trains both the primary LM logits path and the current auxiliary MTP heads.
 
 ## Runtime status
 

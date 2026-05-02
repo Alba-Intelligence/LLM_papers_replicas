@@ -32,8 +32,8 @@ julia --project=. scripts/train_deepseek_tiny.jl
 ```
 
 This script currently builds local byte-encoded batches for either a head-only or
-tiny full-model smoke path. The full-model mode optimizes the primary LM head and
-body end to end, but does not yet train the auxiliary MTP heads.
+tiny full-model smoke path. The full-model mode optimizes both the primary LM
+head path and the current auxiliary MTP heads on tiny configs.
 
 ### Chunked prefill and cache reuse
 

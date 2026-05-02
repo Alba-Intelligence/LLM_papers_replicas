@@ -232,7 +232,7 @@ The current bootstrap trainer is intentionally limited:
 - `OpenMythos.jl` now also has a dense full-model bootstrap mode via `OPENMYTHOS_TRAIN_MODE=full_model`,
 - that full-model mode currently supports small GQA/MLA configs, including tiny sparse routed-expert setups with optional shared experts,
 - `DeepSeekv4.jl` now has both a `LuxHeadOnlyDeepSeekV4` head-only trainer and a first tiny `DeepSeekFullModelTrainerState` bootstrap path,
-- the current DeepSeek full-model loss trains the main LM logits path only and does not yet include auxiliary MTP losses,
+- the current DeepSeek full-model loss now trains both the main LM logits path and the current auxiliary MTP heads on tiny configs,
 - the core model internals are still manual Julia blocks,
 - broader sparse/full-model autodiff and distributed training are still future work.
 

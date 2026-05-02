@@ -62,6 +62,8 @@ end
 
     x = reshape([1, 2, 3, 4], 1, :)
     y = reshape([2, 3, 4, 5], 1, :)
+    head_before = copy(model.head)
+    mtp_head_before = copy(model.mtp_heads[1])
 
     initial_loss = deepseek_full_model_loss(state, x, y)
     train_deepseek_full_model_step!(state, x, y)
@@ -70,7 +72,8 @@ end
     @test final_loss < initial_loss
     @test state.step == 1
     @test size(deepseek_full_model_logits(state, x)) == (1, 4, cfg.vocab_size)
-    @test !all(isapprox.(state.model.head, model.head; atol=1f-6))
+    @test !all(isapprox.(state.model.head, head_before; atol=1f-6))
+    @test !all(isapprox.(state.model.mtp_heads[1], mtp_head_before; atol=1f-6))
 end
 
 @testset "DeepSeek checkpoint roundtrip and pruning" begin
