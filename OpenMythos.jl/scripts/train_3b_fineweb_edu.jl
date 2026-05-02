@@ -12,6 +12,8 @@ const TRAIN_TEXT_FILE = get(ENV, "OPENMYTHOS_TRAIN_TEXT_FILE", "")
 const TRAIN_TEXT = get(ENV, "OPENMYTHOS_TRAIN_TEXT", "")
 const CKPT_DIR = get(ENV, "OPENMYTHOS_TRAIN_CKPT_DIR", "checkpoints")
 const TRAIN_MODE = lowercase(get(ENV, "OPENMYTHOS_TRAIN_MODE", "head_only"))
+const TRAIN_ATTN_TYPE = lowercase(get(ENV, "OPENMYTHOS_TRAIN_ATTN_TYPE", "gqa"))
+const TRAIN_SHARED_EXPERTS = parse(Int, get(ENV, "OPENMYTHOS_TRAIN_SHARED_EXPERTS", "0"))
 
 const SEQ_LEN = parse(Int, get(ENV, "OPENMYTHOS_TRAIN_SEQ_LEN", "32"))
 const BATCH_SIZE = parse(Int, get(ENV, "OPENMYTHOS_TRAIN_BATCH_SIZE", "2"))
@@ -58,8 +60,13 @@ end
 function main()
     tokenizer = MythosTokenizer(TOKENIZER_MODEL_ID)
     cfg = TRAIN_MODE == "full_model" ?
-        bootstrap_full_model_training_config(OpenMythos.vocab_size(tokenizer); seq_len=SEQ_LEN, attn_type="gqa") :
-        bootstrap_training_config(OpenMythos.vocab_size(tokenizer); seq_len=SEQ_LEN, attn_type="gqa")
+        bootstrap_full_model_training_config(
+            OpenMythos.vocab_size(tokenizer);
+            seq_len=SEQ_LEN,
+            attn_type=TRAIN_ATTN_TYPE,
+            n_shared_experts=TRAIN_SHARED_EXPERTS,
+        ) :
+        bootstrap_training_config(OpenMythos.vocab_size(tokenizer); seq_len=SEQ_LEN, attn_type=TRAIN_ATTN_TYPE)
     model = OpenMythos.OpenMythos(cfg; rng=MersenneTwister(RNG_SEED))
     schedule = WarmupCosineSchedule(WARMUP_STEPS, TOTAL_STEPS, LR, LR * 0.1f0)
 
@@ -78,6 +85,7 @@ function main()
     println("Tokenizer model: $(TOKENIZER_MODEL_ID)")
     println("Vocab size: $(OpenMythos.vocab_size(tokenizer)) | seq_len: $(SEQ_LEN) | batch_size: $(BATCH_SIZE) | total_steps: $(TOTAL_STEPS)")
     println("Training mode: $(TRAIN_MODE == \"full_model\" ? \"dense full-model bootstrap\" : \"Lux-backed head-only bootstrap\")")
+    println("Attention backend: $(TRAIN_ATTN_TYPE)$(TRAIN_MODE == \"full_model\" ? \" | shared experts: $(cfg.n_shared_experts)\" : \"\")")
     latest !== nothing && println("Resuming from $(latest)")
 
     metrics = if TRAIN_MODE == "full_model"

@@ -132,6 +132,40 @@ end
     @test !all(isapprox.(state.model.head, original_head; atol=1f-6))
 end
 
+@testset "Full-model trainer supports MLA and shared experts" begin
+    Random.seed!(17)
+    cfg = bootstrap_full_model_training_config(32; seq_len=4, attn_type="mla", n_shared_experts=1)
+    @test cfg.attn_type == "mla"
+    @test cfg.n_experts == 1
+    @test cfg.n_shared_experts == 1
+    @test cfg.n_experts_per_tok == 1
+
+    model = OpenMythos.OpenMythos(cfg; rng=MersenneTwister(17))
+    schedule = WarmupCosineSchedule(0, 4, 0.01f0, 0.01f0)
+    state = FullModelTrainerState(model; schedule=schedule, weight_decay=0.0, n_loops=cfg.max_loop_iters)
+
+    x = reshape([1, 2, 3, 4], 1, :)
+    y = reshape([2, 3, 4, 5], 1, :)
+
+    initial_loss = full_model_loss(state, x, y)
+    for _ in 1:4
+        train_full_model_step!(state, x, y)
+    end
+    final_loss = full_model_loss(state, x, y)
+
+    @test final_loss < initial_loss
+    @test state.model.cfg.attn_type == "mla"
+    @test state.model.cfg.n_shared_experts == 1
+
+    mktempdir() do dir
+        path = save_full_model_checkpoint(state, dir; keep_last=1)
+        restored = load_full_model_checkpoint(path)
+        @test restored.model.cfg.attn_type == "mla"
+        @test restored.model.cfg.n_shared_experts == 1
+        @test restored.model.head == state.model.head
+    end
+end
+
 @testset "Full-model checkpoint roundtrip and pruning" begin
     Random.seed!(15)
     cfg = bootstrap_full_model_training_config(24; seq_len=4)

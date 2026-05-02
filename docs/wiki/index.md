@@ -75,7 +75,7 @@ The Julia replica now has a real bootstrap training path:
 - a small Julia `OpenMythos.jl/scripts/train_3b_fineweb_edu.jl` entrypoint,
 - local-text smoke training and an optional FineWeb-Edu Python streaming bridge,
 - a `LuxHeadOnlyOpenMythos` layer backed by `Optimisers.AdamW`,
-- a first dense OpenMythos full-model trainer/checkpoint path for tiny GQA single-expert configs,
+- a broadened dense OpenMythos full-model trainer/checkpoint path for tiny single-routed-expert configs across GQA and MLA, with optional shared experts,
 - a parallel `LuxHeadOnlyDeepSeekV4` bootstrap path and `DeepSeekv4.jl/scripts/train_deepseek_tiny.jl`,
 - shared schedule, batching, checkpoint discovery, and head-loss helpers in `TransformerCore.jl`.
 

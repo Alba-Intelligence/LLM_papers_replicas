@@ -11,9 +11,11 @@ The replica now includes:
 - an optional Python-vs-Julia parity harness for selected utilities,
 - bootstrap training paths with checkpointing and local/FineWeb smoke data flows,
 - chunked prefill plus serializable KV-cache envelopes for cached generation reuse,
-- lower-allocation buffer-backed cache growth plus envelope-level preallocation hints behind the existing generation API.
+- lower-allocation buffer-backed cache growth plus envelope-level preallocation hints behind the existing generation API,
+- true paged cache-buffer internals beneath the shared envelope API,
+- a broadened dense full-model bootstrap slice that now supports both GQA and MLA attention plus optional shared experts.
 
-The current training surface is intentionally staged: `OpenMythos.jl` now has both the original **Lux-backed head-only** bootstrap path and a first **dense full-model** bootstrap path for tiny GQA configs (`n_experts == 1`, `n_shared_experts == 0`, `n_experts_per_tok == 1`), while the broader sparse/DeepSeek full-model story remains future work.
+The current training surface is intentionally staged: `OpenMythos.jl` now has both the original **Lux-backed head-only** bootstrap path and a broader **dense full-model** bootstrap path for tiny single-routed-expert configs (`n_experts == 1`, `n_experts_per_tok == 1`) across both GQA and MLA attention, with optional shared experts. The broader sparse/DeepSeek full-model story remains future work.
 
 ## Quickstart
 
@@ -77,6 +79,18 @@ OPENMYTHOS_TRAIN_SEQ_LEN=32 \
 julia --project=. scripts/train_3b_fineweb_edu.jl
 ```
 
+To exercise the MLA-backed dense full-model slice with one shared expert:
+
+```bash
+OPENMYTHOS_TRAIN_MODE=full_model \
+OPENMYTHOS_TRAIN_ATTN_TYPE=mla \
+OPENMYTHOS_TRAIN_SHARED_EXPERTS=1 \
+OPENMYTHOS_TRAIN_TOKENIZER_MODEL_ID=gpt2 \
+OPENMYTHOS_TRAIN_TOTAL_STEPS=4 \
+OPENMYTHOS_TRAIN_SEQ_LEN=32 \
+julia --project=. scripts/train_3b_fineweb_edu.jl
+```
+
 For an optional FineWeb-Edu-backed smoke run:
 
 ```bash
@@ -112,9 +126,9 @@ ids2 = generate(model, ids; max_new_tokens=4, n_loops=2, envelope=load_kv_cache(
 
 ## What is still deferred
 
-- broader full-model training beyond the current dense OpenMythos bootstrap slice,
+- broader sparse/full-model training beyond the current dense OpenMythos bootstrap slice,
 - distributed training/runtime behavior,
-- paged or preallocated KV cache internals,
+- page-aware attention kernels and deeper cache lifecycle/runtime work,
 - experimental `moda.py` parity,
 - performance-focused optimization work.
 

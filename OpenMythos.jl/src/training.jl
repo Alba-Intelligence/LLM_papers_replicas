@@ -32,15 +32,25 @@ function bootstrap_training_config(vocab_size::Integer; seq_len::Integer=128, at
 end
 
 """
-    bootstrap_full_model_training_config(vocab_size; seq_len=64, attn_type="gqa")
+    bootstrap_full_model_training_config(vocab_size; seq_len=64, attn_type="gqa", n_shared_experts=0)
 
 Return a constrained dense OpenMythos configuration suitable for the current
 full-model bootstrap trainer.
+
+The trainer now supports both dense GQA and dense MLA variants while still
+requiring a single routed expert (`n_experts == 1`, `n_experts_per_tok == 1`).
+Shared experts remain optional.
 """
-function bootstrap_full_model_training_config(vocab_size::Integer; seq_len::Integer=64, attn_type::String="gqa")
-    attn_type == "gqa" || throw(ArgumentError("full-model bootstrap currently supports only gqa attention"))
+function bootstrap_full_model_training_config(
+    vocab_size::Integer;
+    seq_len::Integer=64,
+    attn_type::String="gqa",
+    n_shared_experts::Integer=0,
+)
+    attn_type in ("gqa", "mla") || throw(ArgumentError("full-model bootstrap currently supports only gqa or mla attention"))
     vocab_size > 0 || throw(ArgumentError("vocab_size must be positive"))
     seq_len > 0 || throw(ArgumentError("seq_len must be positive"))
+    n_shared_experts >= 0 || throw(ArgumentError("n_shared_experts must be non-negative"))
     return MythosConfig(
         vocab_size=Int(vocab_size),
         dim=64,
@@ -57,7 +67,7 @@ function bootstrap_full_model_training_config(vocab_size::Integer; seq_len::Inte
         qk_nope_head_dim=8,
         v_head_dim=8,
         n_experts=1,
-        n_shared_experts=0,
+        n_shared_experts=Int(n_shared_experts),
         n_experts_per_tok=1,
         expert_dim=16,
         lora_rank=4,
@@ -208,9 +218,9 @@ mutable struct HeadOnlyTrainerState{T<:AbstractFloat}
 end
 
 function _validate_full_model_cfg(cfg::MythosConfig)
-    cfg.attn_type == "gqa" || throw(ArgumentError("full-model training currently supports only gqa attention"))
+    cfg.attn_type in ("gqa", "mla") || throw(ArgumentError("full-model training currently supports only gqa or mla attention"))
     cfg.n_experts == 1 || throw(ArgumentError("full-model training currently requires n_experts == 1"))
-    cfg.n_shared_experts == 0 || throw(ArgumentError("full-model training currently requires n_shared_experts == 0"))
+    cfg.n_shared_experts >= 0 || throw(ArgumentError("full-model training requires n_shared_experts >= 0"))
     cfg.n_experts_per_tok == 1 || throw(ArgumentError("full-model training currently requires n_experts_per_tok == 1"))
     return cfg
 end
