@@ -56,7 +56,8 @@ The current training surface is intentionally bootstrap-sized:
 - `OpenMythos.jl` supports both a **head-only Lux path** and a first **dense
   full-model** training slice for small GQA/MLA configs, including tiny sparse
   routed-expert setups with optional shared experts.
-- `DeepSeekv4.jl` currently exposes a **head-only Lux path**.
+- `DeepSeekv4.jl` now exposes both a **head-only Lux path** and a first **tiny
+  full-model** bootstrap trainer for the primary LM logits path.
 - `TransformerCore.jl` provides the shared warmup/cosine schedule, token-pair
   batching helpers, checkpoint discovery, and head-loss math.
 

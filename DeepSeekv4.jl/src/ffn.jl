@@ -90,21 +90,25 @@ function (moe::MoEFFN)(x::AbstractArray{T, 3}) where {T}
 
     logits = moe.router * transpose(token_matrix)
     scores = _softmax_cols(logits)
-    out = zeros(T, n, d)
-
-    for token_idx in 1:n
-        adjusted = view(logits, :, token_idx) .+ moe.router_bias
-        top_idx = partialsortperm(vec(adjusted), 1:moe.topk; rev=true)
-        token_scores = scores[top_idx, token_idx]
-        token_scores ./= sum(token_scores)
-        token = vec(@view token_matrix[token_idx, :])
-        for (score, expert_idx) in zip(token_scores, top_idx)
-            out[token_idx, :] .+= score .* moe.routed_experts[expert_idx](token)
+    token_outputs = [
+        begin
+            adjusted = view(logits, :, token_idx) .+ moe.router_bias
+            top_idx = partialsortperm(vec(adjusted), 1:moe.topk; rev=true)
+            token_scores = scores[top_idx, token_idx]
+            token_scores = token_scores ./ sum(token_scores)
+            token = vec(@view token_matrix[token_idx, :])
+            reduce(
+                .+,
+                (score .* moe.routed_experts[expert_idx](token) for (score, expert_idx) in zip(token_scores, top_idx));
+                init=zeros(T, d),
+            )
         end
-    end
+        for token_idx in 1:n
+    ]
+    out = cat([reshape(token_out, 1, d) for token_out in token_outputs]...; dims=1)
 
     for shared in moe.shared_experts
-        out .+= shared(token_matrix)
+        out = out .+ shared(token_matrix)
     end
 
     return permutedims(reshape(out, b, t, d), (1, 2, 3))
@@ -150,19 +154,23 @@ function HashMoEFFN(cfg::DeepSeekV4Config, layer_seed::Integer; rng::AbstractRNG
     return HashMoEFFN(cfg.n_experts, cfg.n_shared_experts, cfg.n_experts_per_tok, Int(layer_seed), routed, shared)
 end
 
+function _next_unique_hash_candidate(candidate::Int, chosen::Tuple, n_experts::Int)
+    candidate in chosen || return candidate
+    return _next_unique_hash_candidate(mod(candidate, n_experts) + 1, chosen, n_experts)
+end
+
+function _hash_expert_indices_tuple(base::Int, n_experts::Int, topk::Int, layer_seed::Int, offset::Int, chosen::Tuple)
+    length(chosen) == topk && return chosen
+    candidate = mod(base * 1_103_515_245 + (layer_seed + 1) * 12_345 + offset * 97, n_experts) + 1
+    candidate = _next_unique_hash_candidate(candidate, chosen, n_experts)
+    return _hash_expert_indices_tuple(base, n_experts, topk, layer_seed, offset + 1, (chosen..., candidate))
+end
+
 function _hash_expert_indices(token_id::Integer, n_experts::Int, topk::Int, layer_seed::Int)
     n_experts > 0 || throw(ArgumentError("n_experts must be positive"))
     topk > 0 || throw(ArgumentError("topk must be positive"))
-    chosen = Int[]
-    base = Int(token_id)
-    for offset in 0:(topk - 1)
-        idx = mod(base * 1_103_515_245 + (layer_seed + 1) * 12_345 + offset * 97, n_experts) + 1
-        while idx in chosen
-            idx = mod(idx, n_experts) + 1
-        end
-        push!(chosen, idx)
-    end
-    return chosen
+    topk <= n_experts || throw(ArgumentError("topk must be <= n_experts"))
+    return collect(_hash_expert_indices_tuple(Int(token_id), n_experts, topk, layer_seed, 0, ()))
 end
 
 """Apply the hash-routed MoE block using `token_ids` to choose routed experts."""
@@ -170,17 +178,27 @@ function (moe::HashMoEFFN)(x::AbstractArray{T, 3}, token_ids::AbstractMatrix{<:I
     size(x, 1) == size(token_ids, 1) || throw(DimensionMismatch("batch size mismatch"))
     size(x, 2) == size(token_ids, 2) || throw(DimensionMismatch("sequence length mismatch"))
     b, t, d = size(x)
-    out = zeros(T, b, t, d)
-    for bi in 1:b, ti in 1:t
-        token = vec(@view x[bi, ti, :])
-        selected = _hash_expert_indices(token_ids[bi, ti], moe.n_experts, moe.topk, moe.layer_seed)
-        weight = inv(T(length(selected)))
-        for expert_idx in selected
-            @views out[bi, ti, :] .+= weight .* moe.routed_experts[expert_idx](token)
+    token_outputs = [
+        begin
+            token = vec(@view x[bi, ti, :])
+            selected = _hash_expert_indices(token_ids[bi, ti], moe.n_experts, moe.topk, moe.layer_seed)
+            weight = inv(T(length(selected)))
+            reshape(
+                reduce(
+                    .+,
+                    (weight .* moe.routed_experts[expert_idx](token) for expert_idx in selected);
+                    init=zeros(T, d),
+                ),
+                1,
+                1,
+                d,
+            )
         end
-    end
+        for bi in 1:b, ti in 1:t
+    ]
+    out = cat([cat([token_outputs[bi, ti] for ti in 1:t]...; dims=2) for bi in 1:b]...; dims=1)
     for shared in moe.shared_experts
-        out .+= shared(x)
+        out = out .+ shared(x)
     end
     return out
 end

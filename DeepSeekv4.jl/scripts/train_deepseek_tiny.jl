@@ -3,7 +3,8 @@ using DeepSeekV4
 
 const TRAIN_TEXT_FILE = get(ENV, "DEEPSEEK_V4_TRAIN_TEXT_FILE", "")
 const TRAIN_TEXT = get(ENV, "DEEPSEEK_V4_TRAIN_TEXT", "")
-const CKPT_DIR = get(ENV, "DEEPSEEK_V4_TRAIN_CKPT_DIR", "checkpoints")
+const TRAIN_MODE = get(ENV, "DEEPSEEK_V4_TRAIN_MODE", "head_only")
+const CKPT_DIR = get(ENV, "DEEPSEEK_V4_TRAIN_CKPT_DIR", "")
 
 const VOCAB_SIZE = parse(Int, get(ENV, "DEEPSEEK_V4_TRAIN_VOCAB_SIZE", "512"))
 const SEQ_LEN = parse(Int, get(ENV, "DEEPSEEK_V4_TRAIN_SEQ_LEN", "32"))
@@ -18,8 +19,8 @@ const RNG_SEED = parse(Int, get(ENV, "DEEPSEEK_V4_TRAIN_SEED", "1"))
 
 function _default_texts()
     return [
-        "DeepSeek V4 in Julia now has a head only bootstrap training surface for tiny configs.",
-        "The current training path keeps the DeepSeek body frozen and updates only the language model head.",
+        "DeepSeek V4 in Julia now has both head only and tiny full model bootstrap training paths.",
+        "The current full model bootstrap path optimizes the main LM logits end to end on tiny configs.",
         "Shared schedules batching and checkpoint helpers now live in TransformerCore for reuse across packages.",
         "This script is a smoke trainer for local text batches encoded through a simple byte fallback.",
     ]
@@ -44,34 +45,56 @@ function _load_batches(vocab_size::Integer)
     return batch_next_token_pairs(pairs, BATCH_SIZE; drop_last=false)
 end
 
+function _checkpoint_dir(mode::AbstractString)
+    return isempty(CKPT_DIR) ? joinpath("checkpoints", mode) : CKPT_DIR
+end
+
 function main()
-    cfg = bootstrap_deepseek_training_config(VOCAB_SIZE; seq_len=SEQ_LEN)
+    TRAIN_MODE in ("head_only", "full_model") || error("DEEPSEEK_V4_TRAIN_MODE must be head_only or full_model")
+    cfg = TRAIN_MODE == "full_model" ?
+        bootstrap_deepseek_full_model_training_config(VOCAB_SIZE; seq_len=SEQ_LEN) :
+        bootstrap_deepseek_training_config(VOCAB_SIZE; seq_len=SEQ_LEN)
     model = DeepSeekV4Model(cfg; rng=MersenneTwister(RNG_SEED))
     schedule = WarmupCosineSchedule(WARMUP_STEPS, TOTAL_STEPS, LR, LR * 0.1f0)
+    ckpt_dir = _checkpoint_dir(TRAIN_MODE)
 
     batches = _load_batches(cfg.vocab_size)
     isempty(batches) && error("no training batches available; provide longer local text input")
 
-    latest = latest_checkpoint(CKPT_DIR)
-    state = latest === nothing ? DeepSeekHeadTrainerState(model; schedule=schedule, weight_decay=WEIGHT_DECAY) : load_deepseek_checkpoint(latest, model)
+    latest = latest_checkpoint(ckpt_dir)
 
     println("DeepSeek vocab size: $(cfg.vocab_size) | seq_len: $(SEQ_LEN) | batch_size: $(BATCH_SIZE) | total_steps: $(TOTAL_STEPS)")
-    println("Training mode: Lux-backed head-only bootstrap")
+    println("Training mode: $(TRAIN_MODE == \"full_model\" ? \"tiny full-model bootstrap\" : \"Lux-backed head-only bootstrap\")")
     latest !== nothing && println("Resuming from $(latest)")
 
-    metrics = train_deepseek_head_only!(
-        state,
-        batches;
-        total_steps=TOTAL_STEPS,
-        log_every=1,
-        ckpt_dir=CKPT_DIR,
-        ckpt_every=CKPT_EVERY,
-        keep_last=KEEP_LAST,
-        checkpoint_metadata=Dict("encoding" => "byte-mod-vocab"),
-    )
+    metrics = if TRAIN_MODE == "full_model"
+        state = latest === nothing ? DeepSeekFullModelTrainerState(model; schedule=schedule, weight_decay=WEIGHT_DECAY) : load_deepseek_full_model_checkpoint(latest)
+        train_deepseek_full_model!(
+            state,
+            batches;
+            total_steps=TOTAL_STEPS,
+            log_every=1,
+            ckpt_dir=ckpt_dir,
+            ckpt_every=CKPT_EVERY,
+            keep_last=KEEP_LAST,
+            checkpoint_metadata=Dict("encoding" => "byte-mod-vocab", "mode" => "full_model"),
+        )
+    else
+        state = latest === nothing ? DeepSeekHeadTrainerState(model; schedule=schedule, weight_decay=WEIGHT_DECAY) : load_deepseek_checkpoint(latest, model)
+        train_deepseek_head_only!(
+            state,
+            batches;
+            total_steps=TOTAL_STEPS,
+            log_every=1,
+            ckpt_dir=ckpt_dir,
+            ckpt_every=CKPT_EVERY,
+            keep_last=KEEP_LAST,
+            checkpoint_metadata=Dict("encoding" => "byte-mod-vocab", "mode" => "head_only"),
+        )
+    end
 
     println("Final loss: $(round(metrics.loss; digits=4))")
-    println("Latest checkpoint: $(latest_checkpoint(CKPT_DIR))")
+    println("Latest checkpoint: $(latest_checkpoint(ckpt_dir))")
 end
 
 main()

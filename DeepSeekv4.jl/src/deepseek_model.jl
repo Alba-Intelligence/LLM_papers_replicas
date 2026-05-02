@@ -77,9 +77,9 @@ end
 
 function _deepseek_init_state(x::AbstractArray{T, 3}, n_streams::Integer) where {T<:AbstractFloat}
     b, t, d = size(x)
-    X = zeros(T, b, t, Int(n_streams), d)
-    @views X[:, :, 1, :] .= x
-    return X
+    Int(n_streams) > 0 || throw(ArgumentError("n_streams must be positive"))
+    streams = [stream_idx == 1 ? reshape(x, b, t, 1, d) : zeros(T, b, t, 1, d) for stream_idx in 1:Int(n_streams)]
+    return cat(streams...; dims=3)
 end
 
 """Return the final hidden states produced by `model` for `input_ids`."""

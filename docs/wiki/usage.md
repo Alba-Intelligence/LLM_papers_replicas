@@ -204,10 +204,11 @@ Useful environment variables:
 | Variable | Meaning | Default |
 | --- | --- | --- |
 | `DEEPSEEK_V4_TRAIN_VOCAB_SIZE` | tiny bootstrap vocab size | `512` |
+| `DEEPSEEK_V4_TRAIN_MODE` | training mode (`head_only` or `full_model`) | `head_only` |
 | `DEEPSEEK_V4_TRAIN_TOTAL_STEPS` | total bootstrap steps | `8` |
 | `DEEPSEEK_V4_TRAIN_SEQ_LEN` | sequence length | `32` |
 | `DEEPSEEK_V4_TRAIN_BATCH_SIZE` | batch size | `2` |
-| `DEEPSEEK_V4_TRAIN_CKPT_DIR` | checkpoint directory | `checkpoints` |
+| `DEEPSEEK_V4_TRAIN_CKPT_DIR` | checkpoint directory | `checkpoints/<mode>` |
 | `DEEPSEEK_V4_TRAIN_TEXT` | local training text override | empty |
 | `DEEPSEEK_V4_TRAIN_TEXT_FILE` | path to local training text | empty |
 
@@ -215,6 +216,7 @@ Example local DeepSeek smoke run:
 
 ```bash
 cd DeepSeekv4.jl
+DEEPSEEK_V4_TRAIN_MODE=full_model \
 DEEPSEEK_V4_TRAIN_TOTAL_STEPS=8 \
 DEEPSEEK_V4_TRAIN_SEQ_LEN=32 \
 julia --project=. scripts/train_deepseek_tiny.jl
@@ -229,7 +231,8 @@ The current bootstrap trainer is intentionally limited:
 - it uses `Optimisers.AdamW`,
 - `OpenMythos.jl` now also has a dense full-model bootstrap mode via `OPENMYTHOS_TRAIN_MODE=full_model`,
 - that full-model mode currently supports small GQA/MLA configs, including tiny sparse routed-expert setups with optional shared experts,
-- `DeepSeekv4.jl` now has a parallel `LuxHeadOnlyDeepSeekV4` head-only trainer and smoke script,
+- `DeepSeekv4.jl` now has both a `LuxHeadOnlyDeepSeekV4` head-only trainer and a first tiny `DeepSeekFullModelTrainerState` bootstrap path,
+- the current DeepSeek full-model loss trains the main LM logits path only and does not yet include auxiliary MTP losses,
 - the core model internals are still manual Julia blocks,
 - broader sparse/full-model autodiff and distributed training are still future work.
 

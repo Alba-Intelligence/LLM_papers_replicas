@@ -41,8 +41,8 @@ end
 function _sinkhorn_project(raw::AbstractMatrix{T}, niters::Integer) where {T<:AbstractFloat}
     mat = exp.(raw)
     for _ in 1:niters
-        mat ./= sum(mat; dims=2)
-        mat ./= sum(mat; dims=1)
+        mat = mat ./ sum(mat; dims=2)
+        mat = mat ./ sum(mat; dims=1)
     end
     return mat
 end
@@ -50,31 +50,37 @@ end
 function _mhc_params(mhc::ManifoldHyperConnections{T}, X::AbstractArray{T, 4}) where {T<:AbstractFloat}
     b, t, s, d = size(X)
     s == mhc.n_streams || throw(DimensionMismatch("mHC stream count mismatch"))
-    A = zeros(T, b, t, s)
-    Bm = zeros(T, b, t, s, s)
-    C = zeros(T, b, t, s)
-    for bi in 1:b, ti in 1:t
-        flat = vec(permutedims(X[bi, ti, :, :], (2, 1)))
-        normed = vec(mhc.norm(reshape(flat, 1, :)))
-        raw_a = mhc.alpha_pre .* (mhc.w_pre * normed) .+ mhc.s_pre
-        raw_b = reshape(mhc.alpha_res .* (mhc.w_res * normed), s, s) .+ mhc.s_res
-        raw_c = mhc.alpha_post .* (mhc.w_post * normed) .+ mhc.s_post
-        A[bi, ti, :] .= _sigmoid.(raw_a)
-        Bm[bi, ti, :, :] .= _sinkhorn_project(raw_b, mhc.sinkhorn_iters)
-        C[bi, ti, :] .= 2 .* _sigmoid.(raw_c)
-    end
+    params = [
+        begin
+            flat = vec(permutedims(X[bi, ti, :, :], (2, 1)))
+            normed = vec(mhc.norm(reshape(flat, 1, :)))
+            raw_a = mhc.alpha_pre .* (mhc.w_pre * normed) .+ mhc.s_pre
+            raw_b = reshape(mhc.alpha_res .* (mhc.w_res * normed), s, s) .+ mhc.s_res
+            raw_c = mhc.alpha_post .* (mhc.w_post * normed) .+ mhc.s_post
+            (
+                a=reshape(_sigmoid.(raw_a), 1, 1, s),
+                b=reshape(_sinkhorn_project(raw_b, mhc.sinkhorn_iters), 1, 1, s, s),
+                c=reshape(2 .* _sigmoid.(raw_c), 1, 1, s),
+            )
+        end
+        for bi in 1:b, ti in 1:t
+    ]
+    A = cat([cat([params[bi, ti].a for ti in 1:t]...; dims=2) for bi in 1:b]...; dims=1)
+    Bm = cat([cat([params[bi, ti].b for ti in 1:t]...; dims=2) for bi in 1:b]...; dims=1)
+    C = cat([cat([params[bi, ti].c for ti in 1:t]...; dims=2) for bi in 1:b]...; dims=1)
     return A, Bm, C
 end
 
 function _mhc_collapse_streams(X::AbstractArray{T, 4}, A::AbstractArray{T, 3}) where {T<:AbstractFloat}
     b, t, s, d = size(X)
-    out = zeros(T, b, t, d)
-    for bi in 1:b, ti in 1:t
-        for stream_idx in 1:s
-            @views out[bi, ti, :] .+= A[bi, ti, stream_idx] .* X[bi, ti, stream_idx, :]
+    collapsed = [
+        begin
+            contribs = [A[bi, ti, stream_idx] .* vec(@view X[bi, ti, stream_idx, :]) for stream_idx in 1:s]
+            reshape(reduce(.+, contribs; init=zeros(T, d)), 1, 1, d)
         end
-    end
-    return out
+        for bi in 1:b, ti in 1:t
+    ]
+    return cat([cat([collapsed[bi, ti] for ti in 1:t]...; dims=2) for bi in 1:b]...; dims=1)
 end
 
 """Collapse multi-stream state `X` into one readout stream."""
@@ -94,11 +100,13 @@ function (mhc::ManifoldHyperConnections{T})(X::AbstractArray{T, 4}, layer_fn::Fu
     A, Bm, C = _mhc_params(mhc, X)
     layer_input = _mhc_collapse_streams(X, A)
     update = layer_fn(layer_input)
-    X_next = zeros(T, b, t, s, d)
-    for bi in 1:b, ti in 1:t
-        streams = Array(@view X[bi, ti, :, :])
-        mixed = Bm[bi, ti, :, :] * streams
-        @views X_next[bi, ti, :, :] .= mixed .+ reshape(C[bi, ti, :], s, 1) .* reshape(update[bi, ti, :], 1, d)
-    end
-    return X_next
+    next_states = [
+        begin
+            streams = Array(@view X[bi, ti, :, :])
+            mixed = Bm[bi, ti, :, :] * streams
+            reshape(mixed .+ reshape(C[bi, ti, :], s, 1) .* reshape(update[bi, ti, :], 1, d), 1, 1, s, d)
+        end
+        for bi in 1:b, ti in 1:t
+    ]
+    return cat([cat([next_states[bi, ti] for ti in 1:t]...; dims=2) for bi in 1:b]...; dims=1)
 end

@@ -53,6 +53,26 @@ end
     @test logits_from_lux == deepseek_head_logits(state, x)
 end
 
+@testset "DeepSeek full-model trainer step reduces repeated-batch loss" begin
+    Random.seed!(24)
+    cfg = bootstrap_deepseek_full_model_training_config(64; seq_len=4)
+    model = DeepSeekV4Model(cfg; rng=MersenneTwister(24))
+    schedule = WarmupCosineSchedule(0, 2, 0.01f0, 0.01f0)
+    state = DeepSeekFullModelTrainerState(model; schedule=schedule, weight_decay=0.0)
+
+    x = reshape([1, 2, 3, 4], 1, :)
+    y = reshape([2, 3, 4, 5], 1, :)
+
+    initial_loss = deepseek_full_model_loss(state, x, y)
+    train_deepseek_full_model_step!(state, x, y)
+    final_loss = deepseek_full_model_loss(state, x, y)
+
+    @test final_loss < initial_loss
+    @test state.step == 1
+    @test size(deepseek_full_model_logits(state, x)) == (1, 4, cfg.vocab_size)
+    @test !all(isapprox.(state.model.head, model.head; atol=1f-6))
+end
+
 @testset "DeepSeek checkpoint roundtrip and pruning" begin
     Random.seed!(22)
     cfg = bootstrap_deepseek_training_config(48; seq_len=4)
@@ -101,5 +121,34 @@ end
         latest = latest_checkpoint(dir)
         @test latest !== nothing
         @test endswith(latest, "step_0000003.jls")
+    end
+end
+
+@testset "DeepSeek full-model checkpoint roundtrip and loop" begin
+    Random.seed!(25)
+    cfg = bootstrap_deepseek_full_model_training_config(48; seq_len=4)
+    model = DeepSeekV4Model(cfg; rng=MersenneTwister(25))
+    schedule = WarmupCosineSchedule(0, 2, 0.01f0, 0.01f0)
+    state = DeepSeekFullModelTrainerState(model; schedule=schedule, weight_decay=0.0)
+    x = reshape([1, 2, 3, 4], 1, :)
+    y = reshape([2, 3, 4, 5], 1, :)
+
+    mktempdir() do dir
+        train_deepseek_full_model_step!(state, x, y)
+        path = save_deepseek_full_model_checkpoint(state, dir; keep_last=2, metadata=Dict("source" => "test"))
+        @test isfile(path)
+
+        restored = load_deepseek_full_model_checkpoint(path)
+        @test restored.step == state.step
+        @test restored.model.cfg == state.model.cfg
+        @test deepseek_full_model_logits(restored, x) == deepseek_full_model_logits(state, x)
+
+        io = IOBuffer()
+        metrics = train_deepseek_full_model!(restored, [(x, y)]; total_steps=2, log_every=1, ckpt_dir=dir, ckpt_every=2, io=io)
+        @test metrics.step == 2
+        @test occursin("step 2/2", String(take!(io)))
+        latest = latest_checkpoint(dir)
+        @test latest !== nothing
+        @test endswith(latest, "step_0000002.jls")
     end
 end

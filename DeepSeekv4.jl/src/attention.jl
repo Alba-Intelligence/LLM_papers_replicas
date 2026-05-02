@@ -7,10 +7,10 @@ function _apply_partial_rope(x::AbstractArray{T, 4}, freqs_cis::AbstractMatrix{<
     d = size(x, 4)
     rope_dim <= d || throw(DimensionMismatch("RoPE suffix exceeds head dimension"))
     start_dim = d - rope_dim + 1
-    out = copy(x)
     rope_freqs = inverse ? conj.(freqs_cis[:, 1:(rope_dim ÷ 2)]) : freqs_cis[:, 1:(rope_dim ÷ 2)]
-    @views out[:, :, :, start_dim:end] .= apply_rope(x[:, :, :, start_dim:end], rope_freqs)
-    return out
+    rotated = apply_rope(@view(x[:, :, :, start_dim:end]), rope_freqs)
+    start_dim == 1 && return rotated
+    return cat(@view(x[:, :, :, 1:(start_dim - 1)]), rotated; dims=4)
 end
 
 function _compress_csa_entries(
@@ -28,33 +28,44 @@ function _compress_csa_entries(
     compression > 0 || throw(ArgumentError("compression must be positive"))
 
     nblocks = cld(n, compression)
-    compressed = zeros(T, nblocks, d)
-    for block in 1:nblocks
-        start_idx = (block - 1) * compression + 1
-        stop_idx = min(block * compression, n)
-        prev_start = max(1, start_idx - compression)
-        prev_stop = start_idx - 1
-        len_a = stop_idx - start_idx + 1
-        len_b = max(0, prev_stop - prev_start + 1)
-        for dim_idx in 1:d
-            weights = T[]
-            values = T[]
-            for offset in 1:len_a
-                push!(weights, za[start_idx + offset - 1, dim_idx] + bias_a[offset, dim_idx])
-                push!(values, ca[start_idx + offset - 1, dim_idx])
-            end
-            for offset in 1:len_b
-                push!(weights, zb[prev_start + offset - 1, dim_idx] + bias_b[offset, dim_idx])
-                push!(values, cb[prev_start + offset - 1, dim_idx])
-            end
-            isempty(weights) && continue
-            m = maximum(weights)
-            probs = exp.(weights .- m)
-            probs ./= sum(probs)
-            compressed[block, dim_idx] = sum(probs .* values)
+    rows = [
+        begin
+            start_idx = (block - 1) * compression + 1
+            stop_idx = min(block * compression, n)
+            prev_start = max(1, start_idx - compression)
+            prev_stop = start_idx - 1
+            len_a = stop_idx - start_idx + 1
+            len_b = max(0, prev_stop - prev_start + 1)
+            cat(
+                [
+                    fill(
+                        begin
+                            weights_a = [za[start_idx + offset - 1, dim_idx] + bias_a[offset, dim_idx] for offset in 1:len_a]
+                            values_a = [ca[start_idx + offset - 1, dim_idx] for offset in 1:len_a]
+                            weights_b = [zb[prev_start + offset - 1, dim_idx] + bias_b[offset, dim_idx] for offset in 1:len_b]
+                            values_b = [cb[prev_start + offset - 1, dim_idx] for offset in 1:len_b]
+                            weights = vcat(weights_a, weights_b)
+                            values = vcat(values_a, values_b)
+                            if isempty(weights)
+                                zero(T)
+                            else
+                                m = maximum(weights)
+                                probs = exp.(weights .- m)
+                                probs = probs ./ sum(probs)
+                                sum(probs .* values)
+                            end
+                        end,
+                        1,
+                        1,
+                    )
+                    for dim_idx in 1:d
+                ]...;
+                dims=2,
+            )
         end
-    end
-    return compressed
+        for block in 1:nblocks
+    ]
+    return cat(rows...; dims=1)
 end
 
 function _compress_hca_entries(
@@ -68,21 +79,33 @@ function _compress_hca_entries(
     compression > 0 || throw(ArgumentError("compression must be positive"))
 
     nblocks = cld(n, compression)
-    compressed = zeros(T, nblocks, d)
-    for block in 1:nblocks
-        start_idx = (block - 1) * compression + 1
-        stop_idx = min(block * compression, n)
-        len_block = stop_idx - start_idx + 1
-        for dim_idx in 1:d
-            weights = [z[start_idx + offset - 1, dim_idx] + bias[offset, dim_idx] for offset in 1:len_block]
-            values = [c[start_idx + offset - 1, dim_idx] for offset in 1:len_block]
-            m = maximum(weights)
-            probs = exp.(weights .- m)
-            probs ./= sum(probs)
-            compressed[block, dim_idx] = sum(probs .* values)
+    rows = [
+        begin
+            start_idx = (block - 1) * compression + 1
+            stop_idx = min(block * compression, n)
+            len_block = stop_idx - start_idx + 1
+            cat(
+                [
+                    fill(
+                        begin
+                            weights = [z[start_idx + offset - 1, dim_idx] + bias[offset, dim_idx] for offset in 1:len_block]
+                            values = [c[start_idx + offset - 1, dim_idx] for offset in 1:len_block]
+                            m = maximum(weights)
+                            probs = exp.(weights .- m)
+                            probs = probs ./ sum(probs)
+                            sum(probs .* values)
+                        end,
+                        1,
+                        1,
+                    )
+                    for dim_idx in 1:d
+                ]...;
+                dims=2,
+            )
         end
-    end
-    return compressed
+        for block in 1:nblocks
+    ]
+    return cat(rows...; dims=1)
 end
 
 function _attention_with_sink(query::AbstractVector{T}, keys::AbstractMatrix{T}, values::AbstractMatrix{T}, sink_logit::T) where {T<:AbstractFloat}
@@ -108,12 +131,14 @@ function _grouped_output_projection(outputs::AbstractArray{T, 4}, group_projs::V
     ngroups = length(group_projs)
     h % ngroups == 0 || throw(DimensionMismatch("number of heads must be divisible by output groups"))
     per_group = h ÷ ngroups
-    intermediates = Vector{Array{T, 3}}(undef, ngroups)
-    for group_idx in 1:ngroups
-        head_range = ((group_idx - 1) * per_group + 1):(group_idx * per_group)
-        chunk = reshape(outputs[:, :, head_range, :], b, t, :)
-        intermediates[group_idx] = _linear_feature_last(chunk, group_projs[group_idx])
-    end
+    intermediates = [
+        begin
+            head_range = ((group_idx - 1) * per_group + 1):(group_idx * per_group)
+            chunk = reshape(outputs[:, :, head_range, :], b, t, :)
+            _linear_feature_last(chunk, group_projs[group_idx])
+        end
+        for group_idx in 1:ngroups
+    ]
     merged = cat(intermediates...; dims=3)
     return _linear_feature_last(merged, wo)
 end
@@ -291,54 +316,74 @@ function (attn::CompressedSparseAttention)(x::AbstractArray{T, 3}, freqs_cis::Ab
 
     # Each decode position mixes a small recent dense window with a top-k subset
     # of compressed historical blocks chosen by the learned indexer.
-    out_heads = zeros(T, b, t, attn.n_heads, attn.head_dim)
     indexer_weights = _linear_feature_last(x, attn.q_index_weight)
-    for bi in 1:b
-        ca_seq = Array(@view ca[bi, :, :])
-        cb_seq = Array(@view cb[bi, :, :])
-        za_seq = Array(@view za[bi, :, :])
-        zb_seq = Array(@view zb[bi, :, :])
-        compressed = _compress_csa_entries(ca_seq, cb_seq, za_seq, zb_seq, attn.bias_a, attn.bias_b, attn.compression)
-        indexer_comp = _compress_csa_entries(
-            Array(@view kia[bi, :, :]),
-            Array(@view kib[bi, :, :]),
-            za_seq[:, 1:attn.indexer_dim],
-            zb_seq[:, 1:attn.indexer_dim],
-            attn.bias_a[:, 1:attn.indexer_dim],
-            attn.bias_b[:, 1:attn.indexer_dim],
-            attn.compression,
-        )
-        nblocks = size(compressed, 1)
-        for ti in 1:t
-            abs_pos = start_pos + ti
-            eligible = _eligible_compressed_blocks(abs_pos, attn.compression, nblocks)
-            local_start = max(1, abs_pos - attn.window)
-            local_stop = max(0, abs_pos - 1)
-            local_values = local_stop >= local_start ? Array(@view ca_seq[local_start:local_stop, :]) : zeros(T, 0, attn.head_dim)
-
-            selected = Int[]
-            if eligible > 0
-                scores = zeros(T, eligible)
-                for block_idx in 1:eligible
-                    for ih in 1:attn.indexer_heads
-                        q_idx = vec(@view q_index[bi, ti, ih, :])
-                        scores[block_idx] += indexer_weights[bi, ti, ih] * max(zero(T), dot(q_idx, @view indexer_comp[block_idx, :]))
-                    end
-                end
-                ksel = min(attn.topk, eligible)
-                selected = partialsortperm(scores, 1:ksel; rev=true)
+    out_heads = cat(
+        [
+            begin
+                ca_seq = Array(@view ca[bi, :, :])
+                cb_seq = Array(@view cb[bi, :, :])
+                za_seq = Array(@view za[bi, :, :])
+                zb_seq = Array(@view zb[bi, :, :])
+                compressed = _compress_csa_entries(ca_seq, cb_seq, za_seq, zb_seq, attn.bias_a, attn.bias_b, attn.compression)
+                indexer_comp = _compress_csa_entries(
+                    Array(@view kia[bi, :, :]),
+                    Array(@view kib[bi, :, :]),
+                    za_seq[:, 1:attn.indexer_dim],
+                    zb_seq[:, 1:attn.indexer_dim],
+                    attn.bias_a[:, 1:attn.indexer_dim],
+                    attn.bias_b[:, 1:attn.indexer_dim],
+                    attn.compression,
+                )
+                nblocks = size(compressed, 1)
+                cat(
+                    [
+                        begin
+                            abs_pos = start_pos + ti
+                            eligible = _eligible_compressed_blocks(abs_pos, attn.compression, nblocks)
+                            local_start = max(1, abs_pos - attn.window)
+                            local_stop = max(0, abs_pos - 1)
+                            local_values = local_stop >= local_start ? Array(@view ca_seq[local_start:local_stop, :]) : zeros(T, 0, attn.head_dim)
+                            selected = if eligible > 0
+                                eligible_indexer = @view indexer_comp[1:eligible, :]
+                                scores = foldl(
+                                    (acc, ih) -> begin
+                                        q_idx = vec(@view q_index[bi, ti, ih, :])
+                                        acc .+ indexer_weights[bi, ti, ih] .* max.(zero(T), eligible_indexer * q_idx)
+                                    end,
+                                    1:attn.indexer_heads;
+                                    init=zeros(T, eligible),
+                                )
+                                partialsortperm(scores, 1:min(attn.topk, eligible); rev=true)
+                            else
+                                Int[]
+                            end
+                            sparse_values = isempty(selected) ? zeros(T, 0, attn.head_dim) : compressed[selected, :]
+                            keys = vcat(sparse_values, local_values)
+                            cat(
+                                [
+                                    reshape(
+                                        size(keys, 1) > 0 ?
+                                            _attention_with_sink(vec(@view q[bi, ti, hi, :]), keys, keys, attn.sink_logits[hi]) :
+                                            zeros(T, attn.head_dim),
+                                        1,
+                                        1,
+                                        1,
+                                        attn.head_dim,
+                                    )
+                                    for hi in 1:attn.n_heads
+                                ]...;
+                                dims=3,
+                            )
+                        end
+                        for ti in 1:t
+                    ]...;
+                    dims=2,
+                )
             end
-
-            sparse_values = isempty(selected) ? zeros(T, 0, attn.head_dim) : compressed[selected, :]
-            keys = vcat(sparse_values, local_values)
-            for hi in 1:attn.n_heads
-                qvec = vec(@view q[bi, ti, hi, :])
-                if size(keys, 1) > 0
-                    out_heads[bi, ti, hi, :] .= _attention_with_sink(qvec, keys, keys, attn.sink_logits[hi])
-                end
-            end
-        end
-    end
+            for bi in 1:b
+        ]...;
+        dims=1,
+    )
 
     out_heads = _apply_partial_rope(out_heads, freqs_cis, attn.rope_dim; inverse=true)
     return _grouped_output_projection(out_heads, attn.group_projs, attn.wo)
@@ -433,28 +478,48 @@ function (attn::HeavilyCompressedAttention)(x::AbstractArray{T, 3}, freqs_cis::A
 
     # HCA keeps all distant context in compressed form and only preserves a small
     # uncompressed suffix near the current decode position.
-    out_heads = zeros(T, b, t, attn.n_heads, attn.head_dim)
-    for bi in 1:b
-        c_seq = Array(@view c[bi, :, :])
-        z_seq = Array(@view z[bi, :, :])
-        compressed = _compress_hca_entries(c_seq, z_seq, attn.bias, attn.compression)
-        nblocks = size(compressed, 1)
-        for ti in 1:t
-            abs_pos = start_pos + ti
-            eligible = _eligible_compressed_blocks(abs_pos, attn.compression, nblocks)
-            local_start = max(1, abs_pos - attn.window)
-            local_stop = max(0, abs_pos - 1)
-            local_values = local_stop >= local_start ? Array(@view c_seq[local_start:local_stop, :]) : zeros(T, 0, attn.head_dim)
-            dense_values = eligible > 0 ? compressed[1:eligible, :] : zeros(T, 0, attn.head_dim)
-            keys = vcat(dense_values, local_values)
-            for hi in 1:attn.n_heads
-                qvec = vec(@view q[bi, ti, hi, :])
-                if size(keys, 1) > 0
-                    out_heads[bi, ti, hi, :] .= _attention_with_sink(qvec, keys, keys, attn.sink_logits[hi])
-                end
+    out_heads = cat(
+        [
+            begin
+                c_seq = Array(@view c[bi, :, :])
+                z_seq = Array(@view z[bi, :, :])
+                compressed = _compress_hca_entries(c_seq, z_seq, attn.bias, attn.compression)
+                nblocks = size(compressed, 1)
+                cat(
+                    [
+                        begin
+                            abs_pos = start_pos + ti
+                            eligible = _eligible_compressed_blocks(abs_pos, attn.compression, nblocks)
+                            local_start = max(1, abs_pos - attn.window)
+                            local_stop = max(0, abs_pos - 1)
+                            local_values = local_stop >= local_start ? Array(@view c_seq[local_start:local_stop, :]) : zeros(T, 0, attn.head_dim)
+                            dense_values = eligible > 0 ? compressed[1:eligible, :] : zeros(T, 0, attn.head_dim)
+                            keys = vcat(dense_values, local_values)
+                            cat(
+                                [
+                                    reshape(
+                                        size(keys, 1) > 0 ?
+                                            _attention_with_sink(vec(@view q[bi, ti, hi, :]), keys, keys, attn.sink_logits[hi]) :
+                                            zeros(T, attn.head_dim),
+                                        1,
+                                        1,
+                                        1,
+                                        attn.head_dim,
+                                    )
+                                    for hi in 1:attn.n_heads
+                                ]...;
+                                dims=3,
+                            )
+                        end
+                        for ti in 1:t
+                    ]...;
+                    dims=2,
+                )
             end
-        end
-    end
+            for bi in 1:b
+        ]...;
+        dims=1,
+    )
 
     out_heads = _apply_partial_rope(out_heads, freqs_cis, attn.rope_dim; inverse=true)
     return _grouped_output_projection(out_heads, attn.group_projs, attn.wo)

@@ -209,7 +209,7 @@ uuid = "ade2ca70-3891-5945-98fb-dc099432e06a"
 version = "1.11.0"
 
 [[deps.DeepSeekV4]]
-deps = ["LinearAlgebra", "Lux", "Optimisers", "Random", "Serialization", "Statistics", "TransformerCore"]
+deps = ["LinearAlgebra", "Lux", "Optimisers", "Random", "Serialization", "Statistics", "TransformerCore", "Zygote"]
 path = "/home/emmanuel/Sync/Development/julia/_replicas/OpenMythos/docs/../DeepSeekv4.jl"
 uuid = "6136468a-a80b-492a-8d62-41933f2718fd"
 version = "0.1.0"

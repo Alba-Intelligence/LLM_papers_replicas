@@ -11,7 +11,8 @@ This package currently targets:
 - MTP output heads and generation smoke paths,
 - chunked prefill plus serializable KV-cache envelopes for cached generation reuse,
 - lower-allocation buffer-backed cache growth behind the existing generation API,
-- a Lux-backed head-only bootstrap training surface for tiny configs.
+- a Lux-backed head-only bootstrap training surface for tiny configs,
+- a first tiny full-model bootstrap trainer for the main LM logits path.
 
 ## Quickstart
 
@@ -24,12 +25,15 @@ julia --project=. -q -e 'using Pkg; Pkg.test()'
 ### Bootstrap training smoke run
 
 ```bash
+DEEPSEEK_V4_TRAIN_MODE=full_model \
 DEEPSEEK_V4_TRAIN_TOTAL_STEPS=8 \
 DEEPSEEK_V4_TRAIN_SEQ_LEN=32 \
 julia --project=. scripts/train_deepseek_tiny.jl
 ```
 
-This script currently builds local byte-encoded batches for a simple trainable smoke path.
+This script currently builds local byte-encoded batches for either a head-only or
+tiny full-model smoke path. The full-model mode optimizes the primary LM head and
+body end to end, but does not yet train the auxiliary MTP heads.
 
 ### Chunked prefill and cache reuse
 
