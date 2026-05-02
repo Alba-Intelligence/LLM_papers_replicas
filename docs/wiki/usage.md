@@ -203,12 +203,13 @@ julia --project=. scripts/train_deepseek_tiny.jl
 The current bootstrap trainer is intentionally limited:
 
 - shared schedule, batching, checkpoint scanning, and head-loss math now live in `TransformerCore.jl`,
-- it is **Lux-backed**,
+- the original bootstrap path is **Lux-backed**,
 - it uses `Optimisers.AdamW`,
-- it currently optimizes the LM head only through `LuxHeadOnlyOpenMythos`,
+- `OpenMythos.jl` now also has a dense full-model bootstrap mode via `OPENMYTHOS_TRAIN_MODE=full_model`,
+- that full-model mode is currently constrained to tiny GQA single-expert configs,
 - `DeepSeekv4.jl` now has a parallel `LuxHeadOnlyDeepSeekV4` head-only trainer and smoke script,
 - the core model internals are still manual Julia blocks,
-- full-model autodiff/distributed training is still future work.
+- broader sparse/full-model autodiff and distributed training are still future work.
 
 The current runtime seam is also intentionally lightweight:
 

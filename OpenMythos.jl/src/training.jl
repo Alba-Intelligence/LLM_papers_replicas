@@ -25,6 +25,34 @@ function bootstrap_training_config(vocab_size::Integer; seq_len::Integer=128, at
     )
 end
 
+function bootstrap_full_model_training_config(vocab_size::Integer; seq_len::Integer=64, attn_type::String="gqa")
+    attn_type == "gqa" || throw(ArgumentError("full-model bootstrap currently supports only gqa attention"))
+    vocab_size > 0 || throw(ArgumentError("vocab_size must be positive"))
+    seq_len > 0 || throw(ArgumentError("seq_len must be positive"))
+    return MythosConfig(
+        vocab_size=Int(vocab_size),
+        dim=64,
+        n_heads=4,
+        n_kv_heads=2,
+        max_seq_len=Int(seq_len),
+        max_loop_iters=2,
+        prelude_layers=1,
+        coda_layers=1,
+        attn_type=attn_type,
+        kv_lora_rank=16,
+        q_lora_rank=32,
+        qk_rope_head_dim=8,
+        qk_nope_head_dim=8,
+        v_head_dim=8,
+        n_experts=1,
+        n_shared_experts=0,
+        n_experts_per_tok=1,
+        expert_dim=16,
+        lora_rank=4,
+        act_threshold=0.99f0,
+    )
+end
+
 TransformerCore.text_next_token_pairs(texts::AbstractVector{<:AbstractString}, tokenizer::MythosTokenizer, seq_len::Integer) =
     TransformerCore.text_next_token_pairs(texts, text -> encode(tokenizer, text), seq_len)
 
@@ -151,6 +179,102 @@ mutable struct HeadOnlyTrainerState{T<:AbstractFloat}
     step::Int
 end
 
+function _validate_full_model_cfg(cfg::MythosConfig)
+    cfg.attn_type == "gqa" || throw(ArgumentError("full-model training currently supports only gqa attention"))
+    cfg.n_experts == 1 || throw(ArgumentError("full-model training currently requires n_experts == 1"))
+    cfg.n_shared_experts == 0 || throw(ArgumentError("full-model training currently requires n_shared_experts == 0"))
+    cfg.n_experts_per_tok == 1 || throw(ArgumentError("full-model training currently requires n_experts_per_tok == 1"))
+    return cfg
+end
+
+function _sequence_cross_entropy(logits::AbstractArray{T, 3}, target_ids::AbstractMatrix{<:Integer}) where {T<:AbstractFloat}
+    size(logits, 1) == size(target_ids, 1) || throw(DimensionMismatch("batch size mismatch"))
+    size(logits, 2) == size(target_ids, 2) || throw(DimensionMismatch("sequence length mismatch"))
+
+    rows = permutedims(_flatten_feature_last(logits), (2, 1))
+    flat_targets = vec(target_ids)
+    shifted = rows .- maximum(rows; dims=2)
+    log_denom = log.(sum(exp.(shifted); dims=2))
+    total = zero(T)
+    for i in eachindex(flat_targets)
+        tgt = flat_targets[i] + 1
+        (1 <= tgt <= size(rows, 2)) || throw(BoundsError(rows, (i, tgt)))
+        total -= shifted[i, tgt] - log_denom[i]
+    end
+    return total / T(length(flat_targets))
+end
+
+function _tree_sumsq(x)
+    if x === nothing
+        return 0.0
+    elseif x isa AbstractArray{<:Number}
+        return sum(abs2, x)
+    elseif x isa Number
+        return abs2(x)
+    elseif x isa NamedTuple
+        return sum(_tree_sumsq, values(x))
+    elseif x isa Tuple
+        return sum(_tree_sumsq, x)
+    elseif x isa AbstractArray
+        return sum(_tree_sumsq, x)
+    elseif isstructtype(typeof(x))
+        return sum(_tree_sumsq(getfield(x, i)) for i in 1:fieldcount(typeof(x)))
+    end
+    return 0.0
+end
+
+function _full_model_loss(model::OpenMythos{T}, input_ids::AbstractMatrix{<:Integer}, target_ids::AbstractMatrix{<:Integer}; n_loops::Union{Nothing, Integer}=nothing) where {T<:AbstractFloat}
+    logits = model(input_ids; n_loops=n_loops)
+    return _sequence_cross_entropy(logits, target_ids)
+end
+
+mutable struct FullModelTrainerState{T<:AbstractFloat}
+    model::OpenMythos{T}
+    opt_state
+    schedule::WarmupCosineSchedule{T}
+    step::Int
+    n_loops::Union{Nothing, Int}
+end
+
+function FullModelTrainerState(
+    model::OpenMythos{T};
+    schedule::WarmupCosineSchedule{T}=WarmupCosineSchedule(0, 1, T(1e-3), zero(T)),
+    weight_decay::Real=0.1,
+    beta1::Real=0.9,
+    beta2::Real=0.95,
+    eps::Real=1e-8,
+    n_loops::Union{Nothing, Integer}=nothing,
+) where {T<:AbstractFloat}
+    _validate_full_model_cfg(model.cfg)
+    opt_state = Optimisers.setup(
+        Optimisers.AdamW(; eta=zero(T), beta=(T(beta1), T(beta2)), lambda=T(weight_decay), epsilon=T(eps)),
+        model,
+    )
+    return FullModelTrainerState(model, opt_state, schedule, 0, n_loops === nothing ? nothing : Int(n_loops))
+end
+
+function full_model_logits(state::FullModelTrainerState, input_ids::AbstractMatrix{<:Integer}; n_loops::Union{Nothing, Integer}=nothing)
+    return state.model(input_ids; n_loops=(n_loops === nothing ? state.n_loops : n_loops))
+end
+
+function full_model_loss(state::FullModelTrainerState{T}, input_ids::AbstractMatrix{<:Integer}, target_ids::AbstractMatrix{<:Integer}; n_loops::Union{Nothing, Integer}=nothing) where {T<:AbstractFloat}
+    return _full_model_loss(state.model, input_ids, target_ids; n_loops=(n_loops === nothing ? state.n_loops : n_loops))
+end
+
+function train_full_model_step!(state::FullModelTrainerState{T}, input_ids::AbstractMatrix{<:Integer}, target_ids::AbstractMatrix{<:Integer}; n_loops::Union{Nothing, Integer}=nothing) where {T<:AbstractFloat}
+    size(input_ids) == size(target_ids) || throw(ArgumentError("input_ids and target_ids must have the same shape"))
+    active_loops = n_loops === nothing ? state.n_loops : n_loops
+    loss, grads = Zygote.withgradient(model -> _full_model_loss(model, input_ids, target_ids; n_loops=active_loops), state.model)
+    grad = only(grads)
+
+    lr = learning_rate(state.schedule, state.step)
+    Optimisers.adjust!(state.opt_state, lr)
+    state.opt_state, state.model = Optimisers.update(state.opt_state, state.model, grad)
+    state.step += 1
+
+    return (loss=loss, lr=lr, grad_norm=T(sqrt(_tree_sumsq(grad))), step=state.step)
+end
+
 function HeadOnlyTrainerState(
     model::OpenMythos{T};
     schedule::WarmupCosineSchedule{T}=WarmupCosineSchedule(0, 1, T(1e-3), zero(T)),
@@ -240,6 +364,35 @@ function save_head_only_checkpoint(state::HeadOnlyTrainerState, ckpt_dir::Abstra
     return final_path
 end
 
+function save_full_model_checkpoint(state::FullModelTrainerState, ckpt_dir::AbstractString; keep_last::Integer=3, metadata::AbstractDict=Dict{String, Any}())
+    keep_last > 0 || throw(ArgumentError("keep_last must be positive"))
+    mkpath(ckpt_dir)
+    filename = "step_$(lpad(string(state.step), 7, '0')).jls"
+    final_path = joinpath(ckpt_dir, filename)
+    temp_path = final_path * ".tmp"
+    payload = Dict(
+        "step" => state.step,
+        "model" => state.model,
+        "opt_state" => state.opt_state,
+        "schedule" => state.schedule,
+        "n_loops" => state.n_loops,
+        "mode" => "full_model_dense_openmythos",
+        "metadata" => Dict(string(k) => v for (k, v) in pairs(metadata)),
+    )
+    open(temp_path, "w") do io
+        serialize(io, payload)
+    end
+    mv(temp_path, final_path; force=true)
+
+    existing = filter(name -> startswith(name, "step_") && endswith(name, ".jls"), readdir(ckpt_dir))
+    sort!(existing)
+    for old in existing[1:max(0, length(existing) - keep_last)]
+        rm(joinpath(ckpt_dir, old); force=true)
+    end
+
+    return final_path
+end
+
 function load_head_only_checkpoint(path::AbstractString, model::OpenMythos{T}) where {T<:AbstractFloat}
     payload = open(path, "r") do io
         deserialize(io)
@@ -254,6 +407,22 @@ function load_head_only_checkpoint(path::AbstractString, model::OpenMythos{T}) w
         payload["opt_state"],
         payload["schedule"],
         Int(payload["step"]),
+    )
+end
+
+function load_full_model_checkpoint(path::AbstractString)
+    payload = open(path, "r") do io
+        deserialize(io)
+    end
+    get(payload, "mode", nothing) == "full_model_dense_openmythos" || throw(ArgumentError("checkpoint is not an OpenMythos full-model checkpoint"))
+    model = payload["model"]
+    _validate_full_model_cfg(model.cfg)
+    return FullModelTrainerState(
+        model,
+        payload["opt_state"],
+        payload["schedule"],
+        Int(payload["step"]),
+        get(payload, "n_loops", nothing),
     )
 end
 
@@ -288,6 +457,42 @@ function train_head_only!(
 
     if ckpt_dir !== nothing && ckpt_every > 0 && state.step > 0 && state.step % ckpt_every != 0
         save_head_only_checkpoint(state, ckpt_dir; keep_last=keep_last, metadata=checkpoint_metadata)
+    end
+
+    return last_metrics
+end
+
+function train_full_model!(
+    state::FullModelTrainerState,
+    batches::AbstractVector{<:Tuple{<:AbstractMatrix{<:Integer}, <:AbstractMatrix{<:Integer}}};
+    total_steps::Integer=state.schedule.total_steps,
+    n_loops::Union{Nothing, Integer}=nothing,
+    log_every::Integer=10,
+    ckpt_dir::Union{Nothing, AbstractString}=nothing,
+    ckpt_every::Integer=0,
+    keep_last::Integer=3,
+    io::IO=stdout,
+    checkpoint_metadata::AbstractDict=Dict{String, Any}(),
+)
+    isempty(batches) && throw(ArgumentError("at least one batch is required"))
+    total_steps >= state.step || throw(ArgumentError("total_steps must be >= current step"))
+
+    last_metrics = (loss=zero(eltype(state.model.head)), lr=zero(eltype(state.model.head)), grad_norm=zero(eltype(state.model.head)), step=state.step)
+    while state.step < total_steps
+        batch = batches[mod1(state.step + 1, length(batches))]
+        last_metrics = train_full_model_step!(state, batch[1], batch[2]; n_loops=n_loops)
+
+        if log_every > 0 && (state.step == 1 || state.step % log_every == 0 || state.step == total_steps)
+            println(io, "step $(state.step)/$(total_steps) | loss $(round(last_metrics.loss; digits=4)) | gnorm $(round(last_metrics.grad_norm; digits=4)) | lr $(last_metrics.lr)")
+        end
+
+        if ckpt_dir !== nothing && ckpt_every > 0 && state.step % ckpt_every == 0
+            save_full_model_checkpoint(state, ckpt_dir; keep_last=keep_last, metadata=checkpoint_metadata)
+        end
+    end
+
+    if ckpt_dir !== nothing && ckpt_every > 0 && state.step > 0 && state.step % ckpt_every != 0
+        save_full_model_checkpoint(state, ckpt_dir; keep_last=keep_last, metadata=checkpoint_metadata)
     end
 
     return last_metrics

@@ -7,6 +7,7 @@ using Serialization
 using Statistics
 import Lux
 import Optimisers
+import Zygote
 import TransformerCore
 using TransformerCore: _sigmoid,
                        _silu,
@@ -41,11 +42,10 @@ function _causal_mask(seq_len::Integer, prefix_len::Integer=0, ::Type{T}=Float32
     seq_len >= 0 || throw(ArgumentError("seq_len must be non-negative"))
     prefix_len >= 0 || throw(ArgumentError("prefix_len must be non-negative"))
     total_len = Int(prefix_len) + Int(seq_len)
-    mask = zeros(T, 1, 1, seq_len, total_len)
-    for i in 1:seq_len, j in (Int(prefix_len) + i + 1):total_len
-        mask[1, 1, i, j] = T(-Inf)
-    end
-    return mask
+    q_idx = reshape(collect(1:Int(seq_len)), Int(seq_len), 1)
+    k_idx = reshape(collect(1:total_len), 1, total_len)
+    blocked = k_idx .> (Int(prefix_len) .+ q_idx)
+    return reshape(ifelse.(blocked, T(-Inf), zero(T)), 1, 1, Int(seq_len), total_len)
 end
 
 include("config.jl")
@@ -83,6 +83,7 @@ export MythosConfig,
        WarmupCosineSchedule,
        learning_rate,
        bootstrap_training_config,
+       bootstrap_full_model_training_config,
        chunk_next_token_pairs,
        text_next_token_pairs,
        batch_next_token_pairs,
@@ -92,14 +93,21 @@ export MythosConfig,
        load_kv_cache,
        LuxHeadOnlyOpenMythos,
        HeadOnlyTrainerState,
+       FullModelTrainerState,
        head_only_logits,
        head_only_loss,
+       full_model_logits,
+       full_model_loss,
        train_head_only_step!,
+       train_full_model_step!,
        train_head_only!,
+       train_full_model!,
        chunked_prefill,
        latest_checkpoint,
        save_head_only_checkpoint,
        load_head_only_checkpoint,
+       save_full_model_checkpoint,
+       load_full_model_checkpoint,
        mythos_1b,
        mythos_3b,
        mythos_10b,

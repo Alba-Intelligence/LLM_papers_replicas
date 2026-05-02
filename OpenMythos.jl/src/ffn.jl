@@ -34,9 +34,31 @@ struct MoEFFN{T<:AbstractFloat}
     shared_experts::Vector{Expert{T}}
 end
 
+function MoEFFN(
+    n_experts::Int,
+    n_shared::Int,
+    topk::Int,
+    router::Matrix{T},
+    router_bias::Vector{T},
+    routed_experts::AbstractVector,
+    shared_experts::AbstractVector,
+) where {T<:AbstractFloat}
+    return MoEFFN{T}(
+        n_experts,
+        n_shared,
+        topk,
+        router,
+        router_bias,
+        Vector{Expert{T}}(routed_experts),
+        Vector{Expert{T}}(shared_experts),
+    )
+end
+
 function MoEFFN(cfg::MythosConfig; rng::AbstractRNG=Random.default_rng(), T::Type{<:AbstractFloat}=Float32)
     routed = [Expert(cfg.dim, cfg.expert_dim; rng=rng, T=T) for _ in 1:cfg.n_experts]
-    shared = [Expert(cfg.dim, cfg.expert_dim * cfg.n_experts_per_tok; rng=rng, T=T) for _ in 1:cfg.n_shared_experts]
+    shared = cfg.n_shared_experts == 0 ?
+        Expert{T}[] :
+        [Expert(cfg.dim, cfg.expert_dim * cfg.n_experts_per_tok; rng=rng, T=T) for _ in 1:cfg.n_shared_experts]
     return MoEFFN(
         cfg.n_experts,
         cfg.n_shared_experts,
@@ -49,6 +71,14 @@ function MoEFFN(cfg::MythosConfig; rng::AbstractRNG=Random.default_rng(), T::Typ
 end
 
 function (moe::MoEFFN)(x::AbstractArray{T, 3}) where {T}
+    if moe.n_experts == 1 && moe.topk == 1
+        out = moe.routed_experts[1](x)
+        for shared in moe.shared_experts
+            out = out .+ shared(x)
+        end
+        return out
+    end
+
     b, t, d = size(x)
     token_matrix = reshape(permutedims(x, (3, 1, 2)), d, :)'
     n = size(token_matrix, 1)

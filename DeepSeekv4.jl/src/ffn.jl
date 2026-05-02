@@ -34,9 +34,31 @@ struct MoEFFN{T<:AbstractFloat}
     shared_experts::Vector{Expert{T}}
 end
 
+function MoEFFN(
+    n_experts::Int,
+    n_shared::Int,
+    topk::Int,
+    router::Matrix{T},
+    router_bias::Vector{T},
+    routed_experts::AbstractVector,
+    shared_experts::AbstractVector,
+) where {T<:AbstractFloat}
+    return MoEFFN{T}(
+        n_experts,
+        n_shared,
+        topk,
+        router,
+        router_bias,
+        Vector{Expert{T}}(routed_experts),
+        Vector{Expert{T}}(shared_experts),
+    )
+end
+
 function MoEFFN(cfg::DeepSeekV4Config; rng::AbstractRNG=Random.default_rng(), T::Type{<:AbstractFloat}=Float32)
     routed = [Expert(cfg.dim, cfg.expert_dim; rng=rng, T=T) for _ in 1:cfg.n_experts]
-    shared = [Expert(cfg.dim, cfg.expert_dim * cfg.n_experts_per_tok; rng=rng, T=T) for _ in 1:cfg.n_shared_experts]
+    shared = cfg.n_shared_experts == 0 ?
+        Expert{T}[] :
+        [Expert(cfg.dim, cfg.expert_dim * cfg.n_experts_per_tok; rng=rng, T=T) for _ in 1:cfg.n_shared_experts]
     return MoEFFN(
         cfg.n_experts,
         cfg.n_shared_experts,
@@ -84,9 +106,29 @@ struct HashMoEFFN{T<:AbstractFloat}
     shared_experts::Vector{Expert{T}}
 end
 
+function HashMoEFFN(
+    n_experts::Int,
+    n_shared::Int,
+    topk::Int,
+    layer_seed::Int,
+    routed_experts::AbstractVector{<:Expert{T}},
+    shared_experts::AbstractVector,
+) where {T<:AbstractFloat}
+    return HashMoEFFN{T}(
+        n_experts,
+        n_shared,
+        topk,
+        layer_seed,
+        Vector{Expert{T}}(routed_experts),
+        Vector{Expert{T}}(shared_experts),
+    )
+end
+
 function HashMoEFFN(cfg::DeepSeekV4Config, layer_seed::Integer; rng::AbstractRNG=Random.default_rng(), T::Type{<:AbstractFloat}=Float32)
     routed = [Expert(cfg.dim, cfg.expert_dim; rng=rng, T=T) for _ in 1:cfg.n_experts]
-    shared = [Expert(cfg.dim, cfg.expert_dim * cfg.n_experts_per_tok; rng=rng, T=T) for _ in 1:cfg.n_shared_experts]
+    shared = cfg.n_shared_experts == 0 ?
+        Expert{T}[] :
+        [Expert(cfg.dim, cfg.expert_dim * cfg.n_experts_per_tok; rng=rng, T=T) for _ in 1:cfg.n_shared_experts]
     return HashMoEFFN(cfg.n_experts, cfg.n_shared_experts, cfg.n_experts_per_tok, Int(layer_seed), routed, shared)
 end
 

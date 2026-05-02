@@ -9,11 +9,11 @@ The replica now includes:
 - the core model stack (`MythosConfig`, attention backends, MoE, recurrent block, `OpenMythos`, generation),
 - tokenizer parity through a pragmatic Hugging Face bridge,
 - an optional Python-vs-Julia parity harness for selected utilities,
-- a Lux-backed bootstrap training path with checkpointing and local/FineWeb smoke data flows,
+- bootstrap training paths with checkpointing and local/FineWeb smoke data flows,
 - chunked prefill plus serializable KV-cache envelopes for cached generation reuse,
 - lower-allocation buffer-backed cache growth behind the existing generation API.
 
-The current training surface is intentionally **head-only**: the core model implementation remains manual and parity-oriented, while the bootstrap trainer uses `Lux.jl` and `Optimisers.jl` on top of schedule, batching, checkpoint, and loss helpers now shared through `TransformerCore.jl`.
+The current training surface is intentionally staged: `OpenMythos.jl` now has both the original **Lux-backed head-only** bootstrap path and a first **dense full-model** bootstrap path for tiny GQA configs (`n_experts == 1`, `n_shared_experts == 0`, `n_experts_per_tok == 1`), while the broader sparse/DeepSeek full-model story remains future work.
 
 ## Quickstart
 
@@ -67,6 +67,16 @@ OPENMYTHOS_TRAIN_SEQ_LEN=32 \
 julia --project=. scripts/train_3b_fineweb_edu.jl
 ```
 
+To exercise the current dense full-model bootstrap slice instead of the default head-only path:
+
+```bash
+OPENMYTHOS_TRAIN_MODE=full_model \
+OPENMYTHOS_TRAIN_TOKENIZER_MODEL_ID=gpt2 \
+OPENMYTHOS_TRAIN_TOTAL_STEPS=4 \
+OPENMYTHOS_TRAIN_SEQ_LEN=32 \
+julia --project=. scripts/train_3b_fineweb_edu.jl
+```
+
 For an optional FineWeb-Edu-backed smoke run:
 
 ```bash
@@ -102,7 +112,7 @@ ids2 = generate(model, ids; max_new_tokens=4, n_loops=2, envelope=load_kv_cache(
 
 ## What is still deferred
 
-- full-model gradient-based training beyond the head-only bootstrap layer,
+- broader full-model training beyond the current dense OpenMythos bootstrap slice,
 - distributed training/runtime behavior,
 - paged or preallocated KV cache internals,
 - experimental `moda.py` parity,

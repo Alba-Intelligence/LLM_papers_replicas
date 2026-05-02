@@ -109,3 +109,75 @@ end
         @test endswith(latest, "step_0000003.jls")
     end
 end
+
+@testset "Full-model trainer step reduces repeated-batch loss" begin
+    Random.seed!(14)
+    cfg = bootstrap_full_model_training_config(32; seq_len=4)
+    model = OpenMythos.OpenMythos(cfg; rng=MersenneTwister(14))
+    schedule = WarmupCosineSchedule(0, 4, 0.01f0, 0.01f0)
+    state = FullModelTrainerState(model; schedule=schedule, weight_decay=0.0, n_loops=cfg.max_loop_iters)
+
+    x = reshape([1, 2, 3, 4], 1, :)
+    y = reshape([2, 3, 4, 5], 1, :)
+
+    initial_loss = full_model_loss(state, x, y)
+    original_head = copy(state.model.head)
+    for _ in 1:4
+        train_full_model_step!(state, x, y)
+    end
+    final_loss = full_model_loss(state, x, y)
+
+    @test final_loss < initial_loss
+    @test state.step == 4
+    @test !all(isapprox.(state.model.head, original_head; atol=1f-6))
+end
+
+@testset "Full-model checkpoint roundtrip and pruning" begin
+    Random.seed!(15)
+    cfg = bootstrap_full_model_training_config(24; seq_len=4)
+    model = OpenMythos.OpenMythos(cfg; rng=MersenneTwister(15))
+    schedule = WarmupCosineSchedule(0, 3, 0.005f0, 0.005f0)
+    state = FullModelTrainerState(model; schedule=schedule, weight_decay=0.0, n_loops=cfg.max_loop_iters)
+    x = reshape([1, 2, 3, 4], 1, :)
+    y = reshape([2, 3, 4, 5], 1, :)
+
+    mktempdir() do dir
+        train_full_model_step!(state, x, y)
+        first_path = save_full_model_checkpoint(state, dir; keep_last=2, metadata=Dict("source" => "test"))
+        @test isfile(first_path)
+
+        train_full_model_step!(state, x, y)
+        save_full_model_checkpoint(state, dir; keep_last=2)
+        train_full_model_step!(state, x, y)
+        last_path = save_full_model_checkpoint(state, dir; keep_last=2)
+
+        files = filter(name -> endswith(name, ".jls"), readdir(dir))
+        @test length(files) == 2
+        @test latest_checkpoint(dir) == last_path
+
+        restored = load_full_model_checkpoint(last_path)
+        @test restored.step == state.step
+        @test restored.n_loops == state.n_loops
+        @test restored.model.head == state.model.head
+    end
+end
+
+@testset "Full-model training loop saves final checkpoint" begin
+    Random.seed!(16)
+    cfg = bootstrap_full_model_training_config(24; seq_len=4)
+    model = OpenMythos.OpenMythos(cfg; rng=MersenneTwister(16))
+    schedule = WarmupCosineSchedule(0, 2, 0.005f0, 0.005f0)
+    state = FullModelTrainerState(model; schedule=schedule, weight_decay=0.0, n_loops=cfg.max_loop_iters)
+    pairs = chunk_next_token_pairs(collect(0:10), 4)
+    batches = batch_next_token_pairs(pairs, 1)
+
+    mktempdir() do dir
+        io = IOBuffer()
+        metrics = train_full_model!(state, batches; total_steps=2, n_loops=cfg.max_loop_iters, log_every=1, ckpt_dir=dir, ckpt_every=2, io=io)
+        @test metrics.step == 2
+        @test occursin("step 2/2", String(take!(io)))
+        latest = latest_checkpoint(dir)
+        @test latest !== nothing
+        @test endswith(latest, "step_0000002.jls")
+    end
+end

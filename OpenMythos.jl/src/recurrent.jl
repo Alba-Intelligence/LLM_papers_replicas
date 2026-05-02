@@ -8,8 +8,7 @@ function loop_index_embedding(h::AbstractArray, loop_t::Integer, loop_dim::Integ
     freqs = one(work_t) ./ (work_t(theta) .^ (idx ./ work_t(loop_dim)))
     angles = work_t(loop_t) .* freqs
     emb = vcat(sin.(angles), cos.(angles))
-    emb_full = zeros(work_t, size(h, ndims(h)))
-    emb_full[1:loop_dim] .= emb
+    emb_full = vcat(emb, zeros(work_t, size(h, ndims(h)) - loop_dim))
     return h .+ _feature_broadcast(emb_full, ndims(h))
 end
 
@@ -119,11 +118,11 @@ function (recurrent::RecurrentBlock)(h::AbstractArray{T, 3}, e::AbstractArray{T,
         still_running = .!halted
         remainder = clamp.(1 .- cumulative_p, 0f0, Inf32)
         weight = ifelse.(cumulative_p .+ p .>= recurrent.cfg.act_threshold, remainder, p)
-        weight .*= Float32.(still_running)
-        h_out .+= reshape(weight, b, t, 1) .* h
+        weight = weight .* Float32.(still_running)
+        h_out = h_out .+ reshape(weight, b, t, 1) .* h
 
-        cumulative_p .+= p .* Float32.(still_running)
-        halted .|= cumulative_p .>= recurrent.cfg.act_threshold
+        cumulative_p = cumulative_p .+ p .* Float32.(still_running)
+        halted = halted .| (cumulative_p .>= recurrent.cfg.act_threshold)
 
         if all(halted) && kv_cache === nothing
             break

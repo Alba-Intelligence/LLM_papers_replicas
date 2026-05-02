@@ -11,6 +11,7 @@ const FINEWEB_SUBSET = get(ENV, "OPENMYTHOS_FINEWEB_SUBSET", "sample-10BT")
 const TRAIN_TEXT_FILE = get(ENV, "OPENMYTHOS_TRAIN_TEXT_FILE", "")
 const TRAIN_TEXT = get(ENV, "OPENMYTHOS_TRAIN_TEXT", "")
 const CKPT_DIR = get(ENV, "OPENMYTHOS_TRAIN_CKPT_DIR", "checkpoints")
+const TRAIN_MODE = lowercase(get(ENV, "OPENMYTHOS_TRAIN_MODE", "head_only"))
 
 const SEQ_LEN = parse(Int, get(ENV, "OPENMYTHOS_TRAIN_SEQ_LEN", "32"))
 const BATCH_SIZE = parse(Int, get(ENV, "OPENMYTHOS_TRAIN_BATCH_SIZE", "2"))
@@ -56,7 +57,9 @@ end
 
 function main()
     tokenizer = MythosTokenizer(TOKENIZER_MODEL_ID)
-    cfg = bootstrap_training_config(OpenMythos.vocab_size(tokenizer); seq_len=SEQ_LEN, attn_type="gqa")
+    cfg = TRAIN_MODE == "full_model" ?
+        bootstrap_full_model_training_config(OpenMythos.vocab_size(tokenizer); seq_len=SEQ_LEN, attn_type="gqa") :
+        bootstrap_training_config(OpenMythos.vocab_size(tokenizer); seq_len=SEQ_LEN, attn_type="gqa")
     model = OpenMythos.OpenMythos(cfg; rng=MersenneTwister(RNG_SEED))
     schedule = WarmupCosineSchedule(WARMUP_STEPS, TOTAL_STEPS, LR, LR * 0.1f0)
 
@@ -64,28 +67,52 @@ function main()
     isempty(batches) && error("no training batches available; provide longer local text or enable FineWeb-Edu")
 
     latest = latest_checkpoint(CKPT_DIR)
-    state = latest === nothing ? HeadOnlyTrainerState(model; schedule=schedule, weight_decay=WEIGHT_DECAY) : load_head_only_checkpoint(latest, model)
+    state = if latest === nothing
+        TRAIN_MODE == "full_model" ?
+            FullModelTrainerState(model; schedule=schedule, weight_decay=WEIGHT_DECAY, n_loops=cfg.max_loop_iters) :
+            HeadOnlyTrainerState(model; schedule=schedule, weight_decay=WEIGHT_DECAY)
+    else
+        TRAIN_MODE == "full_model" ? load_full_model_checkpoint(latest) : load_head_only_checkpoint(latest, model)
+    end
 
     println("Tokenizer model: $(TOKENIZER_MODEL_ID)")
     println("Vocab size: $(OpenMythos.vocab_size(tokenizer)) | seq_len: $(SEQ_LEN) | batch_size: $(BATCH_SIZE) | total_steps: $(TOTAL_STEPS)")
-    println("Training mode: Lux-backed head-only bootstrap")
+    println("Training mode: $(TRAIN_MODE == \"full_model\" ? \"dense full-model bootstrap\" : \"Lux-backed head-only bootstrap\")")
     latest !== nothing && println("Resuming from $(latest)")
 
-    metrics = train_head_only!(
-        state,
-        batches;
-        total_steps=TOTAL_STEPS,
-        n_loops=cfg.max_loop_iters,
-        log_every=1,
-        ckpt_dir=CKPT_DIR,
-        ckpt_every=CKPT_EVERY,
-        keep_last=KEEP_LAST,
-        checkpoint_metadata=Dict(
-            "tokenizer_model_id" => TOKENIZER_MODEL_ID,
-            "use_fineweb" => USE_FINEWEB,
-            "fineweb_subset" => FINEWEB_SUBSET,
-        ),
-    )
+    metrics = if TRAIN_MODE == "full_model"
+        train_full_model!(
+            state,
+            batches;
+            total_steps=TOTAL_STEPS,
+            n_loops=cfg.max_loop_iters,
+            log_every=1,
+            ckpt_dir=CKPT_DIR,
+            ckpt_every=CKPT_EVERY,
+            keep_last=KEEP_LAST,
+            checkpoint_metadata=Dict(
+                "tokenizer_model_id" => TOKENIZER_MODEL_ID,
+                "use_fineweb" => USE_FINEWEB,
+                "fineweb_subset" => FINEWEB_SUBSET,
+            ),
+        )
+    else
+        train_head_only!(
+            state,
+            batches;
+            total_steps=TOTAL_STEPS,
+            n_loops=cfg.max_loop_iters,
+            log_every=1,
+            ckpt_dir=CKPT_DIR,
+            ckpt_every=CKPT_EVERY,
+            keep_last=KEEP_LAST,
+            checkpoint_metadata=Dict(
+                "tokenizer_model_id" => TOKENIZER_MODEL_ID,
+                "use_fineweb" => USE_FINEWEB,
+                "fineweb_subset" => FINEWEB_SUBSET,
+            ),
+        )
+    end
 
     println("Final loss: $(round(metrics.loss; digits=4))")
     println("Latest checkpoint: $(latest_checkpoint(CKPT_DIR))")

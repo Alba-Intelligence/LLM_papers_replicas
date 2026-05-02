@@ -33,47 +33,28 @@ end
 
 function _linear_feature_last(x::AbstractArray, weight::AbstractMatrix, bias::Union{Nothing, AbstractVector}=nothing)
     flat = _flatten_feature_last(x)
-    y = weight * flat
-    if bias !== nothing
-        y .+= reshape(bias, :, 1)
-    end
+    y = bias === nothing ? (weight * flat) : ((weight * flat) .+ reshape(bias, :, 1))
     return _unflatten_feature_last(y, _feature_last_shape(size(x), size(weight, 1)))
 end
 
 function _softmax_rows(x::AbstractMatrix)
-    out = similar(x)
-    for i in axes(x, 1)
-        row = @view x[i, :]
-        m = maximum(row)
-        exps = exp.(row .- m)
-        s = sum(exps)
-        @view(out[i, :]) .= exps ./ s
-    end
-    return out
+    shifted = x .- maximum(x; dims=2)
+    exps = exp.(shifted)
+    return exps ./ sum(exps; dims=2)
 end
 
 function _softmax_cols(x::AbstractMatrix)
-    out = similar(x)
-    for j in axes(x, 2)
-        col = @view x[:, j]
-        m = maximum(col)
-        exps = exp.(col .- m)
-        s = sum(exps)
-        @view(out[:, j]) .= exps ./ s
-    end
-    return out
+    shifted = x .- maximum(x; dims=1)
+    exps = exp.(shifted)
+    return exps ./ sum(exps; dims=1)
 end
 
 function _embed_tokens(ids::AbstractMatrix{<:Integer}, weight::AbstractMatrix{T}) where {T}
     b, t = size(ids)
-    d = size(weight, 2)
-    out = Array{T}(undef, b, t, d)
-    for i in 1:b, j in 1:t
-        idx = ids[i, j] + 1
-        (1 <= idx <= size(weight, 1)) || throw(BoundsError(weight, (idx, :)))
-        @views out[i, j, :] .= weight[idx, :]
-    end
-    return out
+    idx = vec(ids) .+ 1
+    all((1 .<= idx) .& (idx .<= size(weight, 1))) || throw(BoundsError(weight, (idx, :)))
+    rows = weight[idx, :]
+    return permutedims(reshape(permutedims(rows, (2, 1)), size(weight, 2), b, t), (2, 3, 1))
 end
 
 function _sample_categorical(probs::AbstractMatrix{T}; rng::AbstractRNG=Random.default_rng()) where {T<:AbstractFloat}

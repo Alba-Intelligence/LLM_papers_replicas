@@ -24,9 +24,8 @@ function apply_rope(x::AbstractArray{T, 4}, freqs_cis::AbstractMatrix{<:Complex}
 
     x1 = @view work[:, :, :, 1:2:d]
     x2 = @view work[:, :, :, 2:2:d]
-    out = similar(work)
-    @views out[:, :, :, 1:2:d] .= x1 .* cosvals .- x2 .* sinvals
-    @views out[:, :, :, 2:2:d] .= x1 .* sinvals .+ x2 .* cosvals
-
-    return T.(out)
+    rotated1 = x1 .* cosvals .- x2 .* sinvals
+    rotated2 = x1 .* sinvals .+ x2 .* cosvals
+    stacked = cat(reshape(rotated1, b, t, h, d2, 1), reshape(rotated2, b, t, h, d2, 1); dims=5)
+    return T.(reshape(permutedims(stacked, (1, 2, 3, 5, 4)), b, t, h, d))
 end

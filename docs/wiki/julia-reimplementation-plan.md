@@ -31,6 +31,8 @@ The OpenMythos package includes a parity-tested core model stack:
 - token chunking / next-token batching helpers
 - `LuxHeadOnlyOpenMythos`
 - `HeadOnlyTrainerState`
+- `FullModelTrainerState`
+- dense full-model bootstrap configs and checkpoint helpers
 - resumable checkpoint helpers
 - `scripts/train_3b_fineweb_edu.jl`
 - `loop_index_embedding`
@@ -40,11 +42,11 @@ The OpenMythos package includes a parity-tested core model stack:
 
 The current state is:
 
-- `OpenMythos.jl/` is the recurrent-depth package with parity-oriented model code and a head-only bootstrap training path.
+- `OpenMythos.jl/` is the recurrent-depth package with parity-oriented model code, a head-only Lux bootstrap trainer, and a first dense tiny-config full-model bootstrap trainer for OpenMythos itself.
 - `DeepSeekv4.jl/` is an architecture-first package with CSA/HCA, mHC, MoE routing, MTP, chunked-prefill-aware generation, tiny-config tests, and a head-only bootstrap training path.
 - `TransformerCore.jl/` holds the shared primitive, training-utility, runtime-envelope, and growable cache-buffer layer.
 
-The next milestone is to deepen full-model training and runtime internals without prematurely forcing all model internals into Lux layers.
+The next milestone is to deepen runtime internals and broaden training coverage beyond the current dense OpenMythos slice without prematurely forcing all model internals into Lux layers.
 
 For future DeepSeek planning, keep the source priority explicit:
 
@@ -163,7 +165,7 @@ Status: in progress; the runtime-envelope and lower-allocation cache-buffer slic
 | Area | Validation surface |
 | --- | --- |
 | `TransformerCore.jl` | primitive smoke and invariant tests |
-| `OpenMythos.jl` | translated parity tests plus tokenizer/training smoke tests |
+| `OpenMythos.jl` | translated parity tests plus tokenizer, head-only, and dense full-model training smoke tests |
 | `DeepSeekv4.jl` | tiny-config architecture, generation, and head-only training smoke tests |
 
 ## Explicit deferrals
@@ -180,7 +182,7 @@ These should not block the current Julia milestone:
 
 The best next vertical slice is:
 
-1. expand beyond head-only optimization without collapsing the current shared seams,
-2. decide whether full-model training expansion or runtime/distribution work should land next,
+1. add paged or preallocated KV-cache internals beneath the current shared envelope API,
+2. broaden full-model training beyond the current dense OpenMythos bootstrap slice,
 3. preserve the shared runtime envelope while deeper serving work remains model-specific underneath,
 4. treat Engram-style conditional memory as an optional future DeepSeek research branch rather than an assumed immediate requirement.

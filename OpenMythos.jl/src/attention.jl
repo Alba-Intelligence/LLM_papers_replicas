@@ -1,24 +1,23 @@
 function _attention(q::AbstractArray, k::AbstractArray, v::AbstractArray, mask)
     b, h, t, d = size(q)
-    s = size(k, 3)
     dv = size(v, 4)
-    out = zeros(promote_type(eltype(q), eltype(k), eltype(v)), b, h, t, dv)
     mask2 = mask === nothing ? nothing : (ndims(mask) == 4 ? @view(mask[1, 1, :, :]) : mask)
     scale = inv(sqrt(Float32(d)))
-
-    for bi in 1:b, hi in 1:h
-        qmat = Array(@view q[bi, hi, :, :])
-        kmat = Array(@view k[bi, hi, :, :])
-        scores = (qmat * transpose(kmat)) .* scale
-        if mask2 !== nothing
-            scores .+= mask2
-        end
-        probs = _softmax_rows(scores)
-        vmat = Array(@view v[bi, hi, :, :])
-        @views out[bi, hi, :, :] .= probs * vmat
-    end
-
-    return out
+    heads = [
+        begin
+            qmat = @view q[bi, hi, :, :]
+            kmat = @view k[bi, hi, :, :]
+            scores = (qmat * transpose(kmat)) .* scale
+            scores = mask2 === nothing ? scores : scores .+ mask2
+            probs = _softmax_rows(scores)
+            probs * (@view v[bi, hi, :, :])
+        end for bi in 1:b, hi in 1:h
+    ]
+    batches = [
+        cat([reshape(heads[bi, hi], 1, t, dv) for hi in 1:h]...; dims=1)
+        for bi in 1:b
+    ]
+    return cat([reshape(batch, 1, size(batch, 1), size(batch, 2), size(batch, 3)) for batch in batches]...; dims=1)
 end
 
 function _gq_cache_entry(prev)

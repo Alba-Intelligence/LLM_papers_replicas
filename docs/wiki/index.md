@@ -11,7 +11,7 @@ It is intentionally concept-first: the goal is to explain what the Python projec
 - `DeepSeekv4.jl/` contains the new DeepSeek V4 Julia package.
 - `TransformerCore.jl/` contains reusable feature-last tensor helpers, `RMSNorm`, RoPE utilities, shared training helpers, and the first shared KV-cache envelope utilities.
 - The authoritative implementation today is the Python reference at `reference/OpenMythos`.
-- The implemented Julia slice now covers the OpenMythos primitive layer and main model stack, plus an architecture-first DeepSeek V4 package with tiny-config CSA/HCA, mHC, MTP, generation smoke paths, and a first trainable head-only bootstrap milestone.
+- The implemented Julia slice now covers the OpenMythos primitive layer and main model stack, plus an architecture-first DeepSeek V4 package with tiny-config CSA/HCA, mHC, MTP, generation smoke paths, and bootstrap training surfaces that now include both head-only trainers and a first dense full-model OpenMythos slice.
 - The first two advanced-systems runtime slices are now in place: shared cache envelopes plus lower-allocation buffer-backed cache internals behind the same runtime API.
 - Future work now focuses on deeper full-model training, paged/preallocated serving internals, and distributed/performance work rather than missing repository basics.
 
@@ -74,10 +74,11 @@ The Julia replica now has a real bootstrap training path:
 - a small Julia `OpenMythos.jl/scripts/train_3b_fineweb_edu.jl` entrypoint,
 - local-text smoke training and an optional FineWeb-Edu Python streaming bridge,
 - a `LuxHeadOnlyOpenMythos` layer backed by `Optimisers.AdamW`,
+- a first dense OpenMythos full-model trainer/checkpoint path for tiny GQA single-expert configs,
 - a parallel `LuxHeadOnlyDeepSeekV4` bootstrap path and `DeepSeekv4.jl/scripts/train_deepseek_tiny.jl`,
 - shared schedule, batching, checkpoint discovery, and head-loss helpers in `TransformerCore.jl`.
 
-That path is intentionally limited to **head-only** optimization for now.
+That training surface is still intentionally constrained: the new full-model slice is OpenMythos-only and dense-config-only, while DeepSeek and sparse/full generalization remain later work.
 
 ## Runtime status
 
@@ -96,6 +97,7 @@ This is still a lightweight reference runtime. It does not yet include paged att
 The training foundation is now in place. The main remaining directions are:
 
 - full-model gradient-based training beyond the head-only Lux layer,
+- broader sparse/full-model training beyond the current dense OpenMythos slice,
 - paged/preallocated cache internals and longer-context serving work,
 - distributed training/runtime behavior,
 - deeper performance work,
