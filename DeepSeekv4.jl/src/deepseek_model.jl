@@ -9,6 +9,7 @@ struct DeepSeekV4Block
     mix::ManifoldHyperConnections{Float32}
     attn_norm::RMSNorm{Float32}
     ffn_norm::RMSNorm{Float32}
+    engram
     attn
     ffn
 end
@@ -20,11 +21,13 @@ end
 function DeepSeekV4Block(cfg::DeepSeekV4Config, layer_index::Integer; rng::AbstractRNG=Random.default_rng())
     attn = _deepseek_attention_kind(cfg, layer_index) === :hca ? HeavilyCompressedAttention(cfg; rng=rng) : CompressedSparseAttention(cfg; rng=rng)
     ffn = layer_index <= cfg.hash_routed_layers ? HashMoEFFN(cfg, layer_index; rng=rng) : MoEFFN(cfg; rng=rng)
+    engram = Int(layer_index) in cfg.engram_layer_ids ? Engram(cfg, layer_index; rng=rng) : nothing
     return DeepSeekV4Block(
         Int(layer_index),
         ManifoldHyperConnections(cfg.dim, cfg.n_hyper_connections; rng=rng),
         RMSNorm(cfg.dim),
         RMSNorm(cfg.dim),
+        engram,
         attn,
         ffn,
     )
@@ -33,7 +36,8 @@ end
 """Apply one DeepSeek V4 block to the multi-stream hidden state `X`."""
 function (block::DeepSeekV4Block)(X::AbstractArray{T, 4}, token_ids::AbstractMatrix{<:Integer}, freqs_cis::AbstractMatrix; kv_cache::Union{Nothing, AbstractDict}=nothing, start_pos::Integer=0, kv_capacity::Union{Nothing, Integer}=nothing) where {T<:AbstractFloat}
     cache_key = "deepseek_layer_$(block.layer_index - 1)"
-    return block.mix(X, x -> begin
+    mixed_input = block.engram === nothing ? X : X .+ block.engram(X, token_ids)
+    return block.mix(mixed_input, x -> begin
         h = x .+ block.attn(block.attn_norm(x), freqs_cis; kv_cache=kv_cache, kv_capacity=kv_capacity, cache_key=cache_key, start_pos=start_pos)
         if block.ffn isa HashMoEFFN
             return h .+ block.ffn(block.ffn_norm(h), token_ids)
@@ -60,6 +64,7 @@ struct DeepSeekV4Model{T<:AbstractFloat}
 end
 
 function DeepSeekV4Model(cfg::DeepSeekV4Config; rng::AbstractRNG=Random.default_rng(), T::Type{<:AbstractFloat}=Float32)
+    _validate_engram_cfg(cfg)
     embed = T.(0.02 .* randn(rng, cfg.vocab_size, cfg.dim))
     blocks = [DeepSeekV4Block(cfg, layer_idx; rng=rng) for layer_idx in 1:cfg.n_layers]
     mtp_heads = [T.(0.02 .* randn(rng, cfg.vocab_size, cfg.dim)) for _ in 1:cfg.mtp_tokens]

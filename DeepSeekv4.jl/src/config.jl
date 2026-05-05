@@ -33,4 +33,13 @@ Base.@kwdef struct DeepSeekV4Config
     sinkhorn_iters::Int = 20
     attention_pattern::NTuple{2, Symbol} = (:csa, :hca)
     dropout::Float32 = 0.0f0
+    engram_layer_ids::Vector{Int} = Int[]
+    engram_max_ngram_size::Int = 3
+    engram_embed_dim::Int = 256
+    engram_heads_per_ngram::Int = 4
+    engram_vocab_multiplier::Int = 4
+    engram_kernel_size::Int = 4
+    engram_seed::Int = 0
+    engram_pad_id::Int = 0
+    engram_token_lookup::Union{Nothing, Vector{Int}} = nothing
 end

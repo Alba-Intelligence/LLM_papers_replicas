@@ -143,7 +143,7 @@ end
 
         restored = load_deepseek_full_model_checkpoint(path)
         @test restored.step == state.step
-        @test restored.model.cfg == state.model.cfg
+        @test all(field -> getfield(restored.model.cfg, field) == getfield(state.model.cfg, field), fieldnames(DeepSeekV4Config))
         @test deepseek_full_model_logits(restored, x) == deepseek_full_model_logits(state, x)
 
         io = IOBuffer()

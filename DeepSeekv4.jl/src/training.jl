@@ -4,10 +4,10 @@
 Return a small DeepSeek V4 configuration for head-only bootstrap training and
 smoke tests.
 """
-function bootstrap_deepseek_training_config(vocab_size::Integer; seq_len::Integer=64)
+function bootstrap_deepseek_training_config(vocab_size::Integer; seq_len::Integer=64, with_engram::Bool=false, engram_token_lookup::Union{Nothing, Vector{Int}}=nothing)
     vocab_size > 0 || throw(ArgumentError("vocab_size must be positive"))
     seq_len > 0 || throw(ArgumentError("seq_len must be positive"))
-    return DeepSeekV4Config(
+    cfg = DeepSeekV4Config(
         vocab_size=Int(vocab_size),
         dim=64,
         n_heads=4,
@@ -29,7 +29,14 @@ function bootstrap_deepseek_training_config(vocab_size::Integer; seq_len::Intege
         hash_routed_layers=1,
         mtp_tokens=2,
         n_hyper_connections=2,
+        engram_layer_ids=with_engram ? [1, 3] : Int[],
+        engram_embed_dim=32,
+        engram_heads_per_ngram=2,
+        engram_vocab_multiplier=2,
+        engram_kernel_size=4,
+        engram_token_lookup=engram_token_lookup,
     )
+    return cfg
 end
 
 """
@@ -38,7 +45,7 @@ end
 Return a smaller DeepSeek V4 configuration for the current full-model bootstrap
 training slice.
 """
-function bootstrap_deepseek_full_model_training_config(vocab_size::Integer; seq_len::Integer=64)
+function bootstrap_deepseek_full_model_training_config(vocab_size::Integer; seq_len::Integer=64, with_engram::Bool=false, engram_token_lookup::Union{Nothing, Vector{Int}}=nothing)
     vocab_size > 0 || throw(ArgumentError("vocab_size must be positive"))
     seq_len > 0 || throw(ArgumentError("seq_len must be positive"))
     return DeepSeekV4Config(
@@ -64,6 +71,12 @@ function bootstrap_deepseek_full_model_training_config(vocab_size::Integer; seq_
         mtp_tokens=1,
         n_hyper_connections=2,
         sinkhorn_iters=4,
+        engram_layer_ids=with_engram ? [1] : Int[],
+        engram_embed_dim=16,
+        engram_heads_per_ngram=2,
+        engram_vocab_multiplier=2,
+        engram_kernel_size=3,
+        engram_token_lookup=engram_token_lookup,
     )
 end
 

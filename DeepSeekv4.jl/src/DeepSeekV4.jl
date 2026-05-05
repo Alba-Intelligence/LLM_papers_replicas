@@ -52,6 +52,7 @@ include("config.jl")
 include("ffn.jl")
 include("attention.jl")
 include("mhc.jl")
+include("engram.jl")
 include("deepseek_model.jl")
 include("variants.jl")
 include("training.jl")
@@ -63,6 +64,7 @@ export DeepSeekV4Config,
        Expert,
        MoEFFN,
        HashMoEFFN,
+       Engram,
        CompressedSparseAttention,
        HeavilyCompressedAttention,
        ManifoldHyperConnections,
@@ -79,7 +81,8 @@ export DeepSeekV4Config,
        latest_checkpoint,
        KVCacheEnvelope,
        save_kv_cache,
-        load_kv_cache,
+       load_kv_cache,
+       build_engram_token_lookup,
         bootstrap_deepseek_training_config,
         bootstrap_deepseek_full_model_training_config,
         LuxHeadOnlyDeepSeekV4,
@@ -99,6 +102,7 @@ export DeepSeekV4Config,
         load_deepseek_full_model_checkpoint,
         chunked_prefill,
         deepseek_v4_tiny,
+        deepseek_v4_tiny_engram,
         deepseek_v4_flash,
        deepseek_v4_pro
 

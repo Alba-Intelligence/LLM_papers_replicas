@@ -23,6 +23,36 @@ deepseek_v4_tiny() = DeepSeekV4Config(
     n_hyper_connections=2,
 )
 
+"""Return a tiny DeepSeek V4 preset with the optional Engram branch enabled."""
+deepseek_v4_tiny_engram() = DeepSeekV4Config(
+    vocab_size=512,
+    dim=64,
+    n_heads=4,
+    max_seq_len=64,
+    n_layers=4,
+    csa_compression=4,
+    hca_compression=8,
+    attention_topk=2,
+    attention_window=4,
+    query_compression_dim=16,
+    indexer_dim=8,
+    indexer_heads=2,
+    attention_groups=2,
+    attention_group_dim=16,
+    n_experts=4,
+    n_shared_experts=1,
+    n_experts_per_tok=2,
+    expert_dim=16,
+    hash_routed_layers=1,
+    mtp_tokens=2,
+    n_hyper_connections=2,
+    engram_layer_ids=[1, 3],
+    engram_embed_dim=32,
+    engram_heads_per_ngram=2,
+    engram_vocab_multiplier=2,
+    engram_kernel_size=4,
+)
+
 """Return the larger Flash-style DeepSeek V4 preset."""
 deepseek_v4_flash() = DeepSeekV4Config(
     vocab_size=102_400,

@@ -74,6 +74,13 @@ Expected shape:
 (1, 8, cfg.vocab_size)
 ```
 
+To enable the optional Engram branch on a tiny reference config:
+
+```julia
+cfg = deepseek_v4_tiny_engram()
+model = DeepSeekV4Model(cfg)
+```
+
 ## 5. Use the tokenizer
 
 The tokenizer currently shells out through Hugging Face tooling for parity and practicality.
@@ -205,6 +212,7 @@ Useful environment variables:
 | --- | --- | --- |
 | `DEEPSEEK_V4_TRAIN_VOCAB_SIZE` | tiny bootstrap vocab size | `512` |
 | `DEEPSEEK_V4_TRAIN_MODE` | training mode (`head_only` or `full_model`) | `head_only` |
+| `DEEPSEEK_V4_TRAIN_USE_ENGRAM` | enable the gated Engram branch | `0` |
 | `DEEPSEEK_V4_TRAIN_TOTAL_STEPS` | total bootstrap steps | `8` |
 | `DEEPSEEK_V4_TRAIN_SEQ_LEN` | sequence length | `32` |
 | `DEEPSEEK_V4_TRAIN_BATCH_SIZE` | batch size | `2` |
@@ -217,6 +225,7 @@ Example local DeepSeek smoke run:
 ```bash
 cd DeepSeekv4.jl
 DEEPSEEK_V4_TRAIN_MODE=full_model \
+DEEPSEEK_V4_TRAIN_USE_ENGRAM=1 \
 DEEPSEEK_V4_TRAIN_TOTAL_STEPS=8 \
 DEEPSEEK_V4_TRAIN_SEQ_LEN=32 \
 julia --project=. scripts/train_deepseek_tiny.jl
@@ -232,7 +241,7 @@ The current bootstrap trainer is intentionally limited:
 - `OpenMythos.jl` now also has a dense full-model bootstrap mode via `OPENMYTHOS_TRAIN_MODE=full_model`,
 - that full-model mode currently supports small GQA/MLA configs, including tiny sparse routed-expert setups with optional shared experts,
 - `DeepSeekv4.jl` now has both a `LuxHeadOnlyDeepSeekV4` head-only trainer and a first tiny `DeepSeekFullModelTrainerState` bootstrap path,
-- the current DeepSeek full-model loss now trains both the main LM logits path and the current auxiliary MTP heads on tiny configs,
+- the current DeepSeek full-model loss now trains both the main LM logits path and the current auxiliary MTP heads on tiny configs, with an optional gated Engram branch,
 - the core model internals are still manual Julia blocks,
 - broader sparse/full-model autodiff and distributed training are still future work.
 

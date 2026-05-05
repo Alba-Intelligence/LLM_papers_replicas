@@ -28,6 +28,8 @@ But they should **not** override the official V4 note when the sources disagree.
 - `ManifoldHyperConnections`
 - `HashMoEFFN`
 - `MoEFFN`
+- `Engram`
+- `build_engram_token_lookup`
 - `mtp_logits`
 - `generate`
 - `chunked_prefill`
@@ -54,8 +56,18 @@ The package currently models the paper at the level most useful for a first Juli
   - hash-routed early layers.
 - **MTP surface**
   - multiple prediction heads exposed through `mtp_logits`.
+- **Optional Engram branch**
+  - deterministic local n-gram hashing at selected layers,
+  - per-head static memory lookup,
+  - stream-wise gating against the current mHC residual state,
+  - short causal convolution over the memory value,
+  - residual fusion before the attention/MoE block body.
 
-This matches the current official-note-first scope. It does **not** yet add a separate Engram-style conditional-memory branch, because the late-2025 Engram work is better treated as DeepSeek research lineage unless the official V4 materials or later evidence make that dependency explicit.
+The official note still remains the implementation authority, so Engram is kept
+**explicit and gated** rather than silently assumed as core V4 parity. The
+current Julia package now includes that gated branch at selected layers, with a
+dependency-free compressed-token lookup helper for the first upgrade step beyond
+raw token-id hashing.
 
 ## Runtime surface
 
@@ -81,7 +93,7 @@ The current package does **not** yet attempt full V4 systems parity. These remai
 
 Additional research branches suggested by secondary references also remain deferred unless later sources justify them directly:
 
-- Engram-style conditional memory / host-memory lookup,
+- fuller Engram tokenizer-compression and host-memory lookup systems beyond the current gated in-model branch,
 - explicit data-path separation between knowledge-heavy and reasoning-heavy training flows,
 - speculative DeepSeek Sparse Attention variants inferred from leaks or commentary rather than official documentation.
 
@@ -105,7 +117,10 @@ This surface intentionally mirrors the OpenMythos bootstrap trainer:
 - shared schedule, batching, checkpoint discovery, and head-loss math come from `TransformerCore.jl`,
 - the default script uses local byte-encoded batches for a simple smoke-training path.
 
-MTP-aware training, full-model gradients, distributed training, and paper-scale optimizer/runtime work remain later phases.
+The package also now has a tiny full-model bootstrap trainer that updates the
+main LM path, the current MTP heads, and optional Engram parameters on very
+small configs. Broader config coverage, distributed training, and paper-scale
+optimizer/runtime work remain later phases.
 
 ## Why the package is split from OpenMythos
 
