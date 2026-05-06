@@ -7,7 +7,12 @@
   };
 
   outputs =
-    { self, nixpkgs, llms, ... }:
+    {
+      self,
+      nixpkgs,
+      llms,
+      ...
+    }:
     let
       lib = nixpkgs.lib;
       systems = builtins.attrNames llms.packages;
@@ -48,7 +53,7 @@
                 vscode
 
                 # Language runtime
-                julia
+                julia-bin
 
                 # LLM - CPU-only llama.cpp (CLI + server); workflow uses
                 # llama-cpp instead of ollama.
@@ -76,8 +81,7 @@
       );
 
       checks = forAllSystems (
-        _system: pkgs:
-        {
+        _system: pkgs: {
           enterTest = pkgs.runCommand "openmythos-enter-test" { nativeBuildInputs = [ pkgs.git ]; } ''
             git --version | grep -F "${pkgs.git.version}" >/dev/null
 
