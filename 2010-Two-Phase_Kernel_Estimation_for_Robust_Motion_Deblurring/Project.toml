@@ -1,0 +1,12 @@
+[deps]
+FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
+FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
+Revise = "295af30f-22a3-4d4b-b14b-313f766a96b3"
+ImageFiltering = "6a3955dd-da59-5b1f-98d4-e7296123deb5"
+ImageIO = "82e4d734-157c-48bb-816b-45c225c6df19"
+Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
+Pluto = "c3e4b0f8-55cb-11ea-2926-15256bba5781"
+PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+RobustMotionDeblur = "33333333-3333-3333-3333-333333333333"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+TVL1Deconv = "22222222-2222-2222-2222-222222222222"

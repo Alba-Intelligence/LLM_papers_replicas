@@ -1,0 +1,15 @@
+name = "GraphTools"
+uuid = "bb29c137-534b-4d95-a866-499e6b78abd2"
+version = "0.1.0"
+authors = ["Emmanuel_R8 <emmanuel.rialland@gmail.com>"]
+
+[deps]
+Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
+Hypergraphs = "bbf2d11e-0f24-11e9-2ae7-9fe8af40a25e"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
+Transformers = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"

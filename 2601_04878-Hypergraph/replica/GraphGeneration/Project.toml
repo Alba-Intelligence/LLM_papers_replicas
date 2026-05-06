@@ -1,0 +1,18 @@
+name = "GraphGeneration"
+uuid = "fc36db3f-46aa-426c-a80d-b0fc63989ced"
+version = "0.1.0"
+authors = ["Emmanuel_R8 <emmanuel.rialland@gmail.com>"]
+
+[deps]
+Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
+Hypergraphs = "bbf2d11e-0f24-11e9-2ae7-9fe8af40a25e"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
+SHA = "ea8e919c-243c-51af-8825-aaa63cd721ce"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+
+[extras]
+GraphUtils = "1379f3c9-e828-4162-bd47-00615ff959cd"

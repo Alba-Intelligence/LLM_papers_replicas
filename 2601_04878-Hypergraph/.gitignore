@@ -1,0 +1,40 @@
+flake.lock
+
+# Julia
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+Manifest.toml
+*.local
+.DS_Store
+
+HyperGraphReasoningPython
+
+# Julia package directories
+replica/*/Manifest.toml
+replica/*/.julia/
+
+# Test fixtures and generated data
+replica/*/test/fixtures/*.jld2
+replica/*/test/fixtures/*.json
+replica/*/test/fixtures/*.csv
+replica/*/test/fixtures/*.graphml
+
+# Documentation builds
+replica/*/docs/build/
+replica/*/docs/site/
+documentation/*.pdf
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local

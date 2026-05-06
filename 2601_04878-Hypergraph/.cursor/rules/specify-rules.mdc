@@ -1,0 +1,31 @@
+# 2601_04878-Hypergraph Development Guidelines
+
+Auto-generated from all feature plans. Last updated: 2026-01-16
+
+## Active Technologies
+- Files (JLD2/CSV/GraphML formats for hypergraph data, text files for documentation, Pluto notebooks as `.jl` files) (001-julia-replication)
+
+- Julia 1.9+ (latest stable) (001-julia-replication)
+
+## Project Structure
+
+```text
+src/
+tests/
+```
+
+## Commands
+
+# Add commands for Julia 1.9+ (latest stable)
+
+## Code Style
+
+Julia 1.9+ (latest stable): Follow standard conventions
+
+## Recent Changes
+- 001-julia-replication: Added Julia 1.9+ (latest stable)
+
+- 001-julia-replication: Added Julia 1.9+ (latest stable)
+
+<!-- MANUAL ADDITIONS START -->
+<!-- MANUAL ADDITIONS END -->

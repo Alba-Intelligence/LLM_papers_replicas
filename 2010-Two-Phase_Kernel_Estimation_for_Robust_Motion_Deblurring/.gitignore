@@ -1,0 +1,48 @@
+
+# Devenv
+.devenv*
+devenv.lock
+devenv.local.nix
+devenv.local.yaml
+
+# direnv
+.direnv
+
+# pre-commit
+.pre-commit-config.yaml
+
+# IDE / editor
+.cursor/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Backup files
+*.bak
+*backup*
+
+docs/private
+
+# Julia sub-package manifests
+packages/*/Manifest.toml
+
+# Generated images / outputs
+result*.png
+scripts/*.png
+scripts/*.jpg
+scripts/*.bmp
+!scripts/synth_input.jpg
+scripts/deblurred/
+scripts/kernel/
+scripts/synthetic_cases/
+packages/RobustMotionDeblur/test/figures/
+
+# Scratch / debug scripts
+script[0-9]*.jl
+nb_*.jl
+scripts/debug_*.jl
+scripts/test_*.jl
+scripts/quick_validate.jl
+scripts/validate_kernels.jl
+scripts/run_synthetic_cases.jl

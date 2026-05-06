@@ -1,0 +1,10 @@
+name = "GraphUtils"
+uuid = "1379f3c9-e828-4162-bd47-00615ff959cd"
+version = "0.1.0"
+authors = ["Emmanuel_R8 <emmanuel.rialland@gmail.com>"]
+
+[deps]
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
