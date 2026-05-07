@@ -163,20 +163,20 @@ julia --project=. scripts/train_3b_fineweb_edu.jl
 
 Useful environment variables:
 
-| Variable | Meaning | Default |
-| --- | --- | --- |
-| `OPENMYTHOS_TRAIN_TOKENIZER_MODEL_ID` | tokenizer model ID | `openai/gpt-oss-20b` unless overridden |
-| `OPENMYTHOS_TRAIN_TOTAL_STEPS` | total bootstrap steps | `8` |
-| `OPENMYTHOS_TRAIN_SEQ_LEN` | sequence length | `32` |
-| `OPENMYTHOS_TRAIN_BATCH_SIZE` | batch size | `2` |
-| `OPENMYTHOS_TRAIN_ATTN_TYPE` | attention backend (`gqa` or `mla`) | `gqa` |
-| `OPENMYTHOS_TRAIN_N_EXPERTS` | routed experts in full-model mode | `1` |
-| `OPENMYTHOS_TRAIN_SHARED_EXPERTS` | shared experts in full-model mode | `0` |
-| `OPENMYTHOS_TRAIN_EXPERTS_PER_TOKEN` | routed experts selected per token in full-model mode | `1` |
-| `OPENMYTHOS_TRAIN_CKPT_DIR` | checkpoint directory | `checkpoints` |
-| `OPENMYTHOS_USE_FINEWEB_EDU` | use FineWeb-Edu batch bridge | `0` |
-| `OPENMYTHOS_FINEWEB_SUBSET` | FineWeb-Edu subset | `sample-10BT` |
-| `OPENMYTHOS_FINEWEB_BATCHES` | number of FineWeb batches to fetch | `max(total_steps, 1)` |
+| Variable                              | Meaning                                              | Default                                |
+| ------------------------------------- | ---------------------------------------------------- | -------------------------------------- |
+| `OPENMYTHOS_TRAIN_TOKENIZER_MODEL_ID` | tokenizer model ID                                   | `openai/gpt-oss-20b` unless overridden |
+| `OPENMYTHOS_TRAIN_TOTAL_STEPS`        | total bootstrap steps                                | `8`                                    |
+| `OPENMYTHOS_TRAIN_SEQ_LEN`            | sequence length                                      | `32`                                   |
+| `OPENMYTHOS_TRAIN_BATCH_SIZE`         | batch size                                           | `2`                                    |
+| `OPENMYTHOS_TRAIN_ATTN_TYPE`          | attention backend (`gqa` or `mla`)                   | `gqa`                                  |
+| `OPENMYTHOS_TRAIN_N_EXPERTS`          | routed experts in full-model mode                    | `1`                                    |
+| `OPENMYTHOS_TRAIN_SHARED_EXPERTS`     | shared experts in full-model mode                    | `0`                                    |
+| `OPENMYTHOS_TRAIN_EXPERTS_PER_TOKEN`  | routed experts selected per token in full-model mode | `1`                                    |
+| `OPENMYTHOS_TRAIN_CKPT_DIR`           | checkpoint directory                                 | `checkpoints`                          |
+| `OPENMYTHOS_USE_FINEWEB_EDU`          | use FineWeb-Edu batch bridge                         | `0`                                    |
+| `OPENMYTHOS_FINEWEB_SUBSET`           | FineWeb-Edu subset                                   | `sample-10BT`                          |
+| `OPENMYTHOS_FINEWEB_BATCHES`          | number of FineWeb batches to fetch                   | `max(total_steps, 1)`                  |
 
 Example local-text smoke run:
 
@@ -208,17 +208,17 @@ julia --project=. scripts/train_deepseek_tiny.jl
 
 Useful environment variables:
 
-| Variable | Meaning | Default |
-| --- | --- | --- |
-| `DEEPSEEK_V4_TRAIN_VOCAB_SIZE` | tiny bootstrap vocab size | `512` |
-| `DEEPSEEK_V4_TRAIN_MODE` | training mode (`head_only` or `full_model`) | `head_only` |
-| `DEEPSEEK_V4_TRAIN_USE_ENGRAM` | enable the gated Engram branch | `0` |
-| `DEEPSEEK_V4_TRAIN_TOTAL_STEPS` | total bootstrap steps | `8` |
-| `DEEPSEEK_V4_TRAIN_SEQ_LEN` | sequence length | `32` |
-| `DEEPSEEK_V4_TRAIN_BATCH_SIZE` | batch size | `2` |
-| `DEEPSEEK_V4_TRAIN_CKPT_DIR` | checkpoint directory | `checkpoints/<mode>` |
-| `DEEPSEEK_V4_TRAIN_TEXT` | local training text override | empty |
-| `DEEPSEEK_V4_TRAIN_TEXT_FILE` | path to local training text | empty |
+| Variable                        | Meaning                                     | Default              |
+| ------------------------------- | ------------------------------------------- | -------------------- |
+| `DEEPSEEK_V4_TRAIN_VOCAB_SIZE`  | tiny bootstrap vocab size                   | `512`                |
+| `DEEPSEEK_V4_TRAIN_MODE`        | training mode (`head_only` or `full_model`) | `head_only`          |
+| `DEEPSEEK_V4_TRAIN_USE_ENGRAM`  | enable the gated Engram branch              | `0`                  |
+| `DEEPSEEK_V4_TRAIN_TOTAL_STEPS` | total bootstrap steps                       | `8`                  |
+| `DEEPSEEK_V4_TRAIN_SEQ_LEN`     | sequence length                             | `32`                 |
+| `DEEPSEEK_V4_TRAIN_BATCH_SIZE`  | batch size                                  | `2`                  |
+| `DEEPSEEK_V4_TRAIN_CKPT_DIR`    | checkpoint directory                        | `checkpoints/<mode>` |
+| `DEEPSEEK_V4_TRAIN_TEXT`        | local training text override                | empty                |
+| `DEEPSEEK_V4_TRAIN_TEXT_FILE`   | path to local training text                 | empty                |
 
 Example local DeepSeek smoke run:
 
@@ -242,7 +242,7 @@ The current bootstrap trainer is intentionally limited:
 - that full-model mode currently supports small GQA/MLA configs, including tiny sparse routed-expert setups with optional shared experts,
 - `DeepSeekv4.jl` now has both a `LuxHeadOnlyDeepSeekV4` head-only trainer and a first tiny `DeepSeekFullModelTrainerState` bootstrap path,
 - the current DeepSeek full-model loss now trains both the main LM logits path and the current auxiliary MTP heads on tiny configs, with an optional gated Engram branch,
-- the core model internals are still mostly manual Julia blocks,
+- the core model internals are still mostly manual Julia blocks, though `OpenMythos.jl` now also exposes the first Lux-native leaf-layer mirrors for experts / MoE / recurrent update primitives,
 - broader sparse/full-model autodiff and distributed training are still future work.
 
 The current runtime seam is also intentionally lightweight:

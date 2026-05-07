@@ -6,13 +6,13 @@ Keep one shared repository and wiki while allowing multiple Julia packages to ev
 
 ## Current workspace split
 
-| Path | Purpose |
-| --- | --- |
-| `OpenMythos.jl/` | recurrent OpenMythos package |
-| `DeepSeekv4.jl/` | architecture-first DeepSeek V4 package |
-| `TransformerCore.jl/` | shared low-level primitives plus Lux-native training/checkpoint foundation |
-| `docs/wiki/` | common documentation |
-| `reference/private/OpenMythos/` | vendored OpenMythos Python source of truth |
+| Path                            | Purpose                                                                    |
+| ------------------------------- | -------------------------------------------------------------------------- |
+| `OpenMythos.jl/`                | recurrent OpenMythos package                                               |
+| `DeepSeekv4.jl/`                | architecture-first DeepSeek V4 package                                     |
+| `TransformerCore.jl/`           | shared low-level primitives plus Lux-native training/checkpoint foundation |
+| `docs/wiki/`                    | common documentation                                                       |
+| `reference/private/OpenMythos/` | vendored OpenMythos Python source of truth                                 |
 
 ## What belongs in `TransformerCore.jl/`
 

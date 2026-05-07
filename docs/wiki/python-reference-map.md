@@ -17,19 +17,19 @@ DeepSeek V4 source mapping lives in [DeepSeek V4 reference map](deepseek-v4-refe
 
 ## File-by-file mapping
 
-| Python path | Purpose | Julia target | Priority |
-| --- | --- | --- | --- |
-| `open_mythos/main.py` | Core model, layers, recurrent loop, generation | `OpenMythos.jl/src/` core modules and model assembly | Highest |
-| `open_mythos/tokenizer.py` | Hugging Face tokenizer wrapper | `OpenMythos.jl/src/tokenizer.jl` or a temporary Python bridge | High |
-| `open_mythos/variants.py` | Named configuration presets | `OpenMythos.jl/src/variants.jl` | High |
-| `tests/test_main.py` | Invariant-heavy model tests | `OpenMythos.jl/test/` parity tests | Highest |
-| `tests/test_tokenizer.py` | Tokenizer behavior checks | `OpenMythos.jl/test/test_tokenizer.jl` | High |
-| `docs/open_mythos.md` | Architecture reference | `docs/wiki/architecture.md` and package docs | High |
-| `training/3b_fine_web_edu.py` | FSDP training recipe | `OpenMythos.jl/src/training.jl` plus `OpenMythos.jl/scripts/train_3b_fineweb_edu.jl` Lux-backed bootstrap path | High |
-| `docs/datasets.md` | Dataset recommendations | wiki / training docs | Medium |
-| `open_mythos/moda.py` | MoDA + DeepSeek MoE branch | separate later module or deferred experiment | Low |
-| `tests/bench_vs_transformer.py` | comparative benchmark | later validation tooling | Low |
-| `tests/small_benchmark.py` | benchmark harness | later performance work | Low |
+| Python path                     | Purpose                                        | Julia target                                                                                                   | Priority |
+| ------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | -------- |
+| `open_mythos/main.py`           | Core model, layers, recurrent loop, generation | `OpenMythos.jl/src/` core modules and model assembly                                                           | Highest  |
+| `open_mythos/tokenizer.py`      | Hugging Face tokenizer wrapper                 | `OpenMythos.jl/src/tokenizer.jl` or a temporary Python bridge                                                  | High     |
+| `open_mythos/variants.py`       | Named configuration presets                    | `OpenMythos.jl/src/variants.jl`                                                                                | High     |
+| `tests/test_main.py`            | Invariant-heavy model tests                    | `OpenMythos.jl/test/` parity tests                                                                             | Highest  |
+| `tests/test_tokenizer.py`       | Tokenizer behavior checks                      | `OpenMythos.jl/test/test_tokenizer.jl`                                                                         | High     |
+| `docs/open_mythos.md`           | Architecture reference                         | `docs/wiki/architecture.md` and package docs                                                                   | High     |
+| `training/3b_fine_web_edu.py`   | FSDP training recipe                           | `OpenMythos.jl/src/training.jl` plus `OpenMythos.jl/scripts/train_3b_fineweb_edu.jl` Lux-backed bootstrap path | High     |
+| `docs/datasets.md`              | Dataset recommendations                        | wiki / training docs                                                                                           | Medium   |
+| `open_mythos/moda.py`           | MoDA + DeepSeek MoE branch                     | separate later module or deferred experiment                                                                   | Low      |
+| `tests/bench_vs_transformer.py` | comparative benchmark                          | later validation tooling                                                                                       | Low      |
+| `tests/small_benchmark.py`      | benchmark harness                              | later performance work                                                                                         | Low      |
 
 ## Suggested Julia module breakdown
 

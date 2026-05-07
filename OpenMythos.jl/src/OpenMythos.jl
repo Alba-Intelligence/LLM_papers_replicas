@@ -57,6 +57,7 @@ include("blocks.jl")
 include("recurrent.jl")
 include("model.jl")
 include("variants.jl")
+include("lux_layers.jl")
 include("tokenizer.jl")
 include("training.jl")
 
@@ -75,6 +76,12 @@ export MythosConfig,
        LTIInjection,
        get_A,
        ACTHalting,
+       LuxExpert,
+       LuxMoEFFN,
+       LuxLoRAAdapter,
+       LuxLTIInjection,
+       LuxACTHalting,
+       to_lux_parameters,
        OpenMythos,
        generate,
        DEFAULT_MODEL_ID,

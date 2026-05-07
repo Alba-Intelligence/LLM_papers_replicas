@@ -76,10 +76,10 @@ This is why OpenMythos remains its own package rather than being folded into a g
 
 #### 4. Attention backends
 
-| Backend | Julia type | Role |
-| --- | --- | --- |
-| GQA | `GQAttention` | simpler baseline path |
-| MLA | `MLAttention` | higher-priority parity path |
+| Backend | Julia type    | Role                        |
+| ------- | ------------- | --------------------------- |
+| GQA     | `GQAttention` | simpler baseline path       |
+| MLA     | `MLAttention` | higher-priority parity path |
 
 Both use RoPE and KV caching, but the cache structure differs:
 
@@ -132,6 +132,8 @@ The current implementation is intentionally correctness-first and tiny-config-fi
 - growable axis-append cache buffers used by both model families.
 
 That package should remain architecture-agnostic. Recurrence, CSA/HCA, mHC, training wrappers, and routing policies stay in the model-family packages until a genuinely stable shared abstraction exists.
+
+`OpenMythos.jl` has now started the package-level Lux refactor by adding Lux-native leaf layers that mirror the current recurrent FFN and halting/update primitives (`LuxExpert`, `LuxMoEFFN`, `LuxLoRAAdapter`, `LuxLTIInjection`, `LuxACTHalting`). They currently live alongside the legacy parity structs and are validated for numerical equivalence, but they are not yet wired through the full OpenMythos stack.
 
 ## Runtime foundations
 

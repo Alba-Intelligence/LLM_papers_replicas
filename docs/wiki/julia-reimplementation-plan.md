@@ -40,6 +40,7 @@ The OpenMythos package includes a parity-tested core model stack:
 - `LoRAAdapter`
 - `LTIInjection`
 - `ACTHalting`
+- Lux-native OpenMythos leaf layers for experts / MoE / recurrent update primitives
 
 The current state is:
 
@@ -48,7 +49,7 @@ The current state is:
 - `TransformerCore.jl/` holds the shared primitive, Lux-native layer/trainer foundation, runtime-envelope, and paged/growable cache-buffer layer.
 - the workspace source now carries public-API docstrings and a shared Documenter build for the multi-package surface.
 
-The next milestone is to refactor both model families toward a clearer Lux-native full-model training story without prematurely collapsing their model-family-specific internals into one abstraction. `TransformerCore.jl` now has the first shared Lux-native layer/trainer/checkpoint foundation; the next package-level work is to move OpenMythos onto it first, then reuse the same surface in DeepSeek.
+The next milestone is to refactor both model families toward a clearer Lux-native full-model training story without prematurely collapsing their model-family-specific internals into one abstraction. `TransformerCore.jl` now has the first shared Lux-native layer/trainer/checkpoint foundation, and `OpenMythos.jl` now has the first Lux-native leaf-layer mirrors for experts / MoE / recurrent-update primitives; the next package-level work is to continue moving OpenMythos onto that surface first, then reuse the same pattern in DeepSeek.
 
 For future DeepSeek planning, keep the source priority explicit:
 
@@ -58,17 +59,17 @@ For future DeepSeek planning, keep the source priority explicit:
 
 ## Chosen stack
 
-| Concern | Julia library |
-| --- | --- |
-| Model definition | `Lux.jl` |
-| Tensor ops and NN primitives | `NNlib.jl` |
-| Autodiff | `Zygote.jl` |
-| Optimizers | `Optimisers.jl` |
-| Data loading | `MLUtils.jl` |
-| GPU execution | `CUDA.jl` |
-| Documentation | `Documenter.jl` + `docs/wiki` |
-| Serialization | `JLD2.jl` or another Julia-native checkpoint format |
-| Temporary Python interop where needed | `PythonCall.jl` |
+| Concern                               | Julia library                                       |
+| ------------------------------------- | --------------------------------------------------- |
+| Model definition                      | `Lux.jl`                                            |
+| Tensor ops and NN primitives          | `NNlib.jl`                                          |
+| Autodiff                              | `Zygote.jl`                                         |
+| Optimizers                            | `Optimisers.jl`                                     |
+| Data loading                          | `MLUtils.jl`                                        |
+| GPU execution                         | `CUDA.jl`                                           |
+| Documentation                         | `Documenter.jl` + `docs/wiki`                       |
+| Serialization                         | `JLD2.jl` or another Julia-native checkpoint format |
+| Temporary Python interop where needed | `PythonCall.jl`                                     |
 
 ## Porting principles
 
@@ -165,11 +166,11 @@ Status: in progress; the runtime-envelope, lower-allocation cache-buffer, preall
 
 ## Validation strategy
 
-| Area | Validation surface |
-| --- | --- |
-| `TransformerCore.jl` | primitive smoke and invariant tests |
-| `OpenMythos.jl` | translated parity tests plus tokenizer, head-only, and dense full-model training smoke tests |
-| `DeepSeekv4.jl` | tiny-config architecture, generation, Engram, head-only training, and tiny full-model training smoke tests |
+| Area                 | Validation surface                                                                                         |
+| -------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `TransformerCore.jl` | primitive smoke and invariant tests                                                                        |
+| `OpenMythos.jl`      | translated parity tests plus tokenizer, head-only, and dense full-model training smoke tests               |
+| `DeepSeekv4.jl`      | tiny-config architecture, generation, Engram, head-only training, and tiny full-model training smoke tests |
 
 ## Explicit deferrals
 
@@ -185,7 +186,7 @@ These should not block the current Julia milestone:
 
 The best next vertical slice is:
 
-1. refactor OpenMythos onto the new `TransformerCore.jl` Lux-native trainer/checkpoint foundation and make full-model training the primary path,
+1. continue the OpenMythos Lux refactor by lifting attention / block / model surfaces onto the new `TransformerCore.jl` trainer/checkpoint foundation and make full-model training the primary path,
 2. replace the OpenMythos Python tokenizer/FineWeb bridges with Julia-native paths where practical,
 3. preserve the shared runtime envelope while page-aware attention and deeper serving work remain model-specific underneath,
 4. expand distributed/runtime work once the single-process story is deeper,
