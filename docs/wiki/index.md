@@ -27,7 +27,7 @@ It is intentionally concept-first: the goal is to explain what the Python projec
 7. [Multi-package workspace](multi-model-repo-plan.md) - how the Julia workspace is split across packages.
 8. [Julia reimplementation plan](julia-reimplementation-plan.md) - current status and the remaining engineering phases.
 
-There is also a small Pluto notebook example at `OpenMythos.jl/notebooks/small_example.jl`.
+There is also a small Pluto notebook example at `notebooks/openmythos/small_example.jl`.
 
 ## Big picture
 

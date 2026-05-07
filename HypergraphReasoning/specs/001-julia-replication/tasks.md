@@ -99,14 +99,14 @@ description: "Task list for Julia Replication Project"
 ### Notebook Conversion for User Story 1
 
 - [X] T039 [US1] Create notebooks/ directory structure at repository root (mirroring HyperGraphReasoningPython/Notebooks/SG/ structure)
-- [X] T040 [P] [US1] Write test to verify notebook conversion: test that notebooks/SG/make_hypergraph.jl exists and is valid Pluto notebook format
-- [X] T041 [P] [US1] Write test to verify notebook conversion: test that notebooks/SG/Analyze_Hypergraph.jl exists and is valid Pluto notebook format
-- [X] T042 [P] [US1] Write test to verify notebook conversion: test that notebooks/SG/Agents.jl exists and is valid Pluto notebook format
+- [X] T040 [P] [US1] Write test to verify notebook conversion: test that notebooks/hypergraph-reasoning/sg/make_hypergraph.jl exists and is valid Pluto notebook format
+- [X] T041 [P] [US1] Write test to verify notebook conversion: test that notebooks/hypergraph-reasoning/sg/Analyze_Hypergraph.jl exists and is valid Pluto notebook format
+- [X] T042 [P] [US1] Write test to verify notebook conversion: test that notebooks/hypergraph-reasoning/sg/Agents.jl exists and is valid Pluto notebook format
 - [X] T043 [P] [US1] Write test for notebook execution: test that converted notebooks can be executed in Pluto.jl without errors
 - [X] T044 [P] [US1] Write test for notebook output equivalence: automated comparison of notebook outputs with Python reference data (where applicable)
-- [X] T045 [US1] Convert make_hypergraph.ipynb to Pluto notebook: translate Python code to Julia, replace imports with `using` statements for the top-level Julia packages, store in notebooks/SG/make_hypergraph.jl
-- [X] T046 [US1] Convert Analyze_Hypergraph.ipynb to Pluto notebook: translate Python code to Julia, replace imports with `using` statements for the top-level Julia packages, store in notebooks/SG/Analyze_Hypergraph.jl
-- [X] T047 [US1] Convert Agents.ipynb to Pluto notebook: translate Python code to Julia, replace imports with `using` statements for the top-level Julia packages, store in notebooks/SG/Agents.jl
+- [X] T045 [US1] Convert make_hypergraph.ipynb to Pluto notebook: translate Python code to Julia, replace imports with `using` statements for the top-level Julia packages, store in notebooks/hypergraph-reasoning/sg/make_hypergraph.jl
+- [X] T046 [US1] Convert Analyze_Hypergraph.ipynb to Pluto notebook: translate Python code to Julia, replace imports with `using` statements for the top-level Julia packages, store in notebooks/hypergraph-reasoning/sg/Analyze_Hypergraph.jl
+- [X] T047 [US1] Convert Agents.ipynb to Pluto notebook: translate Python code to Julia, replace imports with `using` statements for the top-level Julia packages, store in notebooks/hypergraph-reasoning/sg/Agents.jl
 - [X] T048 [US1] Verify all converted notebooks execute successfully in Pluto.jl: manual execution and verification of each notebook
 - [X] T049 [US1] Validate notebook output equivalence: compare outputs from converted notebooks with Python notebook outputs (automated where possible, manual for visual/interactive outputs)
 

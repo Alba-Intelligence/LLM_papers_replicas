@@ -4,7 +4,7 @@
 using Test
 using Pkg
 
-const NOTEBOOKS_DIR = joinpath(@__DIR__, "..", "notebooks", "SG")
+const NOTEBOOKS_DIR = joinpath(@__DIR__, "..", "..", "notebooks", "hypergraph-reasoning", "sg")
 const REQUIRED_NOTEBOOKS = ["make_hypergraph.jl", "Analyze_Hypergraph.jl", "Agents.jl"]
 
 @testset "Notebook Execution Tests" begin
@@ -18,11 +18,11 @@ const REQUIRED_NOTEBOOKS = ["make_hypergraph.jl", "Analyze_Hypergraph.jl", "Agen
                     content = read(notebook_path, String)
                     # Basic syntax check: try to parse the file
                     # This is a simplified check - full execution would require Pluto.jl
-                    @test length(content) > 0 "Notebook $notebook should not be empty"
+                    @test length(content) > 0
                     # Check for basic Julia syntax markers
-                    @test occursin("#", content) || occursin("=", content) "Notebook $notebook should have valid structure"
+                    @test occursin("#", content) || occursin("=", content)
                 catch e
-                    @test false "Notebook $notebook failed basic validation: $e"
+                    @test false
                 end
             end
         end
@@ -36,7 +36,7 @@ const REQUIRED_NOTEBOOKS = ["make_hypergraph.jl", "Analyze_Hypergraph.jl", "Agen
                 content = read(notebook_path, String)
                 # Pluto notebooks should have using statements for dependencies
                 # This is a basic check - actual dependencies may vary
-                @test true "Dependency check placeholder for $notebook"
+                @test true
             end
         end
     end

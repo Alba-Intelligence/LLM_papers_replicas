@@ -16,7 +16,7 @@ It is intentionally self-contained and uses a bootstrap-sized config so it can r
 # ╔═╡ 3d2ce33d-5599-4c97-8c0d-4da847bb878e
 begin
     import Pkg
-    Pkg.activate(joinpath(@__DIR__, ".."))
+    Pkg.activate(joinpath(@__DIR__, "..", "..", "OpenMythos.jl"))
 
     using OpenMythos
     using Random
@@ -79,7 +79,7 @@ md"""
 
 - replace `bootstrap_training_config` with a different config to explore shapes,
 - inspect `docs/wiki/usage.md` for tokenizer and training examples,
-- try `scripts/train_3b_fineweb_edu.jl` for the Lux-backed bootstrap training path.
+- try `OpenMythos.jl/scripts/train_3b_fineweb_edu.jl` for the Lux-backed bootstrap training path.
 """
 
 # ╔═╡ Cell order:

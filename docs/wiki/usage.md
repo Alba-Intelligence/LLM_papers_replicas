@@ -133,7 +133,7 @@ This is a reference runtime seam, not a production serving stack: the envelope s
 There is a small Pluto notebook in:
 
 ```text
-OpenMythos.jl/notebooks/small_example.jl
+notebooks/openmythos/small_example.jl
 ```
 
 To open it:
@@ -143,7 +143,7 @@ using Pluto
 Pluto.run()
 ```
 
-Then select `OpenMythos.jl/notebooks/small_example.jl`.
+Then select `notebooks/openmythos/small_example.jl`.
 
 The notebook demonstrates:
 

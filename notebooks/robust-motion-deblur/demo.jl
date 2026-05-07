@@ -7,7 +7,7 @@ using InteractiveUtils
 # ╔═╡ 8a1b2c3d-0001-4000-8000-000000000001
 begin
     import Pkg
-    Pkg.activate(joinpath(@__DIR__, "..", "packages", "RobustMotionDeblur"))
+    Pkg.activate(joinpath(@__DIR__, "..", "..", "2010-Two-Phase_Kernel_Estimation_for_Robust_Motion_Deblurring", "packages", "RobustMotionDeblur"))
     using RobustMotionDeblur
     using Images
     using Statistics

@@ -304,7 +304,7 @@ Manual conversion process:
    # Julia:
    using GraphGeneration  # from the top-level Julia package
    ```
-4. **Create Pluto notebook**: Save as `.jl` file in `notebooks/SG/` directory
+4. **Create Pluto notebook**: Save as `.jl` file in `notebooks/hypergraph-reasoning/sg/` directory
 5. **Test execution**: Open in Pluto.jl and verify it runs
 
 ### 3. Example Conversion
