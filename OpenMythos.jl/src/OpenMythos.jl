@@ -59,6 +59,7 @@ include("model.jl")
 include("variants.jl")
 include("lux_layers.jl")
 include("lux_attention.jl")
+include("lux_blocks.jl")
 include("tokenizer.jl")
 include("training.jl")
 
@@ -84,6 +85,8 @@ export MythosConfig,
        LuxACTHalting,
        LuxGQAttention,
        LuxMLAttention,
+       LuxTransformerBlock,
+       LuxRecurrentBlock,
        to_lux_parameters,
        OpenMythos,
        generate,
