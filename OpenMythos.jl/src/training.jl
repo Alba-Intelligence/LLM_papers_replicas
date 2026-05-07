@@ -327,6 +327,104 @@ function train_full_model_step!(state::FullModelTrainerState{T}, input_ids::Abst
     return (loss=loss, lr=lr, grad_norm=T(sqrt(_tree_sumsq(grad))), step=state.step)
 end
 
+struct LuxConfiguredOpenMythos{L<:LuxOpenMythos} <: Lux.LuxCore.AbstractLuxLayer
+    model::L
+    n_loops::Union{Nothing, Int}
+end
+
+LuxConfiguredOpenMythos(model::LuxOpenMythos; n_loops::Union{Nothing, Integer}=nothing) =
+    LuxConfiguredOpenMythos{typeof(model)}(model, n_loops === nothing ? nothing : Int(n_loops))
+
+Lux.initialparameters(rng::AbstractRNG, layer::LuxConfiguredOpenMythos) = Lux.initialparameters(rng, layer.model)
+Lux.initialstates(rng::AbstractRNG, layer::LuxConfiguredOpenMythos) = Lux.initialstates(rng, layer.model)
+
+function (layer::LuxConfiguredOpenMythos)(input_ids::AbstractMatrix{<:Integer}, ps, st)
+    return Lux.apply(layer.model, (input_ids=input_ids, n_loops=layer.n_loops), ps, st)
+end
+
+"""
+    LuxFullModelTrainerState
+
+Lux-native OpenMythos full-model trainer state built on the shared
+`TransformerCore.NextTokenTrainerState` foundation.
+"""
+mutable struct LuxFullModelTrainerState{L,S}
+    layer::L
+    trainer::S
+end
+
+function LuxFullModelTrainerState(
+    model::OpenMythos{T};
+    schedule::WarmupCosineSchedule{T}=WarmupCosineSchedule(0, 1, T(1e-3), zero(T)),
+    weight_decay::Real=0.1,
+    beta1::Real=0.9,
+    beta2::Real=0.95,
+    eps::Real=1e-8,
+    n_loops::Union{Nothing, Integer}=nothing,
+) where {T<:AbstractFloat}
+    _validate_full_model_cfg(model.cfg)
+    active_loops = n_loops === nothing ? model.cfg.max_loop_iters : Int(n_loops)
+    layer = LuxConfiguredOpenMythos(LuxOpenMythos(model.cfg); n_loops=active_loops)
+    ps = to_lux_parameters(model)
+    st = Lux.initialstates(Random.default_rng(), layer)
+    opt_state = Optimisers.setup(
+        Optimisers.AdamW(; eta=zero(T), beta=(T(beta1), T(beta2)), lambda=T(weight_decay), epsilon=T(eps)),
+        ps,
+    )
+    trainer = TransformerCore.NextTokenTrainerState(ps, st, opt_state, schedule, 0)
+    return LuxFullModelTrainerState(layer, trainer)
+end
+
+"""Return LM logits from the Lux-native full-model trainer state."""
+function lux_full_model_logits(state::LuxFullModelTrainerState, input_ids::AbstractMatrix{<:Integer})
+    return TransformerCore.next_token_logits(state.layer, state.trainer, input_ids)
+end
+
+"""Return sequence cross-entropy from the Lux-native full-model trainer state."""
+function lux_full_model_loss(state::LuxFullModelTrainerState, input_ids::AbstractMatrix{<:Integer}, target_ids::AbstractMatrix{<:Integer})
+    return TransformerCore.next_token_loss(state.layer, state.trainer, input_ids, target_ids)
+end
+
+"""Take one optimization step in the Lux-native OpenMythos full-model trainer."""
+function train_lux_full_model_step!(state::LuxFullModelTrainerState, input_ids::AbstractMatrix{<:Integer}, target_ids::AbstractMatrix{<:Integer})
+    return TransformerCore.train_next_token_step!(state.trainer, state.layer, input_ids, target_ids)
+end
+
+"""
+    train_lux_full_model!(state, batches; ...)
+
+Run the Lux-native OpenMythos full-model trainer over token batches. When
+`ckpt_root` is provided, shared family/mode-aware checkpoints are written under
+`openmythos/full_model_lux/`.
+"""
+function train_lux_full_model!(
+    state::LuxFullModelTrainerState,
+    batches::AbstractVector{<:Tuple{<:AbstractMatrix{<:Integer}, <:AbstractMatrix{<:Integer}}};
+    total_steps::Integer=state.trainer.schedule.total_steps,
+    log_every::Integer=10,
+    ckpt_root::Union{Nothing, AbstractString}=nothing,
+    ckpt_every::Integer=0,
+    keep_last::Integer=3,
+    io::IO=stdout,
+    checkpoint_metadata::AbstractDict=Dict{String, Any}(),
+)
+    return TransformerCore.train_next_token!(
+        state.trainer,
+        state.layer,
+        batches;
+        total_steps=total_steps,
+        log_every=log_every,
+        ckpt_root=ckpt_root,
+        family="openmythos",
+        mode="full_model_lux",
+        ckpt_every=ckpt_every,
+        keep_last=keep_last,
+        io=io,
+        checkpoint_config=state.layer.model.cfg,
+        checkpoint_metadata=checkpoint_metadata,
+    )
+end
+
 function HeadOnlyTrainerState(
     model::OpenMythos{T};
     schedule::WarmupCosineSchedule{T}=WarmupCosineSchedule(0, 1, T(1e-3), zero(T)),

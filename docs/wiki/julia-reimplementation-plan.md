@@ -41,15 +41,16 @@ The OpenMythos package includes a parity-tested core model stack:
 - `LTIInjection`
 - `ACTHalting`
 - Lux-native OpenMythos layers for attention, experts / MoE, transformer blocks, recurrent update primitives, and the tied-embedding model shell
+- `LuxFullModelTrainerState` built on the shared `TransformerCore.NextTokenTrainerState`
 
 The current state is:
 
-- `OpenMythos.jl/` is the recurrent-depth package with parity-oriented model code, a head-only Lux bootstrap trainer, and a broadened tiny-config full-model bootstrap trainer that now supports both GQA and MLA attention plus small sparse routed-expert configs with optional shared experts.
+- `OpenMythos.jl/` is the recurrent-depth package with parity-oriented model code, a head-only Lux bootstrap trainer, a legacy mutable full-model bootstrap trainer, and a new Lux-native `LuxFullModelTrainerState` built on the shared trainer foundation for small GQA/MLA configs including optional shared experts.
 - `DeepSeekv4.jl/` is an architecture-first package with CSA/HCA, mHC, an optional gated Engram branch, MoE routing, MTP, chunked-prefill-aware generation, tiny-config tests, a head-only bootstrap training path, and a first tiny full-model bootstrap trainer that now updates both the main LM logits path and the current auxiliary MTP heads.
 - `TransformerCore.jl/` holds the shared primitive, Lux-native layer/trainer foundation, runtime-envelope, and paged/growable cache-buffer layer.
 - the workspace source now carries public-API docstrings and a shared Documenter build for the multi-package surface.
 
-The next milestone is to refactor both model families toward a clearer Lux-native full-model training story without prematurely collapsing their model-family-specific internals into one abstraction. `TransformerCore.jl` now has the first shared Lux-native layer/trainer/checkpoint foundation, and `OpenMythos.jl` now has Lux-native attention/FFN/block/recurrent mirrors plus a tied-embedding `LuxOpenMythos` shell; the next package-level work is to switch the package training path onto that surface first, then reuse the same pattern in DeepSeek.
+The next milestone is to refactor both model families toward a clearer Lux-native full-model training story without prematurely collapsing their model-family-specific internals into one abstraction. `TransformerCore.jl` now has the first shared Lux-native layer/trainer/checkpoint foundation, and `OpenMythos.jl` now has Lux-native attention/FFN/block/recurrent mirrors, a tied-embedding `LuxOpenMythos` shell, and a first `LuxFullModelTrainerState` on top of that foundation; the next package-level work is to replace the legacy package training/checkpoint path with that surface first, then reuse the same pattern in DeepSeek.
 
 For future DeepSeek planning, keep the source priority explicit:
 
@@ -186,7 +187,7 @@ These should not block the current Julia milestone:
 
 The best next vertical slice is:
 
-1. continue the OpenMythos Lux refactor by switching the package training path onto the new `LuxOpenMythos` + `TransformerCore.jl` trainer/checkpoint foundation and make full-model training the primary path,
+1. continue the OpenMythos Lux refactor by replacing the legacy package training/checkpoint path with the new `LuxOpenMythos` + `TransformerCore.jl` trainer/checkpoint foundation and make full-model training the primary path,
 2. replace the OpenMythos Python tokenizer/FineWeb bridges with Julia-native paths where practical,
 3. preserve the shared runtime envelope while page-aware attention and deeper serving work remain model-specific underneath,
 4. expand distributed/runtime work once the single-process story is deeper,

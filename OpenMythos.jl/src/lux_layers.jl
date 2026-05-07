@@ -114,24 +114,15 @@ function _router_logits(ps, token_matrix)
     return ps.router.weight * transpose(token_matrix)
 end
 
-function _shared_moe_state(layer::LuxMoEFFN, st, routed_states, shared_states)
-    routed = _expert_namedtuple(_ROUTED_EXPERT_KEYS(layer.n_experts), Tuple(routed_states))
-    shared = _expert_namedtuple(_SHARED_EXPERT_KEYS(layer.n_shared), Tuple(shared_states))
-    return (routed_experts=routed, shared_experts=shared)
-end
-
 function (layer::LuxMoEFFN)(x::AbstractArray{T, 3}, ps, st) where {T<:AbstractFloat}
     if layer.n_experts == 1 && layer.topk == 1
-        out, routed_st = Lux.apply(layer.routed_layers[1], x, getfield(ps.routed_experts, _ROUTED_EXPERT_KEYS(layer.n_experts)[1]), getfield(st.routed_experts, _ROUTED_EXPERT_KEYS(layer.n_experts)[1]))
-        shared_states = Any[]
+        out, _ = Lux.apply(layer.routed_layers[1], x, getfield(ps.routed_experts, _ROUTED_EXPERT_KEYS(layer.n_experts)[1]), getfield(st.routed_experts, _ROUTED_EXPERT_KEYS(layer.n_experts)[1]))
         for i in 1:layer.n_shared
             key = _SHARED_EXPERT_KEYS(layer.n_shared)[i]
-            add, shared_st = Lux.apply(layer.shared_layers[i], x, getfield(ps.shared_experts, key), getfield(st.shared_experts, key))
+            add, _ = Lux.apply(layer.shared_layers[i], x, getfield(ps.shared_experts, key), getfield(st.shared_experts, key))
             out = out .+ add
-            push!(shared_states, shared_st)
         end
-        routed_states = Any[routed_st]
-        return out, _shared_moe_state(layer, st, routed_states, shared_states)
+        return out, st
     end
 
     b, t, d = size(x)
@@ -141,7 +132,6 @@ function (layer::LuxMoEFFN)(x::AbstractArray{T, 3}, ps, st) where {T<:AbstractFl
     logits = _router_logits(ps, token_matrix)
     scores = _softmax_cols(logits)
 
-    routed_states = Any[getfield(st.routed_experts, key) for key in _ROUTED_EXPERT_KEYS(layer.n_experts)]
     token_outputs = [
         begin
             adjusted = view(logits, :, token_idx) .+ ps.router.bias
@@ -154,8 +144,7 @@ function (layer::LuxMoEFFN)(x::AbstractArray{T, 3}, ps, st) where {T<:AbstractFl
                 (
                     begin
                         key = _ROUTED_EXPERT_KEYS(layer.n_experts)[expert_idx]
-                        expert_out, routed_st = Lux.apply(layer.routed_layers[expert_idx], token, getfield(ps.routed_experts, key), routed_states[expert_idx])
-                        routed_states[expert_idx] = routed_st
+                        expert_out, _ = Lux.apply(layer.routed_layers[expert_idx], token, getfield(ps.routed_experts, key), getfield(st.routed_experts, key))
                         score .* expert_out
                     end
                     for (score, expert_idx) in zip(token_scores, top_idx)
@@ -167,15 +156,13 @@ function (layer::LuxMoEFFN)(x::AbstractArray{T, 3}, ps, st) where {T<:AbstractFl
     ]
     out = cat([reshape(token_out, 1, d) for token_out in token_outputs]...; dims=1)
 
-    shared_states = Any[]
     for i in 1:layer.n_shared
         key = _SHARED_EXPERT_KEYS(layer.n_shared)[i]
-        shared_out, shared_st = Lux.apply(layer.shared_layers[i], token_matrix, getfield(ps.shared_experts, key), getfield(st.shared_experts, key))
+        shared_out, _ = Lux.apply(layer.shared_layers[i], token_matrix, getfield(ps.shared_experts, key), getfield(st.shared_experts, key))
         out = out .+ shared_out
-        push!(shared_states, shared_st)
     end
 
-    return permutedims(reshape(out, b, t, d), (1, 2, 3)), _shared_moe_state(layer, st, routed_states, shared_states)
+    return permutedims(reshape(out, b, t, d), (1, 2, 3)), st
 end
 
 function _moe_parameters(moe::MoEFFN)

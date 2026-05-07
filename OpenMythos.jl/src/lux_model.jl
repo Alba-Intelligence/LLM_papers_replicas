@@ -76,10 +76,9 @@ function _lux_forward_hidden(
     freqs = freqs_all[(start_pos + 1):(start_pos + t), :]
     mask = t > 1 ? _causal_mask(t, start_pos, Float32) : nothing
 
-    prelude_states = Vector{Any}(undef, length(layer.prelude))
     for i in eachindex(layer.prelude)
         key = _PRELUDE_KEYS(length(layer.prelude))[i]
-        x, prelude_states[i] = Lux.apply(
+        x, _ = Lux.apply(
             layer.prelude[i],
             (x=x, freqs_cis=freqs, mask=mask, kv_cache=kv_cache, kv_capacity=kv_capacity, cache_key="prelude_$(i - 1)"),
             getfield(ps.prelude, key),
@@ -88,17 +87,16 @@ function _lux_forward_hidden(
     end
 
     e = x
-    x, st_recurrent = Lux.apply(
+    x, _ = Lux.apply(
         layer.recurrent,
         (h=x, e=e, freqs_cis=freqs, mask=mask, n_loops=n_loops, kv_cache=kv_cache, kv_capacity=kv_capacity),
         ps.recurrent,
         st.recurrent,
     )
 
-    coda_states = Vector{Any}(undef, length(layer.coda))
     for i in eachindex(layer.coda)
         key = _CODA_KEYS(length(layer.coda))[i]
-        x, coda_states[i] = Lux.apply(
+        x, _ = Lux.apply(
             layer.coda[i],
             (x=x, freqs_cis=freqs, mask=mask, kv_cache=kv_cache, kv_capacity=kv_capacity, cache_key="coda_$(i - 1)"),
             getfield(ps.coda, key),
@@ -106,14 +104,8 @@ function _lux_forward_hidden(
         )
     end
 
-    x, st_norm = Lux.apply(layer.norm, x, ps.norm, st.norm)
-    return x, (
-        embed=st_embed,
-        prelude=_stack_namedtuple(_PRELUDE_KEYS(length(layer.prelude)), Tuple(prelude_states)),
-        recurrent=st_recurrent,
-        coda=_stack_namedtuple(_CODA_KEYS(length(layer.coda)), Tuple(coda_states)),
-        norm=st_norm,
-    )
+    x, _ = Lux.apply(layer.norm, x, ps.norm, st.norm)
+    return x, st
 end
 
 function (layer::LuxOpenMythos)(input_ids::AbstractMatrix{<:Integer}, ps, st)
