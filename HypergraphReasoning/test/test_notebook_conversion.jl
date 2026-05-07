@@ -3,7 +3,7 @@
 
 using Test
 
-const NOTEBOOKS_DIR = joinpath(@__DIR__, "..", "..", "notebooks", "hypergraph-reasoning", "sg")
+const NOTEBOOKS_DIR = joinpath(@__DIR__, "..", "..", "notebooks", "hypergraph-reasoning")
 const REQUIRED_NOTEBOOKS = ["make_hypergraph.jl", "Analyze_Hypergraph.jl", "Agents.jl"]
 
 @testset "Notebook Conversion Tests" begin

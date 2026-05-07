@@ -266,7 +266,7 @@ Remove Markdown formatting from text.
 
 **Input**: Python Jupyter notebook (`.ipynb` file) from `HyperGraphReasoningPython/Notebooks/SG/`
 
-**Output**: Pluto notebook (`.jl` file) in `notebooks/hypergraph-reasoning/sg/` directory
+**Output**: Pluto notebook (`.jl` file) in `notebooks/hypergraph-reasoning/` directory
 
 **Conversion Requirements**:
 - Translate Python code cells to Julia equivalents
@@ -282,9 +282,9 @@ Remove Markdown formatting from text.
 - All dependencies resolve correctly (top-level Julia packages available)
 
 **Notebooks to Convert** (MVP scope):
-1. `make_hypergraph.ipynb` → `notebooks/hypergraph-reasoning/sg/make_hypergraph.jl`
-2. `Analyze_Hypergraph.ipynb` → `notebooks/hypergraph-reasoning/sg/Analyze_Hypergraph.jl`
-3. `Agents.ipynb` → `notebooks/hypergraph-reasoning/sg/Agents.jl`
+1. `make_hypergraph.ipynb` → `notebooks/hypergraph-reasoning/make_hypergraph.jl`
+2. `Analyze_Hypergraph.ipynb` → `notebooks/hypergraph-reasoning/Analyze_Hypergraph.jl`
+3. `Agents.ipynb` → `notebooks/hypergraph-reasoning/Agents.jl`
 
 ---
 
