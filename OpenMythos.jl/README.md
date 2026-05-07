@@ -1,6 +1,6 @@
 # OpenMythos.jl
 
-Julia reimplementation of the Python OpenMythos reference in `../reference/OpenMythos`.
+Julia reimplementation of the vendored Python OpenMythos reference in `../reference/private/OpenMythos`.
 
 ## Current status
 
@@ -136,7 +136,7 @@ ids2 = generate(model, ids; max_new_tokens=4, n_loops=2, envelope=load_kv_cache(
 - `../docs/wiki/` - shared architecture, usage, and porting notes for the workspace
 - `notebooks/small_example.jl` - Pluto notebook smoke example
 - `scripts/train_3b_fineweb_edu.jl` - Lux-backed bootstrap training entrypoint
-- `../reference/OpenMythos/` - upstream Python reference
+- `../reference/private/OpenMythos/` - vendored Python reference
 
 ## What is still deferred
 

@@ -129,20 +129,6 @@ function batch_next_token_pairs(
 end
 
 """
-    latest_checkpoint(ckpt_dir)
-
-Return the newest `step_XXXXXXX.jls` checkpoint path in `ckpt_dir`, or `nothing`
-when no matching checkpoint exists.
-"""
-function latest_checkpoint(ckpt_dir::AbstractString)
-    isdir(ckpt_dir) || return nothing
-    matches = filter(name -> startswith(name, "step_") && endswith(name, ".jls"), readdir(ckpt_dir))
-    isempty(matches) && return nothing
-    sort!(matches)
-    return joinpath(ckpt_dir, last(matches))
-end
-
-"""
     _head_loss_and_grad(hidden, head, target_ids)
 
 Compute cross-entropy loss and the LM-head weight gradient for a fixed hidden

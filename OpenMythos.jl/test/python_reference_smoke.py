@@ -1,8 +1,10 @@
 import sys
+from pathlib import Path
 
 import torch
 
-sys.path.insert(0, "../reference/OpenMythos")
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "reference" / "private" / "OpenMythos"))
 
 from open_mythos.main import apply_rope, precompute_rope_freqs
 

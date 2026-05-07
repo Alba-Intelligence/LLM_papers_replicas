@@ -114,7 +114,7 @@ This surface intentionally mirrors the OpenMythos bootstrap trainer:
 
 - the model body stays frozen,
 - only the LM head is updated,
-- shared schedule, batching, checkpoint discovery, and head-loss math come from `TransformerCore.jl`,
+- shared schedule, batching, next-token loss, and the emerging Lux-native trainer/checkpoint foundation come from `TransformerCore.jl`,
 - the default script uses local byte-encoded batches for a simple smoke-training path.
 
 The package also now has a tiny full-model bootstrap trainer that updates the

@@ -10,9 +10,9 @@ Keep one shared repository and wiki while allowing multiple Julia packages to ev
 | --- | --- |
 | `OpenMythos.jl/` | recurrent OpenMythos package |
 | `DeepSeekv4.jl/` | architecture-first DeepSeek V4 package |
-| `TransformerCore.jl/` | shared low-level primitives and training utilities |
+| `TransformerCore.jl/` | shared low-level primitives plus Lux-native training/checkpoint foundation |
 | `docs/wiki/` | common documentation |
-| `reference/OpenMythos/` | upstream Python source of truth |
+| `reference/private/OpenMythos/` | vendored OpenMythos Python source of truth |
 
 ## What belongs in `TransformerCore.jl/`
 
@@ -25,7 +25,9 @@ Only generic, reusable building blocks:
 - warmup/cosine schedule utilities,
 - generic token chunking and batching helpers,
 - head-only loss/gradient math,
-- checkpoint discovery helpers.
+- Lux-native feature-last layers,
+- generic next-token trainer state / train-step helpers,
+- family/mode-aware checkpoint helpers.
 
 This package should stay small and boring.
 
@@ -33,7 +35,8 @@ This package should stay small and boring.
 
 - OpenMythos recurrence, ACT, LoRA, and LTI logic,
 - DeepSeek V4 CSA/HCA attention, mHC, MTP, and routing choices,
-- package-specific training wrappers while model-specific hidden-state computation still differs.
+- package-specific training wrappers while model-specific hidden-state computation still differs,
+- tokenizer and dataset adapters until the package-level Julia-native paths stabilize.
 
 ## Rule of thumb
 

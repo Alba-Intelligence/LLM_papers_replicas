@@ -2,18 +2,18 @@
 
 This page is the bridge between the upstream Python OpenMythos project and the Julia workspace.
 
-It is intentionally about the **OpenMythos** reference tree in `reference/OpenMythos`.
+It is intentionally about the **OpenMythos** reference tree in `reference/private/OpenMythos`.
 
 DeepSeek V4 source mapping lives in [DeepSeek V4 reference map](deepseek-v4-reference-map.md).
 
 ## Source-of-truth order
 
-1. `reference/OpenMythos/open_mythos/main.py` - ground-truth behavior.
-2. `reference/OpenMythos/docs/open_mythos.md` - best prose description of the architecture.
-3. `reference/OpenMythos/tests/test_main.py` - executable invariants.
-4. `reference/OpenMythos/open_mythos/variants.py` - preset model scales.
-5. `reference/OpenMythos/training/3b_fine_web_edu.py` - current training workflow.
-6. `reference/OpenMythos/README.md` - useful overview, but more speculative and less implementation-tight.
+1. `reference/private/OpenMythos/open_mythos/main.py` - ground-truth behavior.
+2. `reference/private/OpenMythos/docs/open_mythos.md` - best prose description of the architecture.
+3. `reference/private/OpenMythos/tests/test_main.py` - executable invariants.
+4. `reference/private/OpenMythos/open_mythos/variants.py` - preset model scales.
+5. `reference/private/OpenMythos/training/3b_fine_web_edu.py` - current training workflow.
+6. `reference/private/OpenMythos/README.md` - useful overview, but more speculative and less implementation-tight.
 
 ## File-by-file mapping
 
@@ -75,7 +75,7 @@ DeepSeekv4.jl/
 These are Python-reference commands, not root-repo Julia commands:
 
 ```bash
-cd reference/OpenMythos
+cd reference/private/OpenMythos
 python -m pytest tests/test_main.py -q
 python -m pytest tests/test_tokenizer.py -q
 python training/3b_fine_web_edu.py

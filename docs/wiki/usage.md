@@ -6,7 +6,7 @@ This page shows the current user-facing workflow for the Julia workspace.
 
 - Run OpenMythos package commands from `OpenMythos.jl/`.
 - Run DeepSeek V4 package commands from `DeepSeekv4.jl/`.
-- Shared low-level primitives and generic training helpers live in `TransformerCore.jl/`.
+- Shared low-level primitives plus the emerging Lux-native training/checkpoint foundation live in `TransformerCore.jl/`.
 - Use `docs/` for the generated `Documenter.jl` site and `docs/wiki/` for the longer-form narrative docs.
 
 ## 1. Run package tests
@@ -83,7 +83,7 @@ model = DeepSeekV4Model(cfg)
 
 ## 5. Use the tokenizer
 
-The tokenizer currently shells out through Hugging Face tooling for parity and practicality.
+The tokenizer is currently still package-specific and in transition: the current OpenMythos surface remains parity-oriented, while the shared training foundation has now moved into `TransformerCore.jl` so the next package refactor can replace Python bridges with Julia-native paths.
 
 ```julia
 using OpenMythos
@@ -235,14 +235,14 @@ julia --project=. scripts/train_deepseek_tiny.jl
 
 The current bootstrap trainer is intentionally limited:
 
-- shared schedule, batching, checkpoint scanning, and head-loss math now live in `TransformerCore.jl`,
+- shared schedule, batching, next-token loss, Lux-native trainer, gradient-masking, and family/mode-aware checkpoint helpers now live in `TransformerCore.jl`,
 - the original bootstrap path is **Lux-backed**,
 - it uses `Optimisers.AdamW`,
 - `OpenMythos.jl` now also has a dense full-model bootstrap mode via `OPENMYTHOS_TRAIN_MODE=full_model`,
 - that full-model mode currently supports small GQA/MLA configs, including tiny sparse routed-expert setups with optional shared experts,
 - `DeepSeekv4.jl` now has both a `LuxHeadOnlyDeepSeekV4` head-only trainer and a first tiny `DeepSeekFullModelTrainerState` bootstrap path,
 - the current DeepSeek full-model loss now trains both the main LM logits path and the current auxiliary MTP heads on tiny configs, with an optional gated Engram branch,
-- the core model internals are still manual Julia blocks,
+- the core model internals are still mostly manual Julia blocks,
 - broader sparse/full-model autodiff and distributed training are still future work.
 
 The current runtime seam is also intentionally lightweight:

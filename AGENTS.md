@@ -2,7 +2,7 @@
 
 ## Mission
 
-This repository is for a Julia reimplementation of the Python project stored in `reference/OpenMythos`.
+This repository is for a Julia reimplementation of the Python project stored in `reference/private/OpenMythos` for `OpenMythos.jl` work.
 
 The main job for coding agents is to turn the Python reference into a Julia package and documentation set without losing the architectural core:
 
@@ -17,14 +17,14 @@ The main job for coding agents is to turn the Python reference into a Julia pack
 ## Current state
 
 - Root repo: environment scaffolding, a multi-package Julia workspace, and porting docs.
-- Python reference: `reference/OpenMythos`.
+- Python reference for `OpenMythos.jl`: `reference/private/OpenMythos`.
 - Julia packages:
   - `OpenMythos.jl/` for the recurrent OpenMythos package,
   - `DeepSeekv4.jl/` for the DeepSeek V4 package,
   - `TransformerCore.jl/` for shared reusable primitives.
 - Wiki: `docs/wiki/`.
 
-The current Julia slice covers the core numerical primitives, the main model stack, tokenizer parity, and a bootstrap training/data path:
+The current Julia slice covers the core numerical primitives, the main model stack, tokenizer parity, and a bootstrap training/data path plus a first shared Lux-native training foundation in `TransformerCore.jl`:
 
 - `MythosConfig`
 - `RMSNorm`
@@ -40,25 +40,26 @@ The current Julia slice covers the core numerical primitives, the main model sta
 - `WarmupCosineSchedule`
 - token chunking / next-token batching helpers
 - head-only bootstrap training loop
-- checkpoint save / load helpers
+- generic next-token Lux trainer / gradient-mask helpers in `TransformerCore.jl`
+- family/mode-aware checkpoint save / load helpers
 - `loop_index_embedding`
 - `LoRAAdapter`
 - `LTIInjection`
 - `ACTHalting`
 
-The current OpenMythos training path is intentionally bootstrap-sized: it wires tokenizer/data batching, checkpointing, a Julia `OpenMythos.jl/scripts/train_3b_fineweb_edu.jl` entrypoint, an optional FineWeb-Edu Python bridge, and a Lux-backed head-only training layer.
+The current OpenMythos training path is intentionally bootstrap-sized: it wires tokenizer/data batching, checkpointing, a Julia `OpenMythos.jl/scripts/train_3b_fineweb_edu.jl` entrypoint, an optional FineWeb-Edu Python bridge, a broader small-config full-model path, and a first shared Lux-native trainer/checkpoint foundation in `TransformerCore.jl` for the next refactor.
 
 ## Source priority
 
 Use sources in this order:
 
-1. `reference/OpenMythos/open_mythos/main.py`
-2. `reference/OpenMythos/docs/open_mythos.md`
-3. `reference/OpenMythos/tests/test_main.py`
-4. `reference/OpenMythos/open_mythos/variants.py`
-5. `reference/OpenMythos/tests/test_tokenizer.py`
-6. `reference/OpenMythos/training/3b_fine_web_edu.py`
-7. `reference/OpenMythos/README.md`
+1. `reference/private/OpenMythos/open_mythos/main.py`
+2. `reference/private/OpenMythos/docs/open_mythos.md`
+3. `reference/private/OpenMythos/tests/test_main.py`
+4. `reference/private/OpenMythos/open_mythos/variants.py`
+5. `reference/private/OpenMythos/tests/test_tokenizer.py`
+6. `reference/private/OpenMythos/training/3b_fine_web_edu.py`
+7. `reference/private/OpenMythos/README.md`
 
 `README.md` is useful, but it mixes implementation facts with broader theory and speculation. Prefer code and tests when they disagree.
 
@@ -81,7 +82,7 @@ Use sources in this order:
 
 - `open_mythos/moda.py`
 - `examples/moda_example.py`
-- benchmark scripts under `reference/OpenMythos/tests/`
+- benchmark scripts under `reference/private/OpenMythos/tests/`
 
 `moda.py` is a separate experimental branch and should not distort the first Julia milestone.
 
@@ -150,8 +151,8 @@ First match behavior with clear, readable Julia code. Only then optimize kernels
 The current Julia training path is a Lux-backed bootstrap bridge, not full PyTorch parity:
 
 - it covers data/tokenizer integration, batching, scheduling, checkpointing, and resumable smoke training,
-- it currently updates the LM head only through a `LuxHeadOnlyOpenMythos` layer with `Optimisers.AdamW`,
-- the core model internals are still manual Julia blocks under that Lux training surface.
+- it now also has a first shared `TransformerCore.jl` Lux-native trainer/checkpoint foundation intended to replace duplicated package-local training code,
+- the current `OpenMythos.jl` and `DeepSeekv4.jl` model internals are still mostly manual Julia blocks under that evolving Lux training surface.
 
 ### Preserve architecture names
 
@@ -192,7 +193,7 @@ When a task materially changes the package, architecture notes, workflow, or imp
 These commands exist only in the Python reference subtree:
 
 ```bash
-cd reference/OpenMythos
+cd reference/private/OpenMythos
 python -m pytest tests/test_main.py -q
 python -m pytest tests/test_tokenizer.py -q
 python training/3b_fine_web_edu.py

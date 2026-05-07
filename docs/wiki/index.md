@@ -1,6 +1,6 @@
 # OpenMythos Julia Wiki
 
-This wiki is the narrative spine for the Julia reimplementation of the Python reference in `reference/OpenMythos`.
+This wiki is the narrative spine for the Julia reimplementation of the vendored OpenMythos Python reference in `reference/private/OpenMythos`.
 
 It is intentionally concept-first: the goal is to explain what the Python project is doing, what parts matter for the port, and how the Julia codebase should grow without forcing readers to reverse-engineer `main.py` from scratch.
 
@@ -9,8 +9,8 @@ It is intentionally concept-first: the goal is to explain what the Python projec
 - The root repository is now a multi-package workspace.
 - `OpenMythos.jl/` contains the recurrent OpenMythos Julia package with its own `Project.toml`, `src/`, `test/`, and `Manifest.toml`.
 - `DeepSeekv4.jl/` contains the new DeepSeek V4 Julia package.
-- `TransformerCore.jl/` contains reusable feature-last tensor helpers, `RMSNorm`, RoPE utilities, shared training helpers, and the first shared KV-cache envelope utilities.
-- The authoritative implementation today is the Python reference at `reference/OpenMythos`.
+- `TransformerCore.jl/` contains reusable feature-last tensor helpers, `RMSNorm`, RoPE utilities, shared Lux-native layer/trainer helpers, family/mode-aware checkpoint helpers, and the first shared KV-cache envelope utilities.
+- For `OpenMythos.jl`, the authoritative vendored Python reference today is `reference/private/OpenMythos`.
 - The implemented Julia slice now covers the OpenMythos primitive layer and main model stack, plus an architecture-first DeepSeek V4 package with tiny-config CSA/HCA, mHC, an optional gated Engram branch, MTP, generation smoke paths, and bootstrap training surfaces that now include both head-only trainers, a first dense full-model OpenMythos slice, and a first tiny DeepSeek full-model slice.
 - The advanced-systems runtime work now includes shared cache envelopes, lower-allocation buffer-backed cache growth, and a first true paged cache-buffer implementation beneath the same outer runtime API.
 - The workspace now also has a shared `Documenter.jl` site under `docs/` in addition to the narrative wiki under `docs/wiki/`.
@@ -56,9 +56,9 @@ That combination is what the Julia port should preserve first. Everything else i
 
 ## Scope guidance
 
-- Treat `reference/OpenMythos/open_mythos/main.py` as the behavioral core.
-- Treat `reference/OpenMythos/docs/open_mythos.md` as the clearest architecture narrative.
-- Treat `reference/OpenMythos/open_mythos/moda.py` as a secondary experimental branch, not the first porting target.
+- Treat `reference/private/OpenMythos/open_mythos/main.py` as the behavioral core.
+- Treat `reference/private/OpenMythos/docs/open_mythos.md` as the clearest architecture narrative.
+- Treat `reference/private/OpenMythos/open_mythos/moda.py` as a secondary experimental branch, not the first porting target.
 - Port invariants before porting scale.
 - Keep the wiki shared across packages even as Julia implementation code moves into package subdirectories.
 
@@ -79,9 +79,9 @@ The Julia replica now has a real bootstrap training path:
 - a broadened OpenMythos full-model trainer/checkpoint path for small GQA/MLA configs, including tiny sparse routed-expert setups with optional shared experts,
 - a parallel `LuxHeadOnlyDeepSeekV4` bootstrap path plus a first tiny `DeepSeekFullModelTrainerState` path and `DeepSeekv4.jl/scripts/train_deepseek_tiny.jl`,
 - an optional DeepSeek Engram branch with dependency-free compressed token lookup support for selected layers,
-- shared schedule, batching, checkpoint discovery, and head-loss helpers in `TransformerCore.jl`.
+- shared schedule, batching, next-token loss, Lux-native layer/trainer, checkpoint-layout, and gradient-masking helpers in `TransformerCore.jl`.
 
-That training surface is still intentionally constrained: OpenMythos has the broader current full-model slice, while DeepSeek full-model training is still limited to tiny configs even though it now trains both the primary LM logits path and the current auxiliary MTP heads, with optional Engram layers enabled for small-model experiments.
+That training surface is still intentionally constrained: OpenMythos has the broader current full-model slice, while DeepSeek full-model training is still limited to tiny configs even though it now trains both the primary LM logits path and the current auxiliary MTP heads, with optional Engram layers enabled for small-model experiments. The new `TransformerCore.jl` training helpers are the shared Lux-oriented foundation for refactoring both model families onto one clearer full-model training story.
 
 ## Runtime status
 

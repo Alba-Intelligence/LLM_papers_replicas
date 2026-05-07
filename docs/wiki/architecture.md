@@ -21,7 +21,7 @@ The shared wiki stays at the repository root because the important design questi
 
 ## OpenMythos architecture
 
-The authoritative OpenMythos implementation still lives in `reference/OpenMythos/open_mythos/main.py`.
+For `OpenMythos.jl`, the authoritative vendored Python implementation still lives in `reference/private/OpenMythos/open_mythos/main.py`.
 
 It builds a decoder-only language model around a looped middle block:
 
@@ -126,7 +126,8 @@ The current implementation is intentionally correctness-first and tiny-config-fi
 - row/column softmax helpers,
 - `RMSNorm`,
 - RoPE precomputation and application,
-- shared schedule/batching/checkpoint-discovery/head-loss helpers,
+- shared schedule/batching helpers,
+- shared next-token loss and Lux-native layer/trainer/checkpoint helpers,
 - `KVCacheEnvelope`, `save_kv_cache`, `load_kv_cache`,
 - growable axis-append cache buffers used by both model families.
 
@@ -159,7 +160,7 @@ OpenMythos now uses a prefix-aware causal mask during cached multi-token prefill
 
 The strongest implementation cues are still invariant tests rather than scale-oriented training scripts.
 
-For OpenMythos, `reference/OpenMythos/tests/test_main.py` describes the minimum behavioral bar:
+For OpenMythos, `reference/private/OpenMythos/tests/test_main.py` describes the minimum behavioral bar:
 
 - RMSNorm shape and RMS properties,
 - RoPE shape, norm preservation, and relative-position behavior,
@@ -195,7 +196,7 @@ For DeepSeek V4, the Julia package currently uses tiny-config invariants:
 ### Explicit deferrals
 
 - `open_mythos/moda.py`
-- benchmark scripts in `reference/OpenMythos/tests/`
+- benchmark scripts in `reference/private/OpenMythos/tests/`
 - Muon and hybrid ZeRO
 - FP4 QAT
 - contextual parallelism

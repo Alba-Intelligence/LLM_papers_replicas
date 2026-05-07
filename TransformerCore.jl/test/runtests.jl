@@ -1,8 +1,12 @@
 using Test
 using TransformerCore
 
+include("test_layers.jl")
+include("test_training_core.jl")
+include("test_checkpoints.jl")
+
 @testset "TransformerCore smoke" begin
-    norm = RMSNorm(4)
+    norm = TransformerCore.RMSNorm(4)
     x = reshape(Float32.(1:8), 1, 2, 4)
     @test size(norm(x)) == size(x)
 

@@ -1,12 +1,14 @@
 """
     TransformerCore
 
-Shared tensor, normalization, scheduling, batching, and cache helpers used by the
-`OpenMythos.jl` and `DeepSeekv4.jl` packages.
+Shared tensor, normalization, scheduling, batching, Lux-native training, and
+cache helpers used by the `OpenMythos.jl` and `DeepSeekv4.jl` packages.
 
 The module intentionally stays architecture-agnostic: it provides feature-last
-linear algebra helpers, RoPE utilities, schedule/batching helpers, and the shared
-KV-cache envelope/buffer layer without encoding model-family-specific behavior.
+linear algebra helpers, RoPE utilities, schedule/batching helpers, Lux-native
+feature-last layers plus generic next-token trainer/checkpoint helpers, and the
+shared KV-cache envelope/buffer layer without encoding model-family-specific
+behavior.
 """
 module TransformerCore
 
@@ -14,6 +16,9 @@ using LinearAlgebra
 using Random
 using Serialization
 using Statistics
+import Lux
+import Optimisers
+import Zygote
 
 """Compute the logistic sigmoid of `x`."""
 _sigmoid(x) = inv(one(x) + exp(-x))
@@ -140,6 +145,10 @@ end
 include("norms.jl")
 include("rope.jl")
 include("training_utils.jl")
+include("layers.jl")
+include("losses.jl")
+include("trainers.jl")
+include("checkpoints.jl")
 include("cache_buffers.jl")
 include("kv_cache.jl")
 
@@ -162,7 +171,21 @@ export _sigmoid,
        chunk_next_token_pairs,
        text_next_token_pairs,
        batch_next_token_pairs,
+       FeatureLinear,
+       TokenEmbedding,
+       tied_lm_head,
+       next_token_cross_entropy,
+       NextTokenTrainerState,
+       parameter_mask,
+       apply_gradient_mask,
+       next_token_logits,
+       next_token_loss,
+       train_next_token_step!,
+       train_next_token!,
+       checkpoint_dir,
        latest_checkpoint,
+       save_trainer_checkpoint,
+       load_trainer_checkpoint,
        _head_loss_and_grad,
        buffer_capacity,
        buffer_page_count,
