@@ -21,4 +21,11 @@ using TransformerCore
 
     tied = tied_lm_head(hidden, ps_embed.weight)
     @test size(tied) == (2, 2, 16)
+
+    norm = TransformerCore.RMSNorm(8)
+    ps_norm, st_norm = Lux.setup(rng, norm)
+    normed, st_norm_new = Lux.apply(norm, hidden, ps_norm, st_norm)
+    @test size(normed) == size(hidden)
+    @test st_norm_new == st_norm
+    @test normed ≈ norm(hidden) atol = 1f-6
 end

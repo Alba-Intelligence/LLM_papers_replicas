@@ -7,7 +7,7 @@ Julia reimplementation of the vendored Python OpenMythos reference in `../refere
 The replica now includes:
 
 - the core model stack (`MythosConfig`, attention backends, MoE, recurrent block, `OpenMythos`, generation),
-- the first Lux-native leaf-layer mirrors for experts / MoE / recurrent update primitives,
+- the first Lux-native leaf-layer mirrors for attention, experts / MoE, and recurrent update primitives,
 - tokenizer parity through a pragmatic Hugging Face bridge,
 - an optional Python-vs-Julia parity harness for selected utilities,
 - bootstrap training paths with checkpointing and local/FineWeb smoke data flows,
@@ -16,7 +16,7 @@ The replica now includes:
 - true paged cache-buffer internals beneath the shared envelope API,
 - a broadened full-model bootstrap slice that now supports both GQA and MLA attention plus small sparse routed-expert configs with optional shared experts.
 
-The current training surface is intentionally staged: `OpenMythos.jl` now has both the original **Lux-backed head-only** bootstrap path and a broader **full-model** bootstrap path for small GQA/MLA configs, including tiny sparse routed-expert setups with optional shared experts. The package also now includes Lux-native leaf-layer mirrors (`LuxExpert`, `LuxMoEFFN`, `LuxLoRAAdapter`, `LuxLTIInjection`, `LuxACTHalting`) that numerically match the current parity structs and are the first package-level step toward a full Lux-native model refactor.
+The current training surface is intentionally staged: `OpenMythos.jl` now has both the original **Lux-backed head-only** bootstrap path and a broader **full-model** bootstrap path for small GQA/MLA configs, including tiny sparse routed-expert setups with optional shared experts. The package also now includes Lux-native leaf-layer mirrors (`LuxGQAttention`, `LuxMLAttention`, `LuxExpert`, `LuxMoEFFN`, `LuxLoRAAdapter`, `LuxLTIInjection`, `LuxACTHalting`) that numerically match the current parity structs and are the first package-level step toward a full Lux-native model refactor.
 
 ## Quickstart
 

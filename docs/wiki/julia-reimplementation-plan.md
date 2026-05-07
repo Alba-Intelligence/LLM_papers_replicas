@@ -40,7 +40,7 @@ The OpenMythos package includes a parity-tested core model stack:
 - `LoRAAdapter`
 - `LTIInjection`
 - `ACTHalting`
-- Lux-native OpenMythos leaf layers for experts / MoE / recurrent update primitives
+- Lux-native OpenMythos leaf layers for attention, experts / MoE, and recurrent update primitives
 
 The current state is:
 
@@ -49,7 +49,7 @@ The current state is:
 - `TransformerCore.jl/` holds the shared primitive, Lux-native layer/trainer foundation, runtime-envelope, and paged/growable cache-buffer layer.
 - the workspace source now carries public-API docstrings and a shared Documenter build for the multi-package surface.
 
-The next milestone is to refactor both model families toward a clearer Lux-native full-model training story without prematurely collapsing their model-family-specific internals into one abstraction. `TransformerCore.jl` now has the first shared Lux-native layer/trainer/checkpoint foundation, and `OpenMythos.jl` now has the first Lux-native leaf-layer mirrors for experts / MoE / recurrent-update primitives; the next package-level work is to continue moving OpenMythos onto that surface first, then reuse the same pattern in DeepSeek.
+The next milestone is to refactor both model families toward a clearer Lux-native full-model training story without prematurely collapsing their model-family-specific internals into one abstraction. `TransformerCore.jl` now has the first shared Lux-native layer/trainer/checkpoint foundation, and `OpenMythos.jl` now has the first Lux-native leaf-layer mirrors for attention, experts / MoE, and recurrent-update primitives; the next package-level work is to continue moving OpenMythos onto that surface first, then reuse the same pattern in DeepSeek.
 
 For future DeepSeek planning, keep the source priority explicit:
 
