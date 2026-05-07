@@ -14,7 +14,7 @@ result
 docs/build
 
 # Editor state
-/.vscode/*
+.vscode
 !/.vscode/settings.json
 
 # OS cruft
