@@ -1,7 +1,5 @@
-"""
-Equivalence test for df2hypergraph function.
-Tests that Julia implementation produces equivalent hypergraph structure as Python.
-"""
+# Equivalence test for df2hypergraph.
+# Checks that Julia produces the expected hypergraph structure.
 using Test
 using DataFrames
 using Hypergraphs

@@ -155,7 +155,7 @@
 - `outputs`: Dictionary mapping cell IDs to outputs (data, visualizations, text)
 
 **Relationships**:
-- Uses Julia packages from @replica (via `using` statements)
+- Uses the top-level Julia packages (via `using` statements)
 - May generate Hypergraph, Node Embeddings, or other entities
 - May read/write data files (JLD2, JSON, CSV)
 

@@ -19,9 +19,9 @@ description: "Task list for Julia Replication Project"
 
 ## Path Conventions
 
-- **Multiple Julia packages**: `replica/<PackageName>.jl/` at repository root
-- **Documentation**: `documentation/` for Typst, `replica/<PackageName>.jl/docs/` for Documenter.jl
-- **Tests**: `replica/<PackageName>.jl/test/` per package
+- **Multiple Julia packages**: top-level `<PackageName>.jl/` directories at repository root
+- **Documentation**: `documentation/` for Typst, `<PackageName>.jl/docs/` for Documenter.jl
+- **Tests**: `<PackageName>.jl/test/` per package
 - **Notebooks**: `notebooks/` at repository root (Pluto notebooks converted from Python Jupyter notebooks)
 
 ---
@@ -30,12 +30,12 @@ description: "Task list for Julia Replication Project"
 
 **Purpose**: Project initialization and basic structure
 
-- [X] T001 Create replica/ directory structure at repository root
+- [X] T001 Create top-level Julia package directory structure at repository root
 - [X] T002 [P] Create documentation/ directory for Typst files at repository root
-- [X] T003 [P] Initialize GraphGeneration.jl package in replica/GraphGeneration.jl using Pkg.generate()
-- [X] T004 [P] Initialize GraphAnalysis.jl package in replica/GraphAnalysis.jl using Pkg.generate()
-- [X] T005 [P] Initialize GraphTools.jl package in replica/GraphTools.jl using Pkg.generate()
-- [X] T006 [P] Initialize GraphUtils.jl package in replica/GraphUtils.jl using Pkg.generate()
+- [X] T003 [P] Initialize GraphGeneration.jl package in GraphGeneration.jl using Pkg.generate()
+- [X] T004 [P] Initialize GraphAnalysis.jl package in GraphAnalysis.jl using Pkg.generate()
+- [X] T005 [P] Initialize GraphTools.jl package in GraphTools.jl using Pkg.generate()
+- [X] T006 [P] Initialize GraphUtils.jl package in GraphUtils.jl using Pkg.generate()
 
 ---
 
@@ -45,14 +45,14 @@ description: "Task list for Julia Replication Project"
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [X] T007 Create test fixtures directory structure: replica/GraphGeneration.jl/test/fixtures/ for Python reference outputs
+- [X] T007 Create test fixtures directory structure: GraphGeneration.jl/test/fixtures/ for Python reference outputs
 - [X] T008 [P] Add core dependencies to GraphGeneration.jl/Project.toml: Graphs, Hypergraphs, DataFrames, ArgParse, JSON, JLD2, SHA, Test
 - [X] T009 [P] Add core dependencies to GraphAnalysis.jl/Project.toml: Graphs, Hypergraphs, DataFrames, ArgParse, JSON, JLD2, Test, CommunityDetection
 - [X] T010 [P] Add core dependencies to GraphTools.jl/Project.toml: Graphs, Hypergraphs, DataFrames, ArgParse, JSON, JLD2, Transformers, Test, LinearAlgebra
 - [X] T011 [P] Add core dependencies to GraphUtils.jl/Project.toml: DataFrames, ArgParse, JSON, Test
-- [X] T012 [P] Create test helper module for equivalence testing in replica/GraphGeneration.jl/test/test_helpers.jl (comparison utilities for hypergraphs, embeddings)
-- [X] T013 [P] Create test helper module for equivalence testing in replica/GraphAnalysis.jl/test/test_helpers.jl
-- [X] T014 [P] Create test helper module for equivalence testing in replica/GraphTools.jl/test/test_helpers.jl
+- [X] T012 [P] Create test helper module for equivalence testing in GraphGeneration.jl/test/test_helpers.jl (comparison utilities for hypergraphs, embeddings)
+- [X] T013 [P] Create test helper module for equivalence testing in GraphAnalysis.jl/test/test_helpers.jl
+- [X] T014 [P] Create test helper module for equivalence testing in GraphTools.jl/test/test_helpers.jl
 - [X] T015 Setup structured logging infrastructure (create logging utility module shared across packages)
 - [X] T016 Create Python reference data generation script in test/fixtures/generate_references.py to produce test fixtures
 
@@ -70,30 +70,30 @@ description: "Task list for Julia Replication Project"
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [X] T017 [P] [US1] Write equivalence test for documents2dataframe in replica/GraphGeneration.jl/test/test_documents2dataframe.jl
-- [X] T018 [P] [US1] Write equivalence test for df2hypergraph in replica/GraphGeneration.jl/test/test_df2hypergraph.jl
-- [X] T019 [P] [US1] Write equivalence test for make_hypergraph_from_text in replica/GraphGeneration.jl/test/test_make_hypergraph.jl
-- [X] T020 [P] [US1] Write integration test for end-to-end hypergraph generation workflow in replica/GraphGeneration.jl/test/test_integration.jl
-- [X] T021 [P] [US1] Write CLI interface test in replica/GraphGeneration.jl/test/test_cli.jl
+- [X] T017 [P] [US1] Write equivalence test for documents2dataframe in GraphGeneration.jl/test/test_documents2dataframe.jl
+- [X] T018 [P] [US1] Write equivalence test for df2hypergraph in GraphGeneration.jl/test/test_df2hypergraph.jl
+- [X] T019 [P] [US1] Write equivalence test for make_hypergraph_from_text in GraphGeneration.jl/test/test_make_hypergraph.jl
+- [X] T020 [P] [US1] Write integration test for end-to-end hypergraph generation workflow in GraphGeneration.jl/test/test_integration.jl
+- [X] T021 [P] [US1] Write CLI interface test in GraphGeneration.jl/test/test_cli.jl
 
 ### Implementation for User Story 1
 
-- [X] T022 [P] [US1] Create GraphUtils.jl module structure in replica/GraphUtils.jl/src/GraphUtils.jl (extract, remove_markdown_symbols functions)
-- [X] T023 [US1] Implement extract function in replica/GraphUtils.jl/src/GraphUtils.jl
-- [X] T024 [US1] Implement remove_markdown_symbols function in replica/GraphUtils.jl/src/GraphUtils.jl
-- [X] T025 [P] [US1] Write CLI interface test for GraphUtils.jl in replica/GraphUtils.jl/test/test_cli.jl
-- [X] T026 [US1] Implement CLI interface using ArgParse.jl in replica/GraphUtils.jl/src/GraphUtils.jl (cli_main function)
+- [X] T022 [P] [US1] Create GraphUtils.jl module structure in GraphUtils.jl/src/GraphUtils.jl (extract, remove_markdown_symbols functions)
+- [X] T023 [US1] Implement extract function in GraphUtils.jl/src/GraphUtils.jl
+- [X] T024 [US1] Implement remove_markdown_symbols function in GraphUtils.jl/src/GraphUtils.jl
+- [X] T025 [P] [US1] Write CLI interface test for GraphUtils.jl in GraphUtils.jl/test/test_cli.jl
+- [X] T026 [US1] Implement CLI interface using ArgParse.jl in GraphUtils.jl/src/GraphUtils.jl (cli_main function)
 - [X] T027 [US1] Add GraphUtils.jl as dependency to GraphGeneration.jl/Project.toml
-- [X] T028 [US1] Implement documents2dataframe function in replica/GraphGeneration.jl/src/GraphGeneration.jl
-- [X] T029 [US1] Implement text chunking utility (RecursiveCharacterTextSplitter equivalent) in replica/GraphGeneration.jl/src/GraphGeneration.jl
-- [X] T030 [US1] Implement hypergraphPrompt function (LLM-based hypergraph extraction) in replica/GraphGeneration.jl/src/GraphGeneration.jl
-- [X] T031 [US1] Implement df2hypergraph function in replica/GraphGeneration.jl/src/GraphGeneration.jl
-- [X] T032 [US1] Implement make_hypergraph_from_text function with caching in replica/GraphGeneration.jl/src/GraphGeneration.jl
-- [X] T033 [US1] Implement CLI interface using ArgParse.jl in replica/GraphGeneration.jl/src/GraphGeneration.jl (cli_main function)
+- [X] T028 [US1] Implement documents2dataframe function in GraphGeneration.jl/src/GraphGeneration.jl
+- [X] T029 [US1] Implement text chunking utility (RecursiveCharacterTextSplitter equivalent) in GraphGeneration.jl/src/GraphGeneration.jl
+- [X] T030 [US1] Implement hypergraphPrompt function (LLM-based hypergraph extraction) in GraphGeneration.jl/src/GraphGeneration.jl
+- [X] T031 [US1] Implement df2hypergraph function in GraphGeneration.jl/src/GraphGeneration.jl
+- [X] T032 [US1] Implement make_hypergraph_from_text function with caching in GraphGeneration.jl/src/GraphGeneration.jl
+- [X] T033 [US1] Implement CLI interface using ArgParse.jl in GraphGeneration.jl/src/GraphGeneration.jl (cli_main function)
 - [X] T034 [US1] Add error handling and validation to all GraphGeneration.jl functions
 - [X] T035 [US1] Add structured logging to GraphGeneration.jl operations
-- [X] T036 [US1] Create Documenter.jl documentation structure in replica/GraphGeneration.jl/docs/src/
-- [X] T037 [US1] Write API documentation for GraphGeneration.jl functions in replica/GraphGeneration.jl/docs/src/index.md
+- [X] T036 [US1] Create Documenter.jl documentation structure in GraphGeneration.jl/docs/src/
+- [X] T037 [US1] Write API documentation for GraphGeneration.jl functions in GraphGeneration.jl/docs/src/index.md
 - [X] T038 [US1] Build Documenter.jl documentation for GraphGeneration.jl (verify HTML output)
 
 ### Notebook Conversion for User Story 1
@@ -104,9 +104,9 @@ description: "Task list for Julia Replication Project"
 - [X] T042 [P] [US1] Write test to verify notebook conversion: test that notebooks/SG/Agents.jl exists and is valid Pluto notebook format
 - [X] T043 [P] [US1] Write test for notebook execution: test that converted notebooks can be executed in Pluto.jl without errors
 - [X] T044 [P] [US1] Write test for notebook output equivalence: automated comparison of notebook outputs with Python reference data (where applicable)
-- [X] T045 [US1] Convert make_hypergraph.ipynb to Pluto notebook: translate Python code to Julia, replace imports with `using` statements for @replica packages, store in notebooks/SG/make_hypergraph.jl
-- [X] T046 [US1] Convert Analyze_Hypergraph.ipynb to Pluto notebook: translate Python code to Julia, replace imports with `using` statements for @replica packages, store in notebooks/SG/Analyze_Hypergraph.jl
-- [X] T047 [US1] Convert Agents.ipynb to Pluto notebook: translate Python code to Julia, replace imports with `using` statements for @replica packages, store in notebooks/SG/Agents.jl
+- [X] T045 [US1] Convert make_hypergraph.ipynb to Pluto notebook: translate Python code to Julia, replace imports with `using` statements for the top-level Julia packages, store in notebooks/SG/make_hypergraph.jl
+- [X] T046 [US1] Convert Analyze_Hypergraph.ipynb to Pluto notebook: translate Python code to Julia, replace imports with `using` statements for the top-level Julia packages, store in notebooks/SG/Analyze_Hypergraph.jl
+- [X] T047 [US1] Convert Agents.ipynb to Pluto notebook: translate Python code to Julia, replace imports with `using` statements for the top-level Julia packages, store in notebooks/SG/Agents.jl
 - [X] T048 [US1] Verify all converted notebooks execute successfully in Pluto.jl: manual execution and verification of each notebook
 - [X] T049 [US1] Validate notebook output equivalence: compare outputs from converted notebooks with Python notebook outputs (automated where possible, manual for visual/interactive outputs)
 
@@ -116,7 +116,7 @@ description: "Task list for Julia Replication Project"
 
 ## Phase 4: User Story 1 (Continued) - Notebook Conversion
 
-**Note**: Notebook conversion tasks are part of User Story 1 as they depend on Julia packages from @replica being implemented first.
+**Note**: Notebook conversion tasks are part of User Story 1 as they depend on the top-level Julia packages being implemented first.
 
 ---
 
@@ -185,7 +185,7 @@ description: "Task list for Julia Replication Project"
 - [ ] T072 [P] Run quickstart.md validation: verify all examples work correctly
 - [ ] T073 Code cleanup and refactoring across all packages
 - [ ] T074 [P] Performance optimization: profile and optimize critical paths in GraphGeneration.jl
-- [ ] T075 [P] Add additional unit tests for edge cases in replica/GraphGeneration.jl/test/
+- [ ] T075 [P] Add additional unit tests for edge cases in GraphGeneration.jl/test/
 - [ ] T076 Verify all packages can be installed independently via Pkg.add()
 - [ ] T077 Verify inter-package dependencies resolve correctly (GraphGeneration.jl depending on GraphUtils.jl)
 - [ ] T078 Verify all converted Pluto notebooks can be opened and executed in Pluto.jl
@@ -208,7 +208,7 @@ description: "Task list for Julia Replication Project"
 
 ### User Story Dependencies
 
-- **User Story 1 (P1)**: Can start after Foundational (Phase 2) - No dependencies on other stories. Requires GraphUtils.jl (T022-T024) before GraphGeneration.jl implementation. Notebook conversion (T039-T049) depends on GraphGeneration.jl being implemented first (notebooks use packages from @replica).
+- **User Story 1 (P1)**: Can start after Foundational (Phase 2) - No dependencies on other stories. Requires GraphUtils.jl (T022-T024) before GraphGeneration.jl implementation. Notebook conversion (T039-T049) depends on GraphGeneration.jl being implemented first (notebooks use the top-level Julia packages).
 - **User Story 2 (P2)**: Can start after Foundational (Phase 2) - Depends on User Story 1 completion (needs replicated module to document)
 - **User Story 3 (P3)**: Can start after Foundational (Phase 2) - Can proceed independently, but benefits from patterns discovered in US1
 
@@ -236,14 +236,14 @@ description: "Task list for Julia Replication Project"
 
 ```bash
 # Launch all tests for User Story 1 together:
-Task: "Write equivalence test for documents2dataframe in replica/GraphGeneration.jl/test/test_documents2dataframe.jl"
-Task: "Write equivalence test for df2hypergraph in replica/GraphGeneration.jl/test/test_df2hypergraph.jl"
-Task: "Write equivalence test for make_hypergraph_from_text in replica/GraphGeneration.jl/test/test_make_hypergraph.jl"
-Task: "Write integration test for end-to-end hypergraph generation workflow in replica/GraphGeneration.jl/test/test_integration.jl"
-Task: "Write CLI interface test in replica/GraphGeneration.jl/test/test_cli.jl"
+Task: "Write equivalence test for documents2dataframe in GraphGeneration.jl/test/test_documents2dataframe.jl"
+Task: "Write equivalence test for df2hypergraph in GraphGeneration.jl/test/test_df2hypergraph.jl"
+Task: "Write equivalence test for make_hypergraph_from_text in GraphGeneration.jl/test/test_make_hypergraph.jl"
+Task: "Write integration test for end-to-end hypergraph generation workflow in GraphGeneration.jl/test/test_integration.jl"
+Task: "Write CLI interface test in GraphGeneration.jl/test/test_cli.jl"
 
 # Launch GraphUtils.jl implementation in parallel with tests:
-Task: "Create GraphUtils.jl module structure in replica/GraphUtils.jl/src/GraphUtils.jl"
+Task: "Create GraphUtils.jl module structure in GraphUtils.jl/src/GraphUtils.jl"
 ```
 
 ---
@@ -294,5 +294,5 @@ With multiple developers:
   - GraphAnalysis.jl CLI: Will be added when GraphAnalysis.jl implementation phase is created
   - GraphTools.jl CLI: Will be added when GraphTools.jl implementation phase is created
 - Tests must use reference data fixtures from Python for equivalence validation
-- Notebook conversion (T039-T049) requires GraphGeneration.jl to be implemented first (notebooks use packages from @replica)
+- Notebook conversion (T039-T049) requires GraphGeneration.jl to be implemented first (notebooks use the top-level Julia packages)
 - Pluto notebooks specify dependencies via `using` statements within notebook files (Pluto manages environment automatically)

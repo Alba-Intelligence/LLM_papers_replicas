@@ -1,7 +1,5 @@
-"""
-Test suite for GraphGeneration.jl
-Run with: julia --project=. test/runtests.jl
-"""
+# Test suite for GraphGeneration.jl.
+# Run with: julia --project=. test/runtests.jl
 using Test
 using Pkg
 

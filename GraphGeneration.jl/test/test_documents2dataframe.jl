@@ -1,7 +1,5 @@
-"""
-Equivalence test for documents2dataframe function.
-Tests that Julia implementation produces same output as Python reference.
-"""
+# Equivalence test for documents2dataframe.
+# Checks Julia output against the expected structure and optional reference data.
 using Test
 using DataFrames
 using JSON

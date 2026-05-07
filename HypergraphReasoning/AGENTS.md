@@ -7,7 +7,7 @@ This document maintains development standards, coding conventions, and project b
 ### Package Organization
 
 - **One package per Python module**: Each Python module (`graph_generation.py`, `graph_analysis.py`, etc.) maps to one Julia package (`GraphGeneration.jl`, `GraphAnalysis.jl`, etc.)
-- **Package location**: All packages in `replica/` directory at repository root
+- **Package location**: All Julia packages live as top-level `*.jl/` directories at repository root
 - **Standard structure**: Each package follows Julia standard structure:
   ```
   PackageName.jl/

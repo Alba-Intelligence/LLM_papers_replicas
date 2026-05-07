@@ -1,7 +1,5 @@
-"""
-CLI interface test for GraphGeneration.jl.
-Tests command-line argument parsing and execution.
-"""
+# CLI interface test for GraphGeneration.jl.
+# Covers command-line argument parsing and execution smoke checks.
 using Test
 
 # Load package

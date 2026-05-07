@@ -59,9 +59,6 @@ remove_markdown_symbols("[link](url)")    # Returns "link"
 ```
 """
 function remove_markdown_symbols(text::String)
-    import Base: @__MODULE__
-    using Regex
-    
     # Remove links: [text](url) -> text
     text = replace(text, r"\[([^\]]+)\]\([^\)]+\)" => s"\1")
     

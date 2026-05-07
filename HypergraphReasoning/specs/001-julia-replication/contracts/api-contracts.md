@@ -270,7 +270,7 @@ Remove Markdown formatting from text.
 
 **Conversion Requirements**:
 - Translate Python code cells to Julia equivalents
-- Replace Python imports with Julia `using` statements (using packages from @replica)
+- Replace Python imports with Julia `using` statements (using the top-level Julia packages)
 - Convert Python-specific syntax to Julia idioms
 - Maintain notebook structure (cells, markdown, code organization)
 - Preserve workflow and logic flow
@@ -279,7 +279,7 @@ Remove Markdown formatting from text.
 **Validation**:
 - Notebook executes successfully in Pluto.jl
 - Outputs match Python notebook outputs (automated comparison where possible, manual verification for interactive/visual outputs)
-- All dependencies resolve correctly (packages from @replica available)
+- All dependencies resolve correctly (top-level Julia packages available)
 
 **Notebooks to Convert** (MVP scope):
 1. `make_hypergraph.ipynb` → `notebooks/SG/make_hypergraph.jl`

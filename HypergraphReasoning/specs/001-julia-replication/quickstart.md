@@ -302,7 +302,7 @@ Manual conversion process:
    ```julia
    # Python: from GraphReasoning import graph_generation
    # Julia:
-   using GraphGeneration  # from @replica
+   using GraphGeneration  # from the top-level Julia package
    ```
 4. **Create Pluto notebook**: Save as `.jl` file in `notebooks/SG/` directory
 5. **Test execution**: Open in Pluto.jl and verify it runs

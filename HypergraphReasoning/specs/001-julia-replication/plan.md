@@ -7,7 +7,7 @@
 
 ## Summary
 
-Replicate the Python HyperGraphReasoning package in Julia by creating one Julia package per Python module in the @replica directory. Each package will maintain functional equivalence (same logical behavior and outputs) while using Julia-idiomatic implementations optimized for Julia performance. Documentation will use Documenter.jl for API docs within packages and Typst for global progress/learnings documentation. Development standards will be maintained in AGENTS.md. Additionally, convert all Python Jupyter notebooks to Pluto notebooks stored in @notebooks directory, maintaining equivalent workflows using Julia packages from @replica.
+Replicate the Python HyperGraphReasoning package in Julia by creating one Julia package per Python module as a top-level `*.jl/` directory at repository root. Each package will maintain functional equivalence (same logical behavior and outputs) while using Julia-idiomatic implementations optimized for Julia performance. Documentation will use Documenter.jl for API docs within packages and Typst for global progress/learnings documentation. Development standards will be maintained in AGENTS.md. Additionally, convert all Python Jupyter notebooks to Pluto notebooks stored in @notebooks directory, maintaining equivalent workflows using those top-level Julia packages.
 
 **Technical Approach**: 
 - Use `Graphs.jl` and `Hypergraphs.jl` for graph/hypergraph operations
@@ -85,35 +85,34 @@ specs/001-julia-replication/
 
 ### Source Code (repository root)
 
-**Structure Decision**: Multiple Julia packages structure. Each Python module maps to one Julia package in @replica directory. Pluto notebooks stored in @notebooks directory:
+**Structure Decision**: Multiple Julia packages structure. Each Python module maps to one top-level Julia package directory. Pluto notebooks stored in @notebooks directory:
 
 ```text
-replica/
-├── GraphGeneration.jl/     # Replicates graph_generation.py
-│   ├── src/
-│   │   └── GraphGeneration.jl
-│   ├── test/
-│   ├── docs/
-│   │   └── src/            # Documenter.jl docs
-│   └── Project.toml
-├── GraphAnalysis.jl/        # Replicates graph_analysis.py
-│   ├── src/
-│   │   └── GraphAnalysis.jl
-│   ├── test/
-│   ├── docs/
-│   └── Project.toml
-├── GraphTools.jl/           # Replicates graph_tools.py
-│   ├── src/
-│   │   └── GraphTools.jl
-│   ├── test/
-│   ├── docs/
-│   └── Project.toml
-└── GraphUtils.jl/           # Replicates utils.py
-    ├── src/
-    │   └── GraphUtils.jl
-    ├── test/
-    ├── docs/
-    └── Project.toml
+GraphGeneration.jl/          # Replicates graph_generation.py
+├── src/
+│   └── GraphGeneration.jl
+├── test/
+├── docs/
+│   └── src/                 # Documenter.jl docs
+└── Project.toml
+GraphAnalysis.jl/            # Replicates graph_analysis.py
+├── src/
+│   └── GraphAnalysis.jl
+├── test/
+├── docs/
+└── Project.toml
+GraphTools.jl/               # Replicates graph_tools.py
+├── src/
+│   └── GraphTools.jl
+├── test/
+├── docs/
+└── Project.toml
+GraphUtils.jl/               # Replicates utils.py
+├── src/
+│   └── GraphUtils.jl
+├── test/
+├── docs/
+└── Project.toml
 
 notebooks/                    # Converted Pluto notebooks
 ├── SG/                       # Mirrors Python Notebooks/SG/ structure

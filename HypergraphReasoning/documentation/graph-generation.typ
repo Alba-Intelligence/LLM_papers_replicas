@@ -170,6 +170,6 @@ hg, sub_dfs = df2hypergraph(df, mock_generate)
 == References
 
 - Python Source: `HyperGraphReasoningPython/GraphReasoning/graph_generation.py`
-- Julia Package: `replica/GraphGeneration.jl/`
+- Julia Package: `GraphGeneration.jl/`
 - API Contracts: `specs/001-julia-replication/contracts/api-contracts.md`
 - Data Model: `specs/001-julia-replication/data-model.md`

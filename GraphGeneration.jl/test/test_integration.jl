@@ -1,7 +1,5 @@
-"""
-Integration test for end-to-end hypergraph generation workflow.
-Tests the complete pipeline from text input to hypergraph output.
-"""
+# Integration test for the end-to-end hypergraph generation workflow.
+# Covers the full pipeline from text input to hypergraph output.
 using Test
 using DataFrames
 using Hypergraphs

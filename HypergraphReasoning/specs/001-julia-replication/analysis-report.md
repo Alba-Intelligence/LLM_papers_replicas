@@ -99,7 +99,7 @@ All tasks map to requirements or user stories. No orphaned tasks detected.
 ### Terminology Consistency
 
 ✅ **Consistent Terms**:
-- @replica, @documentation, @HyperGraphReasoning (consistent across all artifacts)
+- top-level Julia packages, @documentation, @HyperGraphReasoning (consistent across all artifacts)
 - GraphGeneration.jl, GraphAnalysis.jl, GraphTools.jl, GraphUtils.jl (consistent naming)
 - Functional equivalence (consistently defined)
 

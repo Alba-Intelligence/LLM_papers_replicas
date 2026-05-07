@@ -12,7 +12,7 @@ Pkg.add("GraphGeneration")
 Or from local path:
 
 ```julia
-Pkg.add(path="replica/GraphGeneration")
+Pkg.add(path="GraphGeneration.jl")
 ```
 
 ## Quick Start

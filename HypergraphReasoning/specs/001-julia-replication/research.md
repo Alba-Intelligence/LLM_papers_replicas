@@ -110,7 +110,7 @@ Package naming: PascalCase (e.g., `GraphGeneration.jl`)
 - `src/<PackageName>.jl` - Main module
 - `test/runtests.jl` - Test suite including equivalence tests
 - `docs/src/` - Documenter.jl documentation
-- `Project.toml` - Dependencies (may include other @replica packages)
+- `Project.toml` - Dependencies (may include other top-level Julia packages)
 - CLI scripts in `bin/` or as exported functions callable via `-e`
 
 **Rationale**: Standard structure ensures compatibility with Julia package manager (Pkg.jl), enables proper dependency resolution, and follows ecosystem conventions.
@@ -243,7 +243,7 @@ Julia notebook options:
 
 **Decision**: Convert Python Jupyter notebooks to Pluto notebooks (`.jl` files). Conversion process:
 1. Translate Python code cells to Julia equivalents
-2. Replace Python imports with Julia `using` statements (using packages from @replica)
+2. Replace Python imports with Julia `using` statements (using the top-level Julia packages)
 3. Convert Python-specific syntax to Julia (e.g., list comprehensions, dict operations)
 4. Maintain notebook structure and workflow
 5. Store in `notebooks/` directory at repository root, mirroring Python Notebooks/ structure

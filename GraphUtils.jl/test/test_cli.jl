@@ -1,7 +1,5 @@
-"""
-CLI interface test for GraphUtils.jl.
-Tests command-line argument parsing and execution.
-"""
+# CLI interface test for GraphUtils.jl.
+# Tests command-line argument parsing and execution.
 using Test
 
 # Load package

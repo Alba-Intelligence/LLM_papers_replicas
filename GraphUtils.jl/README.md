@@ -12,7 +12,7 @@ Pkg.add("GraphUtils")
 Or from local path:
 
 ```julia
-Pkg.add(path="replica/GraphUtils")
+Pkg.add(path="GraphUtils.jl")
 ```
 
 ## Usage

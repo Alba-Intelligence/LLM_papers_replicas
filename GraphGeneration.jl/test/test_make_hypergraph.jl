@@ -1,7 +1,5 @@
-"""
-Equivalence test for make_hypergraph_from_text function.
-Tests caching, text chunking, and hypergraph generation from raw text.
-"""
+# Equivalence test for make_hypergraph_from_text.
+# Covers caching, text chunking, and hypergraph generation from raw text.
 using Test
 using Hypergraphs
 using DataFrames
