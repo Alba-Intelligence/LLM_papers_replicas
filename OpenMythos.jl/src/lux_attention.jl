@@ -4,6 +4,7 @@
 Lux-native grouped-query attention matching `GQAttention`.
 """
 struct LuxGQAttention <: Lux.LuxCore.AbstractLuxLayer
+    dim::Int
     n_heads::Int
     n_kv_heads::Int
     head_dim::Int
@@ -12,15 +13,15 @@ end
 
 function LuxGQAttention(cfg::MythosConfig)
     head_dim = cfg.dim ÷ cfg.n_heads
-    return LuxGQAttention(cfg.n_heads, cfg.n_kv_heads, head_dim, cfg.n_heads ÷ cfg.n_kv_heads)
+    return LuxGQAttention(cfg.dim, cfg.n_heads, cfg.n_kv_heads, head_dim, cfg.n_heads ÷ cfg.n_kv_heads)
 end
 
 function Lux.initialparameters(rng::AbstractRNG, layer::LuxGQAttention)
     return (
-        wq=Float32.(0.02 .* randn(rng, layer.n_heads * layer.head_dim, layer.n_heads * layer.head_dim * layer.n_kv_heads ÷ layer.n_kv_heads)),
-        wk=Float32.(0.02 .* randn(rng, layer.n_kv_heads * layer.head_dim, layer.n_heads * layer.head_dim * layer.n_kv_heads ÷ layer.n_kv_heads)),
-        wv=Float32.(0.02 .* randn(rng, layer.n_kv_heads * layer.head_dim, layer.n_heads * layer.head_dim * layer.n_kv_heads ÷ layer.n_kv_heads)),
-        wo=Float32.(0.02 .* randn(rng, layer.n_heads * layer.head_dim * layer.n_kv_heads ÷ layer.n_kv_heads, layer.n_heads * layer.head_dim)),
+        wq=Float32.(0.02 .* randn(rng, layer.n_heads * layer.head_dim, layer.dim)),
+        wk=Float32.(0.02 .* randn(rng, layer.n_kv_heads * layer.head_dim, layer.dim)),
+        wv=Float32.(0.02 .* randn(rng, layer.n_kv_heads * layer.head_dim, layer.dim)),
+        wo=Float32.(0.02 .* randn(rng, layer.dim, layer.n_heads * layer.head_dim)),
     )
 end
 
@@ -83,7 +84,9 @@ _gq_parameters(attn::GQAttention) = (wq=copy(attn.wq), wk=copy(attn.wk), wv=copy
 Lux-native multi-head latent attention matching `MLAttention`.
 """
 struct LuxMLAttention{QN,KN} <: Lux.LuxCore.AbstractLuxLayer
+    dim::Int
     n_heads::Int
+    q_rank::Int
     kv_lora_rank::Int
     qk_rope_dim::Int
     qk_nope_dim::Int
@@ -95,7 +98,9 @@ end
 
 function LuxMLAttention(cfg::MythosConfig)
     return LuxMLAttention(
+        cfg.dim,
         cfg.n_heads,
+        cfg.q_lora_rank,
         cfg.kv_lora_rank,
         cfg.qk_rope_head_dim,
         cfg.qk_nope_head_dim,
@@ -107,16 +112,15 @@ function LuxMLAttention(cfg::MythosConfig)
 end
 
 function Lux.initialparameters(rng::AbstractRNG, layer::LuxMLAttention)
-    q_rank = length(layer.q_norm.weight)
     return (
-        q_down=Float32.(0.02 .* randn(rng, q_rank, layer.n_heads * layer.q_head_dim)),
+        q_down=Float32.(0.02 .* randn(rng, layer.q_rank, layer.dim)),
         q_norm=Lux.initialparameters(rng, layer.q_norm),
-        q_up_nope=Float32.(0.02 .* randn(rng, layer.n_heads * layer.qk_nope_dim, q_rank)),
-        q_up_rope=Float32.(0.02 .* randn(rng, layer.n_heads * layer.qk_rope_dim, q_rank)),
-        kv_down=Float32.(0.02 .* randn(rng, layer.kv_lora_rank + layer.qk_rope_dim, layer.n_heads * layer.q_head_dim)),
+        q_up_nope=Float32.(0.02 .* randn(rng, layer.n_heads * layer.qk_nope_dim, layer.q_rank)),
+        q_up_rope=Float32.(0.02 .* randn(rng, layer.n_heads * layer.qk_rope_dim, layer.q_rank)),
+        kv_down=Float32.(0.02 .* randn(rng, layer.kv_lora_rank + layer.qk_rope_dim, layer.dim)),
         kv_norm=Lux.initialparameters(rng, layer.kv_norm),
         kv_up=Float32.(0.02 .* randn(rng, layer.n_heads * (layer.qk_nope_dim + layer.v_dim), layer.kv_lora_rank)),
-        wo=Float32.(0.02 .* randn(rng, layer.n_heads * layer.q_head_dim, layer.n_heads * layer.v_dim)),
+        wo=Float32.(0.02 .* randn(rng, layer.dim, layer.n_heads * layer.v_dim)),
     )
 end
 

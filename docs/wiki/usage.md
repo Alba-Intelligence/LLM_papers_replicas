@@ -242,7 +242,7 @@ The current bootstrap trainer is intentionally limited:
 - that full-model mode currently supports small GQA/MLA configs, including tiny sparse routed-expert setups with optional shared experts,
 - `DeepSeekv4.jl` now has both a `LuxHeadOnlyDeepSeekV4` head-only trainer and a first tiny `DeepSeekFullModelTrainerState` bootstrap path,
 - the current DeepSeek full-model loss now trains both the main LM logits path and the current auxiliary MTP heads on tiny configs, with an optional gated Engram branch,
-- the core model internals are still mostly manual Julia blocks, though `OpenMythos.jl` now also exposes Lux-native mirrors for attention, experts / MoE, transformer blocks, and recurrent update primitives,
+- the core model internals are still mostly manual Julia blocks, though `OpenMythos.jl` now also exposes Lux-native mirrors for attention, experts / MoE, transformer blocks, recurrent update primitives, and a tied-embedding `LuxOpenMythos` shell,
 - broader sparse/full-model autodiff and distributed training are still future work.
 
 The current runtime seam is also intentionally lightweight:

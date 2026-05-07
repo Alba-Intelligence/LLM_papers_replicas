@@ -46,9 +46,9 @@ The current Julia slice covers the core numerical primitives, the main model sta
 - `LoRAAdapter`
 - `LTIInjection`
 - `ACTHalting`
-- Lux-native OpenMythos mirrors for attention, experts / MoE, transformer blocks, and recurrent update primitives
+- Lux-native OpenMythos mirrors for attention, experts / MoE, transformer blocks, recurrent update primitives, and the tied-embedding model shell
 
-The current OpenMythos training path is intentionally bootstrap-sized: it wires tokenizer/data batching, checkpointing, a Julia `OpenMythos.jl/scripts/train_3b_fineweb_edu.jl` entrypoint, an optional FineWeb-Edu Python bridge, a broader small-config full-model path, a first shared Lux-native trainer/checkpoint foundation in `TransformerCore.jl`, and the first Lux-native OpenMythos attention/FFN/block/recurrent mirrors needed for the next refactor.
+The current OpenMythos training path is intentionally bootstrap-sized: it wires tokenizer/data batching, checkpointing, a Julia `OpenMythos.jl/scripts/train_3b_fineweb_edu.jl` entrypoint, an optional FineWeb-Edu Python bridge, a broader small-config full-model path, a first shared Lux-native trainer/checkpoint foundation in `TransformerCore.jl`, and Lux-native OpenMythos attention/FFN/block/recurrent/model mirrors needed for the next refactor.
 
 ## Source priority
 

@@ -133,7 +133,7 @@ The current implementation is intentionally correctness-first and tiny-config-fi
 
 That package should remain architecture-agnostic. Recurrence, CSA/HCA, mHC, training wrappers, and routing policies stay in the model-family packages until a genuinely stable shared abstraction exists.
 
-`OpenMythos.jl` has now started the package-level Lux refactor by adding Lux-native layers that mirror the current attention, FFN, block, and recurrent halting/update primitives (`LuxGQAttention`, `LuxMLAttention`, `LuxExpert`, `LuxMoEFFN`, `LuxTransformerBlock`, `LuxRecurrentBlock`, `LuxLoRAAdapter`, `LuxLTIInjection`, `LuxACTHalting`). They currently live alongside the legacy parity structs and are validated for numerical equivalence, but they are not yet wired through the full OpenMythos stack.
+`OpenMythos.jl` has now started the package-level Lux refactor by adding Lux-native layers that mirror the current attention, FFN, block, recurrent halting/update primitives, and the tied-embedding model shell itself (`LuxGQAttention`, `LuxMLAttention`, `LuxExpert`, `LuxMoEFFN`, `LuxTransformerBlock`, `LuxRecurrentBlock`, `LuxLoRAAdapter`, `LuxLTIInjection`, `LuxACTHalting`, `LuxOpenMythos`). They currently live alongside the legacy parity structs and are validated for numerical equivalence, but the package training path has not yet been fully rewired onto them.
 
 ## Runtime foundations
 

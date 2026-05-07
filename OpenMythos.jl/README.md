@@ -7,7 +7,7 @@ Julia reimplementation of the vendored Python OpenMythos reference in `../refere
 The replica now includes:
 
 - the core model stack (`MythosConfig`, attention backends, MoE, recurrent block, `OpenMythos`, generation),
-- the first Lux-native mirrors for attention, experts / MoE, transformer blocks, and recurrent update primitives,
+- the first Lux-native mirrors for attention, experts / MoE, transformer blocks, recurrent update primitives, and the tied-embedding model shell,
 - tokenizer parity through a pragmatic Hugging Face bridge,
 - an optional Python-vs-Julia parity harness for selected utilities,
 - bootstrap training paths with checkpointing and local/FineWeb smoke data flows,
@@ -16,7 +16,7 @@ The replica now includes:
 - true paged cache-buffer internals beneath the shared envelope API,
 - a broadened full-model bootstrap slice that now supports both GQA and MLA attention plus small sparse routed-expert configs with optional shared experts.
 
-The current training surface is intentionally staged: `OpenMythos.jl` now has both the original **Lux-backed head-only** bootstrap path and a broader **full-model** bootstrap path for small GQA/MLA configs, including tiny sparse routed-expert setups with optional shared experts. The package also now includes Lux-native mirrors (`LuxGQAttention`, `LuxMLAttention`, `LuxExpert`, `LuxMoEFFN`, `LuxTransformerBlock`, `LuxRecurrentBlock`, `LuxLoRAAdapter`, `LuxLTIInjection`, `LuxACTHalting`) that numerically match the current parity structs and are the next package-level step toward a full Lux-native model refactor.
+The current training surface is intentionally staged: `OpenMythos.jl` now has both the original **Lux-backed head-only** bootstrap path and a broader **full-model** bootstrap path for small GQA/MLA configs, including tiny sparse routed-expert setups with optional shared experts. The package also now includes Lux-native mirrors (`LuxGQAttention`, `LuxMLAttention`, `LuxExpert`, `LuxMoEFFN`, `LuxTransformerBlock`, `LuxRecurrentBlock`, `LuxLoRAAdapter`, `LuxLTIInjection`, `LuxACTHalting`, `LuxOpenMythos`) that numerically match the current parity structs and are the next package-level step toward a full Lux-native model refactor.
 
 ## Quickstart
 
