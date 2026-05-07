@@ -213,7 +213,7 @@ julia docs/make.jl
 
 ### Typst Documentation
 
-Create `documentation/graph-generation.typ`:
+Create `docs/hypergraph-reasoning/graph-generation.typ`:
 
 ```typst
 #set page(margin: 2cm)
@@ -240,7 +240,7 @@ We are replicating `graph_generation.py` functionality...
 Compile:
 
 ```bash
-typst compile documentation/graph-generation.typ
+typst compile docs/hypergraph-reasoning/graph-generation.typ
 ```
 
 ## Testing Equivalence

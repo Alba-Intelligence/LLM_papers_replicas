@@ -1,6 +1,4 @@
-"""
-Test script to verify Typst compilation succeeds.
-"""
+# Test script to verify Typst compilation succeeds.
 using Test
 
 @testset "Typst compilation verification" begin

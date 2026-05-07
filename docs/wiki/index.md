@@ -26,6 +26,7 @@ It is intentionally concept-first: the goal is to explain what the Python projec
 6. [DeepSeek V4 architecture](deepseek-v4-architecture.md) - the current DeepSeek V4 package surface and its deliberate deferrals.
 7. [Multi-package workspace](multi-model-repo-plan.md) - how the Julia workspace is split across packages.
 8. [Julia reimplementation plan](julia-reimplementation-plan.md) - current status and the remaining engineering phases.
+9. [HypergraphReasoning documentation](hypergraph-reasoning.md) - the integrated legacy Typst and specification material for the HypergraphReasoning Julia replication.
 
 There is also a small Pluto notebook example at `notebooks/openmythos/small_example.jl`.
 

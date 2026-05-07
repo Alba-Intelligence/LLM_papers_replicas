@@ -4,7 +4,7 @@ description: "Task list for Julia Replication Project"
 
 # Tasks: Julia Replication Project
 
-**Input**: Design documents from `/specs/001-julia-replication/`
+**Input**: Design documents from `/docs/hypergraph-reasoning/specs/001-julia-replication/`
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
 
 **Tests**: Tests are REQUIRED per Constitution Principle III (Test-First, NON-NEGOTIABLE). All tests must be written first and fail before implementation.
@@ -20,7 +20,7 @@ description: "Task list for Julia Replication Project"
 ## Path Conventions
 
 - **Multiple Julia packages**: top-level `<PackageName>.jl/` directories at repository root
-- **Documentation**: `documentation/` for Typst, `<PackageName>.jl/docs/` for Documenter.jl
+- **Documentation**: `docs/hypergraph-reasoning/` for Typst and migrated design records, `<PackageName>.jl/docs/` for Documenter.jl
 - **Tests**: `<PackageName>.jl/test/` per package
 - **Notebooks**: `notebooks/` at repository root (Pluto notebooks converted from Python Jupyter notebooks)
 
@@ -122,7 +122,7 @@ description: "Task list for Julia Replication Project"
 
 ## Phase 5: User Story 2 - Maintain Typst Documentation (Priority: P2)
 
-**Goal**: Create Typst documentation in @documentation directory covering at least one replicated module (GraphGeneration.jl) with progress notes, implementation approach, and acquired knowledge
+**Goal**: Create Typst documentation in `docs/hypergraph-reasoning/` covering at least one replicated module (GraphGeneration.jl) with progress notes, implementation approach, and acquired knowledge
 
 **Independent Test**: Create Typst document for GraphGeneration.jl replication, compile to PDF successfully, verify content includes progress, implementation details, and learnings
 
@@ -130,17 +130,17 @@ description: "Task list for Julia Replication Project"
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T050 [P] [US2] Write test to verify Typst file exists in documentation/graph-generation.typ
-- [ ] T051 [P] [US2] Write test to verify Typst compilation succeeds (test script in test/verify_typst.jl or shell script)
+- [ ] T050 [P] [US2] Write test to verify Typst file exists in docs/hypergraph-reasoning/graph-generation.typ
+- [ ] T051 [P] [US2] Write test to verify Typst compilation succeeds (test script in docs/hypergraph-reasoning/test/verify_typst.jl or shell script)
 
 ### Implementation for User Story 2
 
-- [ ] T052 [US2] Create Typst document structure in documentation/graph-generation.typ
-- [ ] T053 [US2] Write progress section documenting GraphGeneration.jl replication status in documentation/graph-generation.typ
-- [ ] T054 [US2] Write implementation section describing design decisions and Julia-idiomatic approaches in documentation/graph-generation.typ
-- [ ] T055 [US2] Write learnings section capturing challenges encountered and solutions adopted in documentation/graph-generation.typ
-- [ ] T056 [US2] Add code examples and comparisons (Python vs Julia) in documentation/graph-generation.typ
-- [ ] T057 [US2] Compile Typst document to PDF: documentation/graph-generation.pdf
+- [ ] T052 [US2] Create Typst document structure in docs/hypergraph-reasoning/graph-generation.typ
+- [ ] T053 [US2] Write progress section documenting GraphGeneration.jl replication status in docs/hypergraph-reasoning/graph-generation.typ
+- [ ] T054 [US2] Write implementation section describing design decisions and Julia-idiomatic approaches in docs/hypergraph-reasoning/graph-generation.typ
+- [ ] T055 [US2] Write learnings section capturing challenges encountered and solutions adopted in docs/hypergraph-reasoning/graph-generation.typ
+- [ ] T056 [US2] Add code examples and comparisons (Python vs Julia) in docs/hypergraph-reasoning/graph-generation.typ
+- [ ] T057 [US2] Compile Typst document to PDF: docs/hypergraph-reasoning/graph-generation.pdf
 - [ ] T058 [US2] Verify Typst compilation produces well-formatted output
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently. Typst documentation exists and compiles successfully.

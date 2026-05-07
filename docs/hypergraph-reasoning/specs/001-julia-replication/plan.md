@@ -1,7 +1,7 @@
 # Implementation Plan: Julia Replication Project
 
 **Branch**: `001-julia-replication` | **Date**: 2026-01-16 | **Spec**: [spec.md](./spec.md)
-**Input**: Feature specification from `/specs/001-julia-replication/spec.md`
+**Input**: Feature specification from `/docs/hypergraph-reasoning/specs/001-julia-replication/spec.md`
 
 **Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
 
@@ -74,7 +74,7 @@ Replicate the Python HyperGraphReasoning package in Julia by creating one Julia 
 ### Documentation (this feature)
 
 ```text
-specs/001-julia-replication/
+docs/hypergraph-reasoning/specs/001-julia-replication/
 ├── plan.md              # This file (/speckit.plan command output)
 ├── research.md          # Phase 0 output (/speckit.plan command)
 ├── data-model.md        # Phase 1 output (/speckit.plan command)
@@ -121,10 +121,11 @@ notebooks/                    # Converted Pluto notebooks
 │   └── Agents.jl             # Converted from Agents.ipynb
 │   └── [subdirectories mirroring Python structure as needed]
 
-documentation/                # Typst documentation
+docs/hypergraph-reasoning/    # Integrated HypergraphReasoning documentation
 ├── graph-generation.typ
-├── notebook-conversion.typ   # Documentation for notebook conversion
-└── [other Typst files]
+├── specs/
+│   └── 001-julia-replication/
+└── test/
 
 AGENTS.md                     # Development standards
 ```
