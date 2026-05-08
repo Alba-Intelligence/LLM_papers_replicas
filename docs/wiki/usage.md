@@ -242,20 +242,20 @@ julia --project=. scripts/train_deepseek_tiny.jl
 
 Useful environment variables:
 
-| Variable                              | Meaning                                                                 | Default      |
-| ------------------------------------- | ----------------------------------------------------------------------- | ------------ |
-| `DEEPSEEK_V4_TRAIN_MODE`              | training mode (`head_only` or `full_model`)                             | `head_only`  |
-| `DEEPSEEK_V4_TRAIN_ENCODING`          | data encoding mode (`tokenizer` or `byte`)                              | `tokenizer`  |
-| `DEEPSEEK_V4_TRAIN_TOKENIZER_MODEL_ID`| tokenizer model ID for the shared `TextDataCore.jl` path                | `gpt2`       |
-| `DEEPSEEK_V4_TRAIN_VOCAB_SIZE`        | fallback vocab size for `DEEPSEEK_V4_TRAIN_ENCODING=byte`               | `512`        |
-| `DEEPSEEK_V4_TRAIN_USE_ENGRAM`        | enable the gated Engram branch                                          | `0`          |
-| `DEEPSEEK_V4_TRAIN_TOTAL_STEPS`       | total bootstrap steps                                                   | `8`          |
-| `DEEPSEEK_V4_TRAIN_SEQ_LEN`           | sequence length                                                         | `32`         |
-| `DEEPSEEK_V4_TRAIN_BATCH_SIZE`        | batch size                                                              | `2`          |
-| `DEEPSEEK_V4_TRAIN_CKPT_DIR`          | checkpoint root directory (`deepseekv4/<mode>` under this root)         | `checkpoints`|
-| `DEEPSEEK_V4_TRAIN_TEXT`              | local training text override                                            | empty        |
-| `DEEPSEEK_V4_TRAIN_TEXT_FILE`         | path to local training text                                             | empty        |
-| `DEEPSEEK_V4_TRAIN_PARQUET_PATH`      | local parquet file or directory for the Julia-native text-data path     | empty        |
+| Variable                               | Meaning                                                             | Default       |
+| -------------------------------------- | ------------------------------------------------------------------- | ------------- |
+| `DEEPSEEK_V4_TRAIN_MODE`               | training mode (`head_only` or `full_model`)                         | `head_only`   |
+| `DEEPSEEK_V4_TRAIN_ENCODING`           | data encoding mode (`tokenizer` or `byte`)                          | `tokenizer`   |
+| `DEEPSEEK_V4_TRAIN_TOKENIZER_MODEL_ID` | tokenizer model ID for the shared `TextDataCore.jl` path            | `gpt2`        |
+| `DEEPSEEK_V4_TRAIN_VOCAB_SIZE`         | fallback vocab size for `DEEPSEEK_V4_TRAIN_ENCODING=byte`           | `512`         |
+| `DEEPSEEK_V4_TRAIN_USE_ENGRAM`         | enable the gated Engram branch                                      | `0`           |
+| `DEEPSEEK_V4_TRAIN_TOTAL_STEPS`        | total bootstrap steps                                               | `8`           |
+| `DEEPSEEK_V4_TRAIN_SEQ_LEN`            | sequence length                                                     | `32`          |
+| `DEEPSEEK_V4_TRAIN_BATCH_SIZE`         | batch size                                                          | `2`           |
+| `DEEPSEEK_V4_TRAIN_CKPT_DIR`           | checkpoint root directory (`deepseekv4/<mode>` under this root)     | `checkpoints` |
+| `DEEPSEEK_V4_TRAIN_TEXT`               | local training text override                                        | empty         |
+| `DEEPSEEK_V4_TRAIN_TEXT_FILE`          | path to local training text                                         | empty         |
+| `DEEPSEEK_V4_TRAIN_PARQUET_PATH`       | local parquet file or directory for the Julia-native text-data path | empty         |
 
 Example local DeepSeek smoke run on the shared tokenizer-backed path:
 

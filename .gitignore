@@ -19,3 +19,7 @@ docs/build
 
 # OS cruft
 .DS_Store
+
+
+reference/private
+.pi-lens

@@ -70,6 +70,7 @@
                 opencode
                 openskills
                 openspec
+                pi
                 spec-kit
               ]);
 
