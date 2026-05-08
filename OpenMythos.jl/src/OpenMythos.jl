@@ -1,6 +1,7 @@
 module OpenMythos
 
 using Base64
+using BytePairEncoding
 using LinearAlgebra
 using Random
 using Serialization

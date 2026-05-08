@@ -33,4 +33,14 @@ const TEST_TOKENIZER_MODEL_ID = get(ENV, "OPENMYTHOS_TEST_TOKENIZER_MODEL_ID", "
     @test vocab_size(custom) > 0
     @test tokenize(custom, original) == OpenMythos.encode(custom, original)
     @test detokenize(custom, ids) == OpenMythos.decode(custom, ids)
+
+    default_tok = MythosTokenizer()
+    @test default_tok.tokenizer.name_or_path == DEFAULT_MODEL_ID
+    @test vocab_size(default_tok) > 0
+
+    if occursin("gpt-oss", default_tok.model_id)
+        special_ids = tokenize(default_tok, "<|start|>")
+        @test !isempty(special_ids)
+        @test detokenize(default_tok, special_ids) == ""
+    end
 end

@@ -20,7 +20,7 @@ DeepSeek V4 source mapping lives in [DeepSeek V4 reference map](deepseek-v4-refe
 | Python path                     | Purpose                                        | Julia target                                                                                                   | Priority |
 | ------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | -------- |
 | `open_mythos/main.py`           | Core model, layers, recurrent loop, generation | `OpenMythos.jl/src/` core modules and model assembly                                                           | Highest  |
-| `open_mythos/tokenizer.py`      | Hugging Face tokenizer wrapper                 | `OpenMythos.jl/src/tokenizer.jl` or a temporary Python bridge                                                  | High     |
+| `open_mythos/tokenizer.py`      | Hugging Face tokenizer wrapper                 | `OpenMythos.jl/src/tokenizer.jl` via the current Julia-native BytePairEncoding / tiktoken-style wrapper         | High     |
 | `open_mythos/variants.py`       | Named configuration presets                    | `OpenMythos.jl/src/variants.jl`                                                                                | High     |
 | `tests/test_main.py`            | Invariant-heavy model tests                    | `OpenMythos.jl/test/` parity tests                                                                             | Highest  |
 | `tests/test_tokenizer.py`       | Tokenizer behavior checks                      | `OpenMythos.jl/test/test_tokenizer.jl`                                                                         | High     |

@@ -8,7 +8,7 @@ The replica now includes:
 
 - the core model stack (`MythosConfig`, attention backends, MoE, recurrent block, `OpenMythos`, generation),
 - the first Lux-native mirrors for attention, experts / MoE, transformer blocks, recurrent update primitives, and the tied-embedding model shell,
-- tokenizer parity through a pragmatic Hugging Face bridge,
+- tokenizer parity through a Julia-native BytePairEncoding / tiktoken-backed path,
 - an optional Python-vs-Julia parity harness for selected utilities,
 - bootstrap training paths with checkpointing and local/FineWeb smoke data flows,
 - chunked prefill plus serializable KV-cache envelopes for cached generation reuse,
@@ -17,7 +17,7 @@ The replica now includes:
 - a broadened full-model bootstrap slice that now supports both GQA and MLA attention plus small sparse routed-expert configs with optional shared experts,
 - a first Lux-native `LuxFullModelTrainerState` built on the shared `TransformerCore.NextTokenTrainerState` foundation.
 
-The current training surface is intentionally staged: `OpenMythos.jl` now has both the original **Lux-backed head-only** bootstrap path and a broader **full-model** bootstrap path for small GQA/MLA configs, including tiny sparse routed-expert setups with optional shared experts. The package also now includes Lux-native mirrors (`LuxGQAttention`, `LuxMLAttention`, `LuxExpert`, `LuxMoEFFN`, `LuxTransformerBlock`, `LuxRecurrentBlock`, `LuxLoRAAdapter`, `LuxLTIInjection`, `LuxACTHalting`, `LuxOpenMythos`) plus a first `LuxFullModelTrainerState` that reuses the current parity stack through the shared `TransformerCore.jl` trainer foundation and shared family/mode-aware checkpoints. The training script now treats Lux-native full-model training as the default path; the legacy mutable full-model trainer remains available as an explicit compatibility mode.
+The current training surface is intentionally staged: `OpenMythos.jl` now has both the original **Lux-backed head-only** bootstrap path and a broader **full-model** bootstrap path for small GQA/MLA configs, including tiny sparse routed-expert setups with optional shared experts. The package also now includes Lux-native mirrors (`LuxGQAttention`, `LuxMLAttention`, `LuxExpert`, `LuxMoEFFN`, `LuxTransformerBlock`, `LuxRecurrentBlock`, `LuxLoRAAdapter`, `LuxLTIInjection`, `LuxACTHalting`, `LuxOpenMythos`) plus a first `LuxFullModelTrainerState` that reuses the current parity stack through the shared `TransformerCore.jl` trainer foundation and shared family/mode-aware checkpoints. The tokenizer path is now Julia-native for supported GPT/tiktoken families; the remaining Python bridge is the optional FineWeb-Edu data path. The training script now treats Lux-native full-model training as the default path; the legacy mutable full-model trainer remains available as an explicit compatibility mode.
 
 ## Quickstart
 

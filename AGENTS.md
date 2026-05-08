@@ -48,7 +48,7 @@ The current Julia slice covers the core numerical primitives, the main model sta
 - `ACTHalting`
 - Lux-native OpenMythos mirrors for attention, experts / MoE, transformer blocks, recurrent update primitives, the tied-embedding model shell, and a first shared-trainer-backed Lux full-model state with shared save/load wrappers
 
-The current OpenMythos training path is intentionally bootstrap-sized: it wires tokenizer/data batching, checkpointing, a Julia `OpenMythos.jl/scripts/train_3b_fineweb_edu.jl` entrypoint, an optional FineWeb-Edu Python bridge, a broader small-config full-model path, a first shared Lux-native trainer/checkpoint foundation in `TransformerCore.jl`, Lux-native OpenMythos attention/FFN/block/recurrent/model mirrors, and a first `LuxFullModelTrainerState` plus shared save/load wrappers built on the shared trainer surface. The script default now points at the Lux-native full-model path while legacy modes keep separate checkpoint directories.
+The current OpenMythos training path is intentionally bootstrap-sized: it wires tokenizer/data batching, checkpointing, a Julia `OpenMythos.jl/scripts/train_3b_fineweb_edu.jl` entrypoint, an optional FineWeb-Edu Python bridge, a broader small-config full-model path, a first shared Lux-native trainer/checkpoint foundation in `TransformerCore.jl`, Lux-native OpenMythos attention/FFN/block/recurrent/model mirrors, a first `LuxFullModelTrainerState` plus shared save/load wrappers built on the shared trainer surface, and a Julia-native BytePairEncoding/tiktoken-backed tokenizer path for the currently supported GPT-style families. The script default now points at the Lux-native full-model path while legacy modes keep separate checkpoint directories.
 
 ## Source priority
 

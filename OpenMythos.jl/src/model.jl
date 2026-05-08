@@ -1,4 +1,4 @@
-"""Default tokenizer identifier used by the OpenMythos tokenizer bridge."""
+"""Default tokenizer identifier used by the OpenMythos Julia-native tokenizer path."""
 const DEFAULT_MODEL_ID = "openai/gpt-oss-20b"
 
 struct OpenMythos{T<:AbstractFloat}

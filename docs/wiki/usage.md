@@ -83,7 +83,7 @@ model = DeepSeekV4Model(cfg)
 
 ## 5. Use the tokenizer
 
-The tokenizer is currently still package-specific and in transition: the current OpenMythos surface remains parity-oriented, while the shared training foundation has now moved into `TransformerCore.jl` so the next package refactor can replace Python bridges with Julia-native paths.
+The tokenizer is now package-specific but Julia-native for the currently supported GPT/tiktoken-style families. `OpenMythos.jl` uses `BytePairEncoding.jl` for native BPE/tokenization instead of a Python subprocess bridge. The remaining Python bridge in the training path is the optional FineWeb-Edu batch loader.
 
 ```julia
 using OpenMythos
@@ -99,6 +99,16 @@ Useful entry points:
 - `tokenize(tok, text)`
 - `detokenize(tok, ids)`
 - `vocab_size(tok)`
+
+Currently supported native tokenizer families include:
+
+- `gpt2` / `openai-community/gpt2`
+- `r50k_base`
+- `p50k_base`
+- `p50k_edit`
+- `cl100k_base`
+- `o200k_base`
+- `gpt-oss` aliases via an `o200k_harmony`-style vocabulary wrapper
 
 ## 6. Reuse a prefetched KV cache
 
