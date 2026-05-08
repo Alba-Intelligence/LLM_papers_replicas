@@ -187,7 +187,9 @@ Useful environment variables:
 | `OPENMYTHOS_TRAIN_SHARED_EXPERTS`     | shared experts in full-model mode                                                                        | `0`                                    |
 | `OPENMYTHOS_TRAIN_EXPERTS_PER_TOKEN`  | routed experts selected per token in full-model mode                                                     | `1`                                    |
 | `OPENMYTHOS_TRAIN_CKPT_DIR`           | checkpoint root directory (`openmythos/full_model_lux` for Lux mode; `<mode>/` subdirs for legacy modes) | `checkpoints`                          |
-| `OPENMYTHOS_USE_FINEWEB_EDU`          | use FineWeb-Edu data path (local parquet if set, otherwise remote rows API)                               | `0`                                    |
+| `OPENMYTHOS_USE_FINEWEB_EDU`          | use FineWeb-Edu data path (local parquet if set, otherwise remote rows API)                              | `0`                                    |
+| `OPENMYTHOS_FINEWEB_REMOTE_SOURCE`    | remote FineWeb source when no local parquet path is set (`rows` or `parquet`)                            | `rows`                                 |
+| `OPENMYTHOS_FINEWEB_REMOTE_CACHE_DIR` | optional cache directory for downloaded remote parquet shards                                             | empty                                  |
 | `OPENMYTHOS_FINEWEB_PARQUET_PATH`     | local FineWeb parquet file or directory for the Julia-native path                                        | empty                                  |
 | `OPENMYTHOS_FINEWEB_SUBSET`           | FineWeb-Edu subset / config name for remote loading                                                      | `sample-10BT`                          |
 | `OPENMYTHOS_FINEWEB_BATCHES`          | number of FineWeb batches to fetch                                                                       | `max(total_steps, 1)`                  |
@@ -216,6 +218,19 @@ Example FineWeb-Edu-backed smoke run via the Julia rows API path:
 ```bash
 cd OpenMythos.jl
 OPENMYTHOS_USE_FINEWEB_EDU=1 \
+OPENMYTHOS_TRAIN_TOKENIZER_MODEL_ID=gpt2 \
+OPENMYTHOS_FINEWEB_SUBSET=sample-10BT \
+OPENMYTHOS_FINEWEB_BATCHES=8 \
+julia --project=. scripts/train_3b_fineweb_edu.jl
+```
+
+Example Julia-native remote parquet-shard run for larger-than-smoke loading:
+
+```bash
+cd OpenMythos.jl
+OPENMYTHOS_USE_FINEWEB_EDU=1 \
+OPENMYTHOS_FINEWEB_REMOTE_SOURCE=parquet \
+OPENMYTHOS_FINEWEB_REMOTE_CACHE_DIR=.fineweb-cache \
 OPENMYTHOS_TRAIN_TOKENIZER_MODEL_ID=gpt2 \
 OPENMYTHOS_FINEWEB_SUBSET=sample-10BT \
 OPENMYTHOS_FINEWEB_BATCHES=8 \

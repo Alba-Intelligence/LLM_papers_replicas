@@ -138,6 +138,18 @@ OPENMYTHOS_FINEWEB_BATCHES=8 \
 julia --project=. scripts/train_3b_fineweb_edu.jl
 ```
 
+For a Julia-native remote parquet-shard path that can scale beyond the rows-api smoke loader:
+
+```bash
+OPENMYTHOS_USE_FINEWEB_EDU=1 \
+OPENMYTHOS_FINEWEB_REMOTE_SOURCE=parquet \
+OPENMYTHOS_FINEWEB_REMOTE_CACHE_DIR=.fineweb-cache \
+OPENMYTHOS_TRAIN_TOKENIZER_MODEL_ID=gpt2 \
+OPENMYTHOS_FINEWEB_SUBSET=sample-10BT \
+OPENMYTHOS_FINEWEB_BATCHES=8 \
+julia --project=. scripts/train_3b_fineweb_edu.jl
+```
+
 For a Julia-native FineWeb-style smoke run from local parquet shard(s):
 
 ```bash
@@ -147,7 +159,6 @@ OPENMYTHOS_TRAIN_TOKENIZER_MODEL_ID=gpt2 \
 OPENMYTHOS_FINEWEB_BATCHES=8 \
 julia --project=. scripts/train_3b_fineweb_edu.jl
 ```
-
 
 ### Chunked prefill and cache reuse
 

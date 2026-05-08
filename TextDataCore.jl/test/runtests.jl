@@ -31,6 +31,11 @@ end
         @test parquet_text_files(path) == [path]
         @test parquet_text_column(path) == ["one short parquet row", "a second parquet row for batching"]
 
+        pairs = Tuple{Vector{Int}, Vector{Int}}[]
+        buffer = Int[]
+        append_next_token_pairs_from_parquet!(pairs, buffer, tok, path, 4, 2)
+        @test length(pairs) == 2
+
         batches = next_token_batches_from_parquet(tok, path, 4, 1; max_batches=2)
         @test length(batches) == 2
         @test size(batches[1][1]) == (1, 4)

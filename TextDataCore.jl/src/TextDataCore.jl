@@ -19,6 +19,7 @@ export NativeTokenizerHandle,
        vocab_texts,
        parquet_text_files,
        parquet_text_column,
+       append_next_token_pairs_from_parquet!,
        next_token_batches_from_parquet
 
 end

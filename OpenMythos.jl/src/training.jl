@@ -84,6 +84,7 @@ TransformerCore.text_next_token_pairs(texts::AbstractVector{<:AbstractString}, t
 
 const _FINEWEB_DATASET = "HuggingFaceFW/fineweb-edu"
 const _FINEWEB_ROWS_API = "https://datasets-server.huggingface.co/rows"
+const _FINEWEB_PARQUET_LIST_API = "https://huggingface.co/api/datasets"
 const _FINEWEB_MAX_ROWS_PER_REQUEST = 100
 
 function _download_json(url::AbstractString)
@@ -118,6 +119,19 @@ function _fineweb_rows_texts(; dataset::AbstractString=_FINEWEB_DATASET, config:
     return texts
 end
 
+function _fineweb_parquet_shard_urls(; dataset::AbstractString=_FINEWEB_DATASET, config::AbstractString="sample-10BT", split::AbstractString="train", fetch_json::Function=_download_json)
+    dataset_path = join(Base.split(dataset, '/'), '/')
+    url = "$(_FINEWEB_PARQUET_LIST_API)/$(dataset_path)/parquet/$(config)/$(split)"
+    payload = fetch_json(url)
+    return String[String(entry) for entry in payload]
+end
+
+function _download_fineweb_parquet_shard(url::AbstractString, path::AbstractString; downloader::Function=Downloads.download)
+    mkpath(dirname(path))
+    downloader(url, path)
+    return path
+end
+
 """
     fineweb_edu_batches_from_parquet(tokenizer, parquet_path, seq_len, batch_size; max_batches=8)
 
@@ -142,6 +156,57 @@ end
 
 fineweb_edu_batches_from_parquet(model_id::String, parquet_path::AbstractString, seq_len::Integer, batch_size::Integer; kwargs...) =
     fineweb_edu_batches_from_parquet(MythosTokenizer(model_id), parquet_path, seq_len, batch_size; kwargs...)
+
+"""
+    fineweb_edu_batches_from_remote_parquet(tokenizer, seq_len, batch_size; subset="sample-10BT", max_batches=8)
+
+Build next-token batches from remote FineWeb-Edu parquet shard URLs using
+Julia-native shard discovery and download helpers.
+"""
+function fineweb_edu_batches_from_remote_parquet(
+    tokenizer::MythosTokenizer,
+    seq_len::Integer,
+    batch_size::Integer;
+    subset::String="sample-10BT",
+    split::String="train",
+    max_batches::Integer=8,
+    max_shards::Union{Nothing, Integer}=nothing,
+    cache_dir::Union{Nothing, AbstractString}=nothing,
+    fetch_manifest::Function=_fineweb_parquet_shard_urls,
+    downloader::Function=_download_fineweb_parquet_shard,
+)
+    seq_len > 0 || throw(ArgumentError("seq_len must be positive"))
+    batch_size > 0 || throw(ArgumentError("batch_size must be positive"))
+    max_batches > 0 || throw(ArgumentError("max_batches must be positive"))
+    max_shards === nothing || max_shards > 0 || throw(ArgumentError("max_shards must be positive when provided"))
+
+    max_pairs = Int(max_batches) * Int(batch_size)
+    pairs = Tuple{Vector{Int}, Vector{Int}}[]
+    buffer = Int[]
+    shard_urls = fetch_manifest(; dataset=_FINEWEB_DATASET, config=subset, split=split)
+
+    for (index, shard_url) in enumerate(shard_urls)
+        max_shards !== nothing && index > max_shards && break
+        if cache_dir === nothing
+            mktempdir() do dir
+                local_path = joinpath(dir, "fineweb_shard_$(lpad(string(index), 4, '0')).parquet")
+                downloader(shard_url, local_path)
+                TextDataCore.append_next_token_pairs_from_parquet!(pairs, buffer, _native_tokenizer(tokenizer), local_path, seq_len, max_pairs)
+            end
+        else
+            mkpath(cache_dir)
+            local_path = joinpath(cache_dir, "fineweb_shard_$(lpad(string(index), 4, '0')).parquet")
+            isfile(local_path) || downloader(shard_url, local_path)
+            TextDataCore.append_next_token_pairs_from_parquet!(pairs, buffer, _native_tokenizer(tokenizer), local_path, seq_len, max_pairs)
+        end
+        length(pairs) >= max_pairs && break
+    end
+
+    return batch_next_token_pairs(pairs, batch_size; drop_last=false)
+end
+
+fineweb_edu_batches_from_remote_parquet(model_id::String, seq_len::Integer, batch_size::Integer; kwargs...) =
+    fineweb_edu_batches_from_remote_parquet(MythosTokenizer(model_id), seq_len, batch_size; kwargs...)
 
 """
     fineweb_edu_batches(tokenizer, seq_len, batch_size; subset="sample-10BT", max_batches=8)

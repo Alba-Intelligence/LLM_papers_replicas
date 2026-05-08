@@ -53,7 +53,7 @@ The current state is:
 - `TransformerCore.jl/` holds the shared primitive, Lux-native layer/trainer foundation, runtime-envelope, and paged/growable cache-buffer layer.
 - the workspace source now carries public-API docstrings and a shared Documenter build for the multi-package surface.
 
-The next milestone is to refactor both model families toward a clearer Lux-native full-model training story without prematurely collapsing their model-family-specific internals into one abstraction. `TransformerCore.jl` now has the first shared Lux-native layer/trainer/checkpoint foundation, `TextDataCore.jl` now owns the shared Julia-native tokenizer and local-parquet text-data path, `OpenMythos.jl` now has Lux-native attention/FFN/block/recurrent mirrors plus a first `LuxFullModelTrainerState` on top of that foundation plus a Julia-native FineWeb rows-api smoke path, and `DeepSeekv4.jl` now shares the tokenizer/data path plus the family/mode-aware checkpoint conventions while keeping a DeepSeek-specific full-model loss because of MTP. The next package-level work is to replace the remaining legacy package training/checkpoint path and broaden the Julia-native remote dataset story beyond the current smoke-scale rows loader.
+The next milestone is to refactor both model families toward a clearer Lux-native full-model training story without prematurely collapsing their model-family-specific internals into one abstraction. `TransformerCore.jl` now has the first shared Lux-native layer/trainer/checkpoint foundation, `TextDataCore.jl` now owns the shared Julia-native tokenizer and local-parquet text-data path, `OpenMythos.jl` now has Lux-native attention/FFN/block/recurrent mirrors plus a first `LuxFullModelTrainerState` on top of that foundation plus Julia-native FineWeb rows-api and remote parquet-shard paths, and `DeepSeekv4.jl` now shares the tokenizer/data path plus the family/mode-aware checkpoint conventions while keeping a DeepSeek-specific full-model loss because of MTP. The next package-level work is to replace the remaining legacy package training/checkpoint path and broaden the Julia-native remote dataset story beyond the current bootstrap download loop.
 
 For future DeepSeek planning, keep the source priority explicit:
 
@@ -195,7 +195,7 @@ These should not block the current Julia milestone:
 The best next vertical slice is:
 
 1. continue the OpenMythos Lux refactor by replacing the remaining legacy package training/checkpoint internals with the new `LuxOpenMythos` + `TransformerCore.jl` trainer/checkpoint foundation and make full-model training the primary path,
-2. broaden the OpenMythos Julia-native remote dataset story beyond the current smoke-scale rows loader now that local-parquet and rows-api paths exist,
+2. broaden the OpenMythos Julia-native remote dataset story beyond the current bootstrap remote parquet download loop,
 3. preserve the shared runtime envelope while page-aware attention and deeper serving work remain model-specific underneath,
 4. expand distributed/runtime work once the single-process story is deeper,
 5. reuse the same shared training surface inside DeepSeek after the OpenMythos refactor is stable.
