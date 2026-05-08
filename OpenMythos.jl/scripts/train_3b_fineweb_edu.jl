@@ -11,7 +11,8 @@ const FINEWEB_SUBSET = get(ENV, "OPENMYTHOS_FINEWEB_SUBSET", "sample-10BT")
 const TRAIN_TEXT_FILE = get(ENV, "OPENMYTHOS_TRAIN_TEXT_FILE", "")
 const TRAIN_TEXT = get(ENV, "OPENMYTHOS_TRAIN_TEXT", "")
 const CKPT_DIR = get(ENV, "OPENMYTHOS_TRAIN_CKPT_DIR", "checkpoints")
-const TRAIN_MODE = lowercase(get(ENV, "OPENMYTHOS_TRAIN_MODE", "head_only"))
+const RAW_TRAIN_MODE = lowercase(get(ENV, "OPENMYTHOS_TRAIN_MODE", "full_model"))
+const TRAIN_MODE = RAW_TRAIN_MODE == "full_model" ? "full_model_lux" : RAW_TRAIN_MODE
 const TRAIN_ATTN_TYPE = lowercase(get(ENV, "OPENMYTHOS_TRAIN_ATTN_TYPE", "gqa"))
 const TRAIN_N_EXPERTS = parse(Int, get(ENV, "OPENMYTHOS_TRAIN_N_EXPERTS", "1"))
 const TRAIN_SHARED_EXPERTS = parse(Int, get(ENV, "OPENMYTHOS_TRAIN_SHARED_EXPERTS", "0"))
@@ -60,8 +61,11 @@ function _load_batches(tokenizer::MythosTokenizer)
 end
 
 function main()
+    TRAIN_MODE in ("head_only", "full_model_lux", "full_model_legacy") ||
+        error("unsupported OPENMYTHOS_TRAIN_MODE=$(RAW_TRAIN_MODE); use head_only, full_model, full_model_lux, or full_model_legacy")
+
     tokenizer = MythosTokenizer(TOKENIZER_MODEL_ID)
-    cfg = TRAIN_MODE == "full_model" ?
+    cfg = TRAIN_MODE in ("full_model_lux", "full_model_legacy") ?
         bootstrap_full_model_training_config(
             OpenMythos.vocab_size(tokenizer);
             seq_len=SEQ_LEN,
@@ -77,22 +81,52 @@ function main()
     batches = _load_batches(tokenizer)
     isempty(batches) && error("no training batches available; provide longer local text or enable FineWeb-Edu")
 
-    latest = latest_checkpoint(CKPT_DIR)
+    latest = if TRAIN_MODE == "full_model_lux"
+        latest_checkpoint(CKPT_DIR; family="openmythos", mode="full_model_lux")
+    else
+        latest_checkpoint(CKPT_DIR)
+    end
+
     state = if latest === nothing
-        TRAIN_MODE == "full_model" ?
+        TRAIN_MODE == "full_model_lux" ?
+            LuxFullModelTrainerState(model; schedule=schedule, weight_decay=WEIGHT_DECAY, n_loops=cfg.max_loop_iters) :
+        TRAIN_MODE == "full_model_legacy" ?
             FullModelTrainerState(model; schedule=schedule, weight_decay=WEIGHT_DECAY, n_loops=cfg.max_loop_iters) :
             HeadOnlyTrainerState(model; schedule=schedule, weight_decay=WEIGHT_DECAY)
     else
-        TRAIN_MODE == "full_model" ? load_full_model_checkpoint(latest) : load_head_only_checkpoint(latest, model)
+        TRAIN_MODE == "full_model_lux" ? load_lux_full_model_checkpoint(latest) :
+        TRAIN_MODE == "full_model_legacy" ? load_full_model_checkpoint(latest) :
+            load_head_only_checkpoint(latest, model)
     end
 
     println("Tokenizer model: $(TOKENIZER_MODEL_ID)")
     println("Vocab size: $(OpenMythos.vocab_size(tokenizer)) | seq_len: $(SEQ_LEN) | batch_size: $(BATCH_SIZE) | total_steps: $(TOTAL_STEPS)")
-    println("Training mode: $(TRAIN_MODE == \"full_model\" ? \"dense full-model bootstrap\" : \"Lux-backed head-only bootstrap\")")
-    println("Attention backend: $(TRAIN_ATTN_TYPE)$(TRAIN_MODE == \"full_model\" ? \" | routed experts: $(cfg.n_experts) | shared experts: $(cfg.n_shared_experts) | experts/token: $(cfg.n_experts_per_tok)\" : \"\")")
+    mode_label = TRAIN_MODE == "full_model_lux" ? "Lux-native full-model bootstrap" :
+        TRAIN_MODE == "full_model_legacy" ? "legacy dense full-model bootstrap" :
+        "Lux-backed head-only bootstrap"
+    attention_details = TRAIN_MODE in ("full_model_lux", "full_model_legacy") ?
+        " | routed experts: $(cfg.n_experts) | shared experts: $(cfg.n_shared_experts) | experts/token: $(cfg.n_experts_per_tok)" :
+        ""
+    println("Training mode: $(mode_label)")
+    println("Attention backend: $(TRAIN_ATTN_TYPE)$(attention_details)")
     latest !== nothing && println("Resuming from $(latest)")
 
-    metrics = if TRAIN_MODE == "full_model"
+    metrics = if TRAIN_MODE == "full_model_lux"
+        train_lux_full_model!(
+            state,
+            batches;
+            total_steps=TOTAL_STEPS,
+            log_every=1,
+            ckpt_root=CKPT_DIR,
+            ckpt_every=CKPT_EVERY,
+            keep_last=KEEP_LAST,
+            checkpoint_metadata=Dict(
+                "tokenizer_model_id" => TOKENIZER_MODEL_ID,
+                "use_fineweb" => USE_FINEWEB,
+                "fineweb_subset" => FINEWEB_SUBSET,
+            ),
+        )
+    elseif TRAIN_MODE == "full_model_legacy"
         train_full_model!(
             state,
             batches;
@@ -126,8 +160,12 @@ function main()
         )
     end
 
+    final_latest = TRAIN_MODE == "full_model_lux" ?
+        latest_checkpoint(CKPT_DIR; family="openmythos", mode="full_model_lux") :
+        latest_checkpoint(CKPT_DIR)
+
     println("Final loss: $(round(metrics.loss; digits=4))")
-    println("Latest checkpoint: $(latest_checkpoint(CKPT_DIR))")
+    println("Latest checkpoint: $(final_latest)")
 end
 
 main()

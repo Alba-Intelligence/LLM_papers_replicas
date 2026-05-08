@@ -50,5 +50,12 @@ end
         restored = TransformerCore.load_trainer_checkpoint(latest; expected_family="openmythos", expected_mode="full_model_lux")
         @test restored.state.step == 2
         @test restored.config == cfg
+
+        manual_path = save_lux_full_model_checkpoint(state2, dir; keep_last=2, metadata=Dict("source" => "manual-test"))
+        @test isfile(manual_path)
+        loaded = load_lux_full_model_checkpoint(manual_path)
+        @test loaded.trainer.step == state2.trainer.step
+        @test loaded.layer.model.cfg == state2.layer.model.cfg
+        @test loaded.layer.n_loops == state2.layer.n_loops
     end
 end

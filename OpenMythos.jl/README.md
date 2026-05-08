@@ -17,7 +17,7 @@ The replica now includes:
 - a broadened full-model bootstrap slice that now supports both GQA and MLA attention plus small sparse routed-expert configs with optional shared experts,
 - a first Lux-native `LuxFullModelTrainerState` built on the shared `TransformerCore.NextTokenTrainerState` foundation.
 
-The current training surface is intentionally staged: `OpenMythos.jl` now has both the original **Lux-backed head-only** bootstrap path and a broader **full-model** bootstrap path for small GQA/MLA configs, including tiny sparse routed-expert setups with optional shared experts. The package also now includes Lux-native mirrors (`LuxGQAttention`, `LuxMLAttention`, `LuxExpert`, `LuxMoEFFN`, `LuxTransformerBlock`, `LuxRecurrentBlock`, `LuxLoRAAdapter`, `LuxLTIInjection`, `LuxACTHalting`, `LuxOpenMythos`) plus a first `LuxFullModelTrainerState` that numerically reuses the current parity stack through the shared `TransformerCore.jl` trainer foundation.
+The current training surface is intentionally staged: `OpenMythos.jl` now has both the original **Lux-backed head-only** bootstrap path and a broader **full-model** bootstrap path for small GQA/MLA configs, including tiny sparse routed-expert setups with optional shared experts. The package also now includes Lux-native mirrors (`LuxGQAttention`, `LuxMLAttention`, `LuxExpert`, `LuxMoEFFN`, `LuxTransformerBlock`, `LuxRecurrentBlock`, `LuxLoRAAdapter`, `LuxLTIInjection`, `LuxACTHalting`, `LuxOpenMythos`) plus a first `LuxFullModelTrainerState` that reuses the current parity stack through the shared `TransformerCore.jl` trainer foundation and shared family/mode-aware checkpoints. The training script now treats Lux-native full-model training as the default path; the legacy mutable full-model trainer remains available as an explicit compatibility mode.
 
 ## Quickstart
 
@@ -64,6 +64,8 @@ text = detokenize(tok, ids)
 
 ### Bootstrap training smoke run
 
+The default script path is now the **Lux-native full-model** bootstrap trainer.
+
 ```bash
 OPENMYTHOS_TRAIN_TOKENIZER_MODEL_ID=gpt2 \
 OPENMYTHOS_TRAIN_TOTAL_STEPS=8 \
@@ -71,20 +73,27 @@ OPENMYTHOS_TRAIN_SEQ_LEN=32 \
 julia --project=. scripts/train_3b_fineweb_edu.jl
 ```
 
-To exercise the current dense full-model bootstrap slice instead of the default head-only path:
+The mode aliases are:
+
+- `OPENMYTHOS_TRAIN_MODE=full_model` -> Lux-native full-model path (default)
+- `OPENMYTHOS_TRAIN_MODE=full_model_lux` -> explicit Lux-native full-model path
+- `OPENMYTHOS_TRAIN_MODE=full_model_legacy` -> legacy mutable full-model trainer
+- `OPENMYTHOS_TRAIN_MODE=head_only` -> legacy head-only trainer
+
+To exercise the current Lux-native dense full-model bootstrap slice explicitly:
 
 ```bash
-OPENMYTHOS_TRAIN_MODE=full_model \
+OPENMYTHOS_TRAIN_MODE=full_model_lux \
 OPENMYTHOS_TRAIN_TOKENIZER_MODEL_ID=gpt2 \
 OPENMYTHOS_TRAIN_TOTAL_STEPS=4 \
 OPENMYTHOS_TRAIN_SEQ_LEN=32 \
 julia --project=. scripts/train_3b_fineweb_edu.jl
 ```
 
-To exercise the MLA-backed dense full-model slice with one shared expert:
+To exercise the MLA-backed Lux-native full-model slice with one shared expert:
 
 ```bash
-OPENMYTHOS_TRAIN_MODE=full_model \
+OPENMYTHOS_TRAIN_MODE=full_model_lux \
 OPENMYTHOS_TRAIN_ATTN_TYPE=mla \
 OPENMYTHOS_TRAIN_SHARED_EXPERTS=1 \
 OPENMYTHOS_TRAIN_TOKENIZER_MODEL_ID=gpt2 \
@@ -93,14 +102,24 @@ OPENMYTHOS_TRAIN_SEQ_LEN=32 \
 julia --project=. scripts/train_3b_fineweb_edu.jl
 ```
 
-To exercise a small sparse full-model slice:
+To exercise a small sparse Lux-native full-model slice:
 
 ```bash
-OPENMYTHOS_TRAIN_MODE=full_model \
+OPENMYTHOS_TRAIN_MODE=full_model_lux \
 OPENMYTHOS_TRAIN_ATTN_TYPE=gqa \
 OPENMYTHOS_TRAIN_N_EXPERTS=4 \
 OPENMYTHOS_TRAIN_SHARED_EXPERTS=1 \
 OPENMYTHOS_TRAIN_EXPERTS_PER_TOKEN=2 \
+OPENMYTHOS_TRAIN_TOKENIZER_MODEL_ID=gpt2 \
+OPENMYTHOS_TRAIN_TOTAL_STEPS=4 \
+OPENMYTHOS_TRAIN_SEQ_LEN=32 \
+julia --project=. scripts/train_3b_fineweb_edu.jl
+```
+
+To exercise the legacy mutable full-model trainer explicitly:
+
+```bash
+OPENMYTHOS_TRAIN_MODE=full_model_legacy \
 OPENMYTHOS_TRAIN_TOKENIZER_MODEL_ID=gpt2 \
 OPENMYTHOS_TRAIN_TOTAL_STEPS=4 \
 OPENMYTHOS_TRAIN_SEQ_LEN=32 \

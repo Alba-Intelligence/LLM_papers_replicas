@@ -165,20 +165,21 @@ Useful environment variables:
 
 | Variable                              | Meaning                                              | Default                                |
 | ------------------------------------- | ---------------------------------------------------- | -------------------------------------- |
-| `OPENMYTHOS_TRAIN_TOKENIZER_MODEL_ID` | tokenizer model ID                                   | `openai/gpt-oss-20b` unless overridden |
-| `OPENMYTHOS_TRAIN_TOTAL_STEPS`        | total bootstrap steps                                | `8`                                    |
-| `OPENMYTHOS_TRAIN_SEQ_LEN`            | sequence length                                      | `32`                                   |
-| `OPENMYTHOS_TRAIN_BATCH_SIZE`         | batch size                                           | `2`                                    |
-| `OPENMYTHOS_TRAIN_ATTN_TYPE`          | attention backend (`gqa` or `mla`)                   | `gqa`                                  |
-| `OPENMYTHOS_TRAIN_N_EXPERTS`          | routed experts in full-model mode                    | `1`                                    |
-| `OPENMYTHOS_TRAIN_SHARED_EXPERTS`     | shared experts in full-model mode                    | `0`                                    |
-| `OPENMYTHOS_TRAIN_EXPERTS_PER_TOKEN`  | routed experts selected per token in full-model mode | `1`                                    |
-| `OPENMYTHOS_TRAIN_CKPT_DIR`           | checkpoint directory                                 | `checkpoints`                          |
-| `OPENMYTHOS_USE_FINEWEB_EDU`          | use FineWeb-Edu batch bridge                         | `0`                                    |
-| `OPENMYTHOS_FINEWEB_SUBSET`           | FineWeb-Edu subset                                   | `sample-10BT`                          |
-| `OPENMYTHOS_FINEWEB_BATCHES`          | number of FineWeb batches to fetch                   | `max(total_steps, 1)`                  |
+| `OPENMYTHOS_TRAIN_TOKENIZER_MODEL_ID` | tokenizer model ID                                                           | `openai/gpt-oss-20b` unless overridden |
+| `OPENMYTHOS_TRAIN_MODE`               | training mode (`full_model`, `full_model_lux`, `full_model_legacy`, `head_only`) | `full_model`                           |
+| `OPENMYTHOS_TRAIN_TOTAL_STEPS`        | total bootstrap steps                                                        | `8`                                    |
+| `OPENMYTHOS_TRAIN_SEQ_LEN`            | sequence length                                                              | `32`                                   |
+| `OPENMYTHOS_TRAIN_BATCH_SIZE`         | batch size                                                                   | `2`                                    |
+| `OPENMYTHOS_TRAIN_ATTN_TYPE`          | attention backend (`gqa` or `mla`)                                           | `gqa`                                  |
+| `OPENMYTHOS_TRAIN_N_EXPERTS`          | routed experts in full-model mode                                            | `1`                                    |
+| `OPENMYTHOS_TRAIN_SHARED_EXPERTS`     | shared experts in full-model mode                                            | `0`                                    |
+| `OPENMYTHOS_TRAIN_EXPERTS_PER_TOKEN`  | routed experts selected per token in full-model mode                         | `1`                                    |
+| `OPENMYTHOS_TRAIN_CKPT_DIR`           | checkpoint root directory                                                     | `checkpoints`                          |
+| `OPENMYTHOS_USE_FINEWEB_EDU`          | use FineWeb-Edu batch bridge                                                 | `0`                                    |
+| `OPENMYTHOS_FINEWEB_SUBSET`           | FineWeb-Edu subset                                                           | `sample-10BT`                          |
+| `OPENMYTHOS_FINEWEB_BATCHES`          | number of FineWeb batches to fetch                                           | `max(total_steps, 1)`                  |
 
-Example local-text smoke run:
+Example local-text smoke run using the default Lux-native full-model path:
 
 ```bash
 cd OpenMythos.jl
@@ -187,6 +188,13 @@ OPENMYTHOS_TRAIN_TOTAL_STEPS=8 \
 OPENMYTHOS_TRAIN_SEQ_LEN=32 \
 julia --project=. scripts/train_3b_fineweb_edu.jl
 ```
+
+Mode aliases:
+
+- `OPENMYTHOS_TRAIN_MODE=full_model` -> Lux-native full-model path (default)
+- `OPENMYTHOS_TRAIN_MODE=full_model_lux` -> explicit Lux-native full-model path
+- `OPENMYTHOS_TRAIN_MODE=full_model_legacy` -> legacy mutable full-model trainer
+- `OPENMYTHOS_TRAIN_MODE=head_only` -> legacy head-only trainer
 
 Example FineWeb-Edu-backed smoke run:
 
@@ -238,9 +246,9 @@ The current bootstrap trainer is intentionally limited:
 - shared schedule, batching, next-token loss, Lux-native trainer, gradient-masking, and family/mode-aware checkpoint helpers now live in `TransformerCore.jl`,
 - the original bootstrap path is **Lux-backed**,
 - it uses `Optimisers.AdamW`,
-- `OpenMythos.jl` now also has a dense full-model bootstrap mode via `OPENMYTHOS_TRAIN_MODE=full_model`,
-- the package now also exposes a first Lux-native `LuxFullModelTrainerState` built on `TransformerCore.NextTokenTrainerState` and shared family/mode-aware checkpoints,
-- those full-model paths currently support small GQA/MLA configs, including tiny sparse routed-expert setups with optional shared experts,
+- `OpenMythos.jl` now defaults its script surface to a Lux-native dense full-model bootstrap mode via `OPENMYTHOS_TRAIN_MODE=full_model`,
+- the package now also exposes a first Lux-native `LuxFullModelTrainerState` built on `TransformerCore.NextTokenTrainerState` plus shared family/mode-aware checkpoint save/load helpers,
+- those full-model paths currently support small GQA/MLA configs, including tiny sparse routed-expert setups with optional shared experts, while `full_model_legacy` and `head_only` remain compatibility modes,
 - `DeepSeekv4.jl` now has both a `LuxHeadOnlyDeepSeekV4` head-only trainer and a first tiny `DeepSeekFullModelTrainerState` bootstrap path,
 - the current DeepSeek full-model loss now trains both the main LM logits path and the current auxiliary MTP heads on tiny configs, with an optional gated Engram branch,
 - the core model internals are still mostly manual Julia blocks, though `OpenMythos.jl` now also exposes Lux-native mirrors for attention, experts / MoE, transformer blocks, recurrent update primitives, and a tied-embedding `LuxOpenMythos` shell,

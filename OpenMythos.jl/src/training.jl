@@ -408,6 +408,8 @@ function train_lux_full_model!(
     io::IO=stdout,
     checkpoint_metadata::AbstractDict=Dict{String, Any}(),
 )
+    metadata = Dict{String, Any}(string(k) => v for (k, v) in pairs(checkpoint_metadata))
+    metadata["n_loops"] = something(state.layer.n_loops, state.layer.model.cfg.max_loop_iters)
     return TransformerCore.train_next_token!(
         state.trainer,
         state.layer,
@@ -421,8 +423,38 @@ function train_lux_full_model!(
         keep_last=keep_last,
         io=io,
         checkpoint_config=state.layer.model.cfg,
-        checkpoint_metadata=checkpoint_metadata,
+        checkpoint_metadata=metadata,
     )
+end
+
+"""Save a Lux-native full-model checkpoint under the shared family/mode layout."""
+function save_lux_full_model_checkpoint(
+    state::LuxFullModelTrainerState,
+    ckpt_root::AbstractString;
+    keep_last::Integer=3,
+    metadata::AbstractDict=Dict{String, Any}(),
+)
+    merged = Dict{String, Any}(string(k) => v for (k, v) in pairs(metadata))
+    merged["n_loops"] = something(state.layer.n_loops, state.layer.model.cfg.max_loop_iters)
+    return TransformerCore.save_trainer_checkpoint(
+        state.trainer,
+        ckpt_root;
+        family="openmythos",
+        mode="full_model_lux",
+        keep_last=keep_last,
+        config=state.layer.model.cfg,
+        metadata=merged,
+    )
+end
+
+"""Restore a Lux-native full-model trainer state from a shared checkpoint."""
+function load_lux_full_model_checkpoint(path::AbstractString; n_loops::Union{Nothing, Integer}=nothing)
+    restored = TransformerCore.load_trainer_checkpoint(path; expected_family="openmythos", expected_mode="full_model_lux")
+    cfg = restored.config isa MythosConfig ? restored.config : throw(ArgumentError("checkpoint config is not a MythosConfig"))
+    metadata = restored.metadata isa AbstractDict ? restored.metadata : Dict{String, Any}()
+    active_loops = n_loops === nothing ? get(metadata, "n_loops", cfg.max_loop_iters) : Int(n_loops)
+    layer = LuxConfiguredOpenMythos(LuxOpenMythos(cfg); n_loops=Int(active_loops))
+    return LuxFullModelTrainerState(layer, restored.state)
 end
 
 function HeadOnlyTrainerState(
