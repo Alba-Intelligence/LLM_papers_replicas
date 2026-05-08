@@ -1,34 +1,64 @@
-# OpenMythos workspace
+# Julia research replication workspace
 
-This repository is now a **multi-package Julia workspace** for model ports derived from the Python reference in `reference/OpenMythos`.
+This repository is a **general-purpose multi-package Julia workspace** for reimplementing, studying, and extending research ideas.
 
-## Workspace layout
+It is not limited to one paper or even one subfield. The repo currently contains:
 
-- `OpenMythos.jl/` - the existing recurrent OpenMythos Julia package
-  - Implements the recurrent-depth stack: `Prelude -> Recurrent Block -> Coda`, switchable GQA/MLA attention, MoE FFNs, ACT halting, loop-index embeddings, depth-wise LoRA, LTI-stable input injection, tokenizer parity, cache reuse, and Lux-backed bootstrap training.
-  - ArXiv references: [Loop, Think, & Generalize / Recurrent-Depth Transformer](https://arxiv.org/pdf/2604.07822), [Parcae / Scaling Laws for Stable Looped Language Models](https://arxiv.org/abs/2604.12946), [Universal Transformers](https://arxiv.org/pdf/1807.03819), [DeepSeek-V2 / MLA](https://arxiv.org/abs/2405.04434), [GQA](https://arxiv.org/abs/2305.13245), [DeepSeekMoE](https://arxiv.org/abs/2401.06066), [Relaxed Recursive Transformers](https://arxiv.org/pdf/2410.20672), [RMSNorm](https://arxiv.org/abs/1910.07467), [RoPE](https://arxiv.org/abs/2104.09864), and [ACT](https://arxiv.org/abs/1603.08983).
-- `DeepSeekv4.jl/` - the new DeepSeek V4 Julia package
-  - Implements architecture-first DeepSeek V4 components: CSA/HCA hybrid attention, mHC residual mixing, routed/shared/hash MoE paths, optional Engram conditional memory, MTP heads, cached generation reuse, and tiny-config Lux bootstrap trainers.
-  - References: the official [DeepSeek V4 technical note](https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf), plus the arXiv lineage used in the Julia package: [DeepSeek-V3](https://arxiv.org/html/2412.19437v1), [Engram](https://arxiv.org/abs/2601.07372), and [mHC](https://arxiv.org/abs/2512.24880).
-- `TransformerCore.jl/` - reusable shared tensor, normalization, RoPE, and training utilities
-  - Implements architecture-agnostic feature-last tensor helpers, embedding/sampling helpers, `RMSNorm`, RoPE precomputation and application, warmup-cosine schedules, token chunking/batching, checkpoint discovery, growable cache buffers, and serialized KV-cache envelopes.
-  - ArXiv references: [RMSNorm](https://arxiv.org/abs/1910.07467) and [RoPE](https://arxiv.org/abs/2104.09864).
-- `docs/wiki/` - shared architecture and workspace documentation
-- `reference/OpenMythos/` - upstream Python reference
+- **LLM architecture ports and training experiments**
+- **graph / hypergraph utilities and replicas**
+- **research notebooks and exploratory packages**
+- **shared infrastructure for reusable Julia implementations**
+
+## Current main workspace themes
+
+### Language-model replication workspace
+
+The most actively documented subworkspace currently centers on model-family ports:
+
+- `OpenMythos.jl/`
+  - recurrent-depth OpenMythos implementation in Julia
+  - covers `Prelude -> Recurrent Block -> Coda`, GQA/MLA attention, MoE FFNs, ACT halting, loop-index embeddings, depth-wise LoRA, LTI-stable input injection, cache reuse, tokenizer parity, and staged Lux-oriented training work
+- `DeepSeekv4.jl/`
+  - architecture-first DeepSeek V4 implementation in Julia
+  - covers CSA/HCA hybrid attention, mHC residual mixing, routed/shared/hash MoE paths, optional Engram conditional memory, MTP heads, cached generation reuse, and tiny-config Lux bootstrap training
+- `TransformerCore.jl/`
+  - shared infrastructure for model-family ports
+  - covers feature-last tensor helpers, embedding/sampling helpers, `RMSNorm`, RoPE, shared Lux-native training/checkpoint utilities, growable cache buffers, and serialized KV-cache envelopes
+- `docs/wiki/`
+  - shared architecture and implementation notes for the model-port workspace
+
+### Other research/utility packages
+
+The repository also contains other Julia packages and experiments at the root, including graph-oriented and hypergraph-oriented work such as:
+
+- `GraphAnalysis.jl/`
+- `GraphGeneration.jl/`
+- `GraphTools.jl/`
+- `GraphUtils.jl/`
+- `HypergraphReasoning/`
+
+These packages are part of the broader research-replication workspace even when the wiki is currently focused more heavily on the LLM/model-port side.
 
 ## Quick commands
 
-### OpenMythos
+### OpenMythos tests
 
 ```bash
 cd OpenMythos.jl
 OPENMYTHOS_TEST_TOKENIZER_MODEL_ID=gpt2 julia --project=. -q -e 'using Pkg; Pkg.test()'
 ```
 
-### DeepSeek V4
+### DeepSeek V4 tests
 
 ```bash
 cd DeepSeekv4.jl
+julia --project=. -q -e 'using Pkg; Pkg.test()'
+```
+
+### TransformerCore tests
+
+```bash
+cd TransformerCore.jl
 julia --project=. -q -e 'using Pkg; Pkg.test()'
 ```
 
@@ -41,4 +71,8 @@ DEEPSEEK_V4_TRAIN_SEQ_LEN=32 \
 julia --project=. scripts/train_deepseek_tiny.jl
 ```
 
-The common documentation remains under `docs/wiki/`.
+## Documentation
+
+- model-port documentation currently lives under `docs/wiki/`
+- package-local READMEs provide more detail for each subproject
+- notebooks and scripts under the repo root capture more exploratory work
