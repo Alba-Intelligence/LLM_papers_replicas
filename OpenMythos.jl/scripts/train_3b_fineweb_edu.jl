@@ -8,6 +8,7 @@ const TOKENIZER_MODEL_ID = get(
 )
 const USE_FINEWEB = get(ENV, "OPENMYTHOS_USE_FINEWEB_EDU", "0") == "1"
 const FINEWEB_SUBSET = get(ENV, "OPENMYTHOS_FINEWEB_SUBSET", "sample-10BT")
+const FINEWEB_PARQUET_PATH = get(ENV, "OPENMYTHOS_FINEWEB_PARQUET_PATH", "")
 const TRAIN_TEXT_FILE = get(ENV, "OPENMYTHOS_TRAIN_TEXT_FILE", "")
 const TRAIN_TEXT = get(ENV, "OPENMYTHOS_TRAIN_TEXT", "")
 const CKPT_DIR = get(ENV, "OPENMYTHOS_TRAIN_CKPT_DIR", "checkpoints")
@@ -50,6 +51,10 @@ end
 
 function _load_batches(tokenizer::MythosTokenizer)
     if USE_FINEWEB
+        if !isempty(FINEWEB_PARQUET_PATH)
+            println("Loading FineWeb-Edu batches from local parquet path via Julia...")
+            return fineweb_edu_batches_from_parquet(tokenizer, FINEWEB_PARQUET_PATH, SEQ_LEN, BATCH_SIZE; max_batches=FINEWEB_BATCHES)
+        end
         println("Loading FineWeb-Edu batches via Python bridge...")
         return fineweb_edu_batches(tokenizer, SEQ_LEN, BATCH_SIZE; subset=FINEWEB_SUBSET, max_batches=FINEWEB_BATCHES)
     end
@@ -126,6 +131,7 @@ function main()
                 "tokenizer_model_id" => TOKENIZER_MODEL_ID,
                 "use_fineweb" => USE_FINEWEB,
                 "fineweb_subset" => FINEWEB_SUBSET,
+                "fineweb_parquet_path" => FINEWEB_PARQUET_PATH,
             ),
         )
     elseif TRAIN_MODE == "full_model_legacy"
@@ -142,6 +148,7 @@ function main()
                 "tokenizer_model_id" => TOKENIZER_MODEL_ID,
                 "use_fineweb" => USE_FINEWEB,
                 "fineweb_subset" => FINEWEB_SUBSET,
+                "fineweb_parquet_path" => FINEWEB_PARQUET_PATH,
             ),
         )
     else
@@ -158,6 +165,7 @@ function main()
                 "tokenizer_model_id" => TOKENIZER_MODEL_ID,
                 "use_fineweb" => USE_FINEWEB,
                 "fineweb_subset" => FINEWEB_SUBSET,
+                "fineweb_parquet_path" => FINEWEB_PARQUET_PATH,
             ),
         )
     end

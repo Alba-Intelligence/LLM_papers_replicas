@@ -17,7 +17,7 @@ The replica now includes:
 - a broadened full-model bootstrap slice that now supports both GQA and MLA attention plus small sparse routed-expert configs with optional shared experts,
 - a first Lux-native `LuxFullModelTrainerState` built on the shared `TransformerCore.NextTokenTrainerState` foundation.
 
-The current training surface is intentionally staged: `OpenMythos.jl` now has both the original **Lux-backed head-only** bootstrap path and a broader **full-model** bootstrap path for small GQA/MLA configs, including tiny sparse routed-expert setups with optional shared experts. The package also now includes Lux-native mirrors (`LuxGQAttention`, `LuxMLAttention`, `LuxExpert`, `LuxMoEFFN`, `LuxTransformerBlock`, `LuxRecurrentBlock`, `LuxLoRAAdapter`, `LuxLTIInjection`, `LuxACTHalting`, `LuxOpenMythos`) plus a first `LuxFullModelTrainerState` that reuses the current parity stack through the shared `TransformerCore.jl` trainer foundation and shared family/mode-aware checkpoints. The tokenizer path is now Julia-native for supported GPT/tiktoken families; the remaining Python bridge is the optional FineWeb-Edu data path. The training script now treats Lux-native full-model training as the default path; the legacy mutable full-model trainer remains available as an explicit compatibility mode.
+The current training surface is intentionally staged: `OpenMythos.jl` now has both the original **Lux-backed head-only** bootstrap path and a broader **full-model** bootstrap path for small GQA/MLA configs, including tiny sparse routed-expert setups with optional shared experts. The package also now includes Lux-native mirrors (`LuxGQAttention`, `LuxMLAttention`, `LuxExpert`, `LuxMoEFFN`, `LuxTransformerBlock`, `LuxRecurrentBlock`, `LuxLoRAAdapter`, `LuxLTIInjection`, `LuxACTHalting`, `LuxOpenMythos`) plus a first `LuxFullModelTrainerState` that reuses the current parity stack through the shared `TransformerCore.jl` trainer foundation and shared family/mode-aware checkpoints. The tokenizer path is now Julia-native for supported GPT/tiktoken families, and the FineWeb path now also has a Julia-native local parquet option; the remaining Python bridge is only the optional remote FineWeb streaming path. The training script now treats Lux-native full-model training as the default path; the legacy mutable full-model trainer remains available as an explicit compatibility mode.
 
 ## Quickstart
 
@@ -128,12 +128,22 @@ OPENMYTHOS_TRAIN_SEQ_LEN=32 \
 julia --project=. scripts/train_3b_fineweb_edu.jl
 ```
 
-For an optional FineWeb-Edu-backed smoke run:
+For an optional FineWeb-Edu-backed smoke run through the existing Python streaming bridge:
 
 ```bash
 OPENMYTHOS_USE_FINEWEB_EDU=1 \
 OPENMYTHOS_TRAIN_TOKENIZER_MODEL_ID=gpt2 \
 OPENMYTHOS_FINEWEB_SUBSET=sample-10BT \
+OPENMYTHOS_FINEWEB_BATCHES=8 \
+julia --project=. scripts/train_3b_fineweb_edu.jl
+```
+
+For a Julia-native FineWeb-style smoke run from local parquet shard(s):
+
+```bash
+OPENMYTHOS_USE_FINEWEB_EDU=1 \
+OPENMYTHOS_FINEWEB_PARQUET_PATH=/path/to/fineweb-sample.parquet \
+OPENMYTHOS_TRAIN_TOKENIZER_MODEL_ID=gpt2 \
 OPENMYTHOS_FINEWEB_BATCHES=8 \
 julia --project=. scripts/train_3b_fineweb_edu.jl
 ```

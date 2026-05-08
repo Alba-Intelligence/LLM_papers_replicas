@@ -3,6 +3,7 @@ module OpenMythos
 using Base64
 using BytePairEncoding
 using LinearAlgebra
+using Parquet2
 using Random
 using Serialization
 using Statistics
@@ -106,6 +107,7 @@ export MythosConfig,
        text_next_token_pairs,
        batch_next_token_pairs,
        fineweb_edu_batches,
+       fineweb_edu_batches_from_parquet,
        KVCacheEnvelope,
        save_kv_cache,
        load_kv_cache,

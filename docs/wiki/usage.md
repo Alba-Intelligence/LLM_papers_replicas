@@ -83,7 +83,7 @@ model = DeepSeekV4Model(cfg)
 
 ## 5. Use the tokenizer
 
-The tokenizer is now package-specific but Julia-native for the currently supported GPT/tiktoken-style families. `OpenMythos.jl` uses `BytePairEncoding.jl` for native BPE/tokenization instead of a Python subprocess bridge. The remaining Python bridge in the training path is the optional FineWeb-Edu batch loader.
+The tokenizer is now package-specific but Julia-native for the currently supported GPT/tiktoken-style families. `OpenMythos.jl` uses `BytePairEncoding.jl` for native BPE/tokenization instead of a Python subprocess bridge. The remaining Python bridge in the training path is only the optional remote FineWeb-Edu streaming loader; local parquet FineWeb-style batches now have a Julia-native path.
 
 ```julia
 using OpenMythos
@@ -185,8 +185,9 @@ Useful environment variables:
 | `OPENMYTHOS_TRAIN_SHARED_EXPERTS`     | shared experts in full-model mode                                                                        | `0`                                    |
 | `OPENMYTHOS_TRAIN_EXPERTS_PER_TOKEN`  | routed experts selected per token in full-model mode                                                     | `1`                                    |
 | `OPENMYTHOS_TRAIN_CKPT_DIR`           | checkpoint root directory (`openmythos/full_model_lux` for Lux mode; `<mode>/` subdirs for legacy modes) | `checkpoints`                          |
-| `OPENMYTHOS_USE_FINEWEB_EDU`          | use FineWeb-Edu batch bridge                                                                             | `0`                                    |
-| `OPENMYTHOS_FINEWEB_SUBSET`           | FineWeb-Edu subset                                                                                       | `sample-10BT`                          |
+| `OPENMYTHOS_USE_FINEWEB_EDU`          | use FineWeb-Edu data path (local parquet if set, otherwise Python bridge)                               | `0`                                    |
+| `OPENMYTHOS_FINEWEB_PARQUET_PATH`     | local FineWeb parquet file or directory for the Julia-native path                                        | empty                                  |
+| `OPENMYTHOS_FINEWEB_SUBSET`           | FineWeb-Edu subset for the Python bridge                                                                 | `sample-10BT`                          |
 | `OPENMYTHOS_FINEWEB_BATCHES`          | number of FineWeb batches to fetch                                                                       | `max(total_steps, 1)`                  |
 
 Example local-text smoke run using the default Lux-native full-model path:
@@ -208,13 +209,24 @@ Mode aliases:
 
 The script now keeps Lux full-model checkpoints under the shared family/mode-aware layout and isolates legacy modes into separate subdirectories under `OPENMYTHOS_TRAIN_CKPT_DIR` to avoid mixed checkpoint namespaces.
 
-Example FineWeb-Edu-backed smoke run:
+Example FineWeb-Edu-backed smoke run via the existing Python streaming bridge:
 
 ```bash
 cd OpenMythos.jl
 OPENMYTHOS_USE_FINEWEB_EDU=1 \
 OPENMYTHOS_TRAIN_TOKENIZER_MODEL_ID=gpt2 \
 OPENMYTHOS_FINEWEB_SUBSET=sample-10BT \
+OPENMYTHOS_FINEWEB_BATCHES=8 \
+julia --project=. scripts/train_3b_fineweb_edu.jl
+```
+
+Example Julia-native FineWeb-style smoke run from local parquet shard(s):
+
+```bash
+cd OpenMythos.jl
+OPENMYTHOS_USE_FINEWEB_EDU=1 \
+OPENMYTHOS_FINEWEB_PARQUET_PATH=/path/to/fineweb-sample.parquet \
+OPENMYTHOS_TRAIN_TOKENIZER_MODEL_ID=gpt2 \
 OPENMYTHOS_FINEWEB_BATCHES=8 \
 julia --project=. scripts/train_3b_fineweb_edu.jl
 ```

@@ -51,7 +51,7 @@ The current state is:
 - `TransformerCore.jl/` holds the shared primitive, Lux-native layer/trainer foundation, runtime-envelope, and paged/growable cache-buffer layer.
 - the workspace source now carries public-API docstrings and a shared Documenter build for the multi-package surface.
 
-The next milestone is to refactor both model families toward a clearer Lux-native full-model training story without prematurely collapsing their model-family-specific internals into one abstraction. `TransformerCore.jl` now has the first shared Lux-native layer/trainer/checkpoint foundation, and `OpenMythos.jl` now has Lux-native attention/FFN/block/recurrent mirrors, a tied-embedding `LuxOpenMythos` shell, a first `LuxFullModelTrainerState` plus shared save/load wrappers on top of that foundation, and a Julia-native tokenizer path for the currently supported GPT/tiktoken-style families; the next package-level work is to replace the remaining legacy package training/checkpoint path and then reduce the optional Python FineWeb bridge before reusing the same pattern in DeepSeek.
+The next milestone is to refactor both model families toward a clearer Lux-native full-model training story without prematurely collapsing their model-family-specific internals into one abstraction. `TransformerCore.jl` now has the first shared Lux-native layer/trainer/checkpoint foundation, and `OpenMythos.jl` now has Lux-native attention/FFN/block/recurrent mirrors, a tied-embedding `LuxOpenMythos` shell, a first `LuxFullModelTrainerState` plus shared save/load wrappers on top of that foundation, a Julia-native tokenizer path for the currently supported GPT/tiktoken-style families, and a first Julia-native local-parquet FineWeb path; the next package-level work is to replace the remaining legacy package training/checkpoint path and then reduce the optional remote Python FineWeb bridge before reusing the same pattern in DeepSeek.
 
 For future DeepSeek planning, keep the source priority explicit:
 
@@ -189,7 +189,7 @@ These should not block the current Julia milestone:
 The best next vertical slice is:
 
 1. continue the OpenMythos Lux refactor by replacing the remaining legacy package training/checkpoint internals with the new `LuxOpenMythos` + `TransformerCore.jl` trainer/checkpoint foundation and make full-model training the primary path,
-2. replace or reduce the remaining OpenMythos Python FineWeb bridge with a Julia-native data path where practical,
+2. replace or reduce the remaining OpenMythos remote Python FineWeb bridge now that a Julia-native local-parquet data path exists,
 3. preserve the shared runtime envelope while page-aware attention and deeper serving work remain model-specific underneath,
 4. expand distributed/runtime work once the single-process story is deeper,
 5. reuse the same shared training surface inside DeepSeek after the OpenMythos refactor is stable.
