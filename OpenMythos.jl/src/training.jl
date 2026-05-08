@@ -118,97 +118,6 @@ function _fineweb_rows_texts(; dataset::AbstractString=_FINEWEB_DATASET, config:
     return texts
 end
 
-function _fineweb_runner()
-    if haskey(ENV, "OPENMYTHOS_FINEWEB_PYTHON")
-        return Cmd([ENV["OPENMYTHOS_FINEWEB_PYTHON"]])
-    end
-    return Cmd(["uv", "run", "--with", "datasets", "--with", "transformers", "python"])
-end
-
-function _run_fineweb_python(model_id::String, seq_len::Integer, batch_size::Integer; subset::String="sample-10BT", max_batches::Integer=8, runner::Cmd=_fineweb_runner())
-    seq_len > 0 || throw(ArgumentError("seq_len must be positive"))
-    batch_size > 0 || throw(ArgumentError("batch_size must be positive"))
-    max_batches > 0 || throw(ArgumentError("max_batches must be positive"))
-
-    script = """
-import argparse
-import certifi
-import os
-
-os.environ["SSL_CERT_FILE"] = certifi.where()
-os.environ["REQUESTS_CA_BUNDLE"] = certifi.where()
-os.environ["CURL_CA_BUNDLE"] = certifi.where()
-
-from datasets import load_dataset
-from transformers import AutoTokenizer
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--model-id", required=True)
-parser.add_argument("--seq-len", required=True, type=int)
-parser.add_argument("--batch-size", required=True, type=int)
-parser.add_argument("--subset", default="sample-10BT")
-parser.add_argument("--max-batches", required=True, type=int)
-args = parser.parse_args()
-
-tok = AutoTokenizer.from_pretrained(args.model_id)
-ds = load_dataset("HuggingFaceFW/fineweb-edu", name=args.subset, split="train", streaming=True)
-
-buf = []
-xs = []
-ys = []
-produced = 0
-
-for sample in ds:
-    buf.extend(tok.encode(sample["text"], add_special_tokens=False))
-    while len(buf) >= args.seq_len + 1:
-        chunk = buf[: args.seq_len + 1]
-        buf = buf[args.seq_len + 1 :]
-        xs.append(chunk[:-1])
-        ys.append(chunk[1:])
-        if len(xs) == args.batch_size:
-            print(";".join(",".join(str(v) for v in row) for row in xs) + "|" + ";".join(",".join(str(v) for v in row) for row in ys))
-            xs = []
-            ys = []
-            produced += 1
-            if produced >= args.max_batches:
-                raise SystemExit(0)
-"""
-
-    mktemp() do path, io
-        write(io, script)
-        close(io)
-        cmd = `$runner $path --model-id $model_id --seq-len $seq_len --batch-size $batch_size --subset $subset --max-batches $max_batches`
-        return read(cmd, String)
-    end
-end
-
-function _parse_batch_matrix(raw::AbstractString, seq_len::Int)
-    isempty(raw) && return Matrix{Int}(undef, 0, seq_len)
-    rows = split(raw, ';')
-    out = Matrix{Int}(undef, length(rows), seq_len)
-    for (i, row) in enumerate(rows)
-        vals = parse.(Int, split(row, ','))
-        length(vals) == seq_len || error("unexpected sequence length in Python batch response")
-        out[i, :] .= vals
-    end
-    return out
-end
-
-function _parse_fineweb_batches(raw::AbstractString, seq_len::Int)
-    isempty(strip(raw)) && return Tuple{Matrix{Int}, Matrix{Int}}[]
-    batches = Tuple{Matrix{Int}, Matrix{Int}}[]
-    for line in split(chomp(raw), '\n')
-        isempty(line) && continue
-        parts = split(line, '|')
-        length(parts) == 2 || error("unexpected Python batch response")
-        x = _parse_batch_matrix(parts[1], seq_len)
-        y = _parse_batch_matrix(parts[2], seq_len)
-        size(x) == size(y) || error("input/target batch shape mismatch")
-        push!(batches, (x, y))
-    end
-    return batches
-end
-
 """
     fineweb_edu_batches_from_parquet(tokenizer, parquet_path, seq_len, batch_size; max_batches=8)
 
@@ -249,12 +158,7 @@ function fineweb_edu_batches(
     split::String="train",
     max_batches::Integer=8,
     fetch_rows::Function=_fineweb_rows_texts,
-    backend::Symbol=:julia_rows,
-    runner::Cmd=_fineweb_runner(),
 )
-    backend in (:julia_rows, :python) || throw(ArgumentError("backend must be :julia_rows or :python"))
-    backend === :python && return fineweb_edu_batches_python(tokenizer, seq_len, batch_size; subset=subset, max_batches=max_batches, runner=runner)
-
     seq_len > 0 || throw(ArgumentError("seq_len must be positive"))
     batch_size > 0 || throw(ArgumentError("batch_size must be positive"))
     max_batches > 0 || throw(ArgumentError("max_batches must be positive"))
@@ -281,20 +185,6 @@ end
 
 fineweb_edu_batches(model_id::String, seq_len::Integer, batch_size::Integer; kwargs...) =
     fineweb_edu_batches(MythosTokenizer(model_id), seq_len, batch_size; kwargs...)
-
-"""
-    fineweb_edu_batches_python(model_id, seq_len, batch_size; subset="sample-10BT", max_batches=8, runner=_fineweb_runner())
-
-Legacy optional Python FineWeb-Edu batch loader kept as a compatibility fallback
-while the Julia-native remote path settles.
-"""
-function fineweb_edu_batches_python(model_id::String, seq_len::Integer, batch_size::Integer; subset::String="sample-10BT", max_batches::Integer=8, runner::Cmd=_fineweb_runner())
-    raw = _run_fineweb_python(model_id, seq_len, batch_size; subset=subset, max_batches=max_batches, runner=runner)
-    return _parse_fineweb_batches(raw, Int(seq_len))
-end
-
-fineweb_edu_batches_python(tokenizer::MythosTokenizer, seq_len::Integer, batch_size::Integer; kwargs...) =
-    fineweb_edu_batches_python(tokenizer.model_id, seq_len, batch_size; kwargs...)
 
 """
     LuxHeadOnlyOpenMythos

@@ -83,7 +83,7 @@ model = DeepSeekV4Model(cfg)
 
 ## 5. Use the tokenizer
 
-The tokenizer is now package-specific at the API boundary but backed by a shared Julia-native `TextDataCore.jl` implementation for the currently supported GPT/tiktoken-style families. `OpenMythos.jl` now reuses that shared package for native BPE/tokenization and local parquet text batching instead of keeping those helpers package-local. The remote FineWeb-Edu smoke path now also has a Julia-native dataset-viewer rows loader, while the old Python bridge remains only as an explicit legacy fallback.
+The tokenizer is now package-specific at the API boundary but backed by a shared Julia-native `TextDataCore.jl` implementation for the currently supported GPT/tiktoken-style families. `OpenMythos.jl` now reuses that shared package for native BPE/tokenization and local parquet text batching instead of keeping those helpers package-local. The remote FineWeb-Edu smoke path now also uses a Julia-native dataset-viewer rows loader.
 
 ```julia
 using OpenMythos
@@ -187,8 +187,7 @@ Useful environment variables:
 | `OPENMYTHOS_TRAIN_SHARED_EXPERTS`     | shared experts in full-model mode                                                                        | `0`                                    |
 | `OPENMYTHOS_TRAIN_EXPERTS_PER_TOKEN`  | routed experts selected per token in full-model mode                                                     | `1`                                    |
 | `OPENMYTHOS_TRAIN_CKPT_DIR`           | checkpoint root directory (`openmythos/full_model_lux` for Lux mode; `<mode>/` subdirs for legacy modes) | `checkpoints`                          |
-| `OPENMYTHOS_USE_FINEWEB_EDU`          | use FineWeb-Edu data path (local parquet if set, otherwise remote rows API / legacy Python fallback)    | `0`                                    |
-| `OPENMYTHOS_FINEWEB_BACKEND`          | remote FineWeb backend when no parquet path is set (`julia_rows` or `python`)                           | `julia_rows`                           |
+| `OPENMYTHOS_USE_FINEWEB_EDU`          | use FineWeb-Edu data path (local parquet if set, otherwise remote rows API)                               | `0`                                    |
 | `OPENMYTHOS_FINEWEB_PARQUET_PATH`     | local FineWeb parquet file or directory for the Julia-native path                                        | empty                                  |
 | `OPENMYTHOS_FINEWEB_SUBSET`           | FineWeb-Edu subset / config name for remote loading                                                      | `sample-10BT`                          |
 | `OPENMYTHOS_FINEWEB_BATCHES`          | number of FineWeb batches to fetch                                                                       | `max(total_steps, 1)`                  |
@@ -217,7 +216,6 @@ Example FineWeb-Edu-backed smoke run via the Julia rows API path:
 ```bash
 cd OpenMythos.jl
 OPENMYTHOS_USE_FINEWEB_EDU=1 \
-OPENMYTHOS_FINEWEB_BACKEND=julia_rows \
 OPENMYTHOS_TRAIN_TOKENIZER_MODEL_ID=gpt2 \
 OPENMYTHOS_FINEWEB_SUBSET=sample-10BT \
 OPENMYTHOS_FINEWEB_BATCHES=8 \
@@ -234,8 +232,6 @@ OPENMYTHOS_TRAIN_TOKENIZER_MODEL_ID=gpt2 \
 OPENMYTHOS_FINEWEB_BATCHES=8 \
 julia --project=. scripts/train_3b_fineweb_edu.jl
 ```
-
-If you still need the older compatibility path, set `OPENMYTHOS_FINEWEB_BACKEND=python` to use the legacy Python streaming bridge explicitly.
 
 The DeepSeek V4 training entrypoint is:
 
