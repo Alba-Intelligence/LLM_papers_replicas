@@ -115,12 +115,16 @@ This surface intentionally mirrors the OpenMythos bootstrap trainer:
 - the model body stays frozen,
 - only the LM head is updated,
 - shared schedule, batching, next-token loss, and the emerging Lux-native trainer/checkpoint foundation come from `TransformerCore.jl`,
-- the default script uses local byte-encoded batches for a simple smoke-training path.
+- shared Julia-native tokenizer and local parquet text-data helpers now come from `TextDataCore.jl`,
+- the default script now uses tokenizer-backed local-text batches, while `DEEPSEEK_V4_TRAIN_ENCODING=byte` remains as a compatibility mode.
 
 The package also now has a tiny full-model bootstrap trainer that updates the
 main LM path, the current MTP heads, and optional Engram parameters on very
-small configs. Broader config coverage, distributed training, and paper-scale
-optimizer/runtime work remain later phases.
+small configs. Its head-only checkpoints now use the shared `TransformerCore.jl`
+family/mode-aware layout directly, and its full-model checkpoints now follow the
+same outer layout even though the inner loss/update path is still DeepSeek-
+specific because of MTP. Broader config coverage, distributed training, and
+paper-scale optimizer/runtime work remain later phases.
 
 ## Why the package is split from OpenMythos
 

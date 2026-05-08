@@ -11,13 +11,20 @@ The current normalization is intentionally lightweight and dependency-free:
 - strip outer whitespace,
 - map empty results to a single space sentinel.
 """
+function _normalize_engram_token_text(text::AbstractString)
+    if isvalid(text)
+        key = lowercase(strip(replace(text, r"\s+" => " ")))
+        return isempty(key) ? " " : key
+    end
+    return "bytes:" * bytes2hex(Vector{UInt8}(codeunits(text)))
+end
+
 function build_engram_token_lookup(token_texts::AbstractVector{<:AbstractString})
     lookup = Vector{Int}(undef, length(token_texts))
     compressed = Dict{String, Int}()
     next_id = 0
     for (idx, text) in enumerate(token_texts)
-        key = lowercase(strip(replace(text, r"\s+" => " ")))
-        key = isempty(key) ? " " : key
+        key = _normalize_engram_token_text(text)
         compressed_id = get!(compressed, key) do
             current = next_id
             next_id += 1
@@ -27,6 +34,9 @@ function build_engram_token_lookup(token_texts::AbstractVector{<:AbstractString}
     end
     return lookup
 end
+
+build_engram_token_lookup(tokenizer::TextDataCore.NativeBPETokenizer) =
+    build_engram_token_lookup(TextDataCore.vocab_texts(tokenizer))
 
 function _validate_engram_cfg(cfg::DeepSeekV4Config)
     isempty(cfg.engram_layer_ids) && return cfg

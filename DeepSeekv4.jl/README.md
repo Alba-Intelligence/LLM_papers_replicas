@@ -13,7 +13,9 @@ This package currently targets:
 - chunked prefill plus serializable KV-cache envelopes for cached generation reuse,
 - lower-allocation buffer-backed cache growth behind the existing generation API,
 - a Lux-backed head-only bootstrap training surface for tiny configs,
-- a first tiny full-model bootstrap trainer for the main LM logits path, auxiliary MTP heads, and optional Engram-enabled stacks.
+- a first tiny full-model bootstrap trainer for the main LM logits path, auxiliary MTP heads, and optional Engram-enabled stacks,
+- shared Julia-native tokenizer and local parquet text-data paths through `TextDataCore.jl`,
+- shared family/mode-aware checkpoint layout through `TransformerCore.jl`.
 
 ## Quickstart
 
@@ -27,16 +29,31 @@ julia --project=. -q -e 'using Pkg; Pkg.test()'
 
 ```bash
 DEEPSEEK_V4_TRAIN_MODE=full_model \
+DEEPSEEK_V4_TRAIN_ENCODING=tokenizer \
+DEEPSEEK_V4_TRAIN_TOKENIZER_MODEL_ID=gpt2 \
 DEEPSEEK_V4_TRAIN_USE_ENGRAM=1 \
 DEEPSEEK_V4_TRAIN_TOTAL_STEPS=8 \
 DEEPSEEK_V4_TRAIN_SEQ_LEN=32 \
 julia --project=. scripts/train_deepseek_tiny.jl
 ```
 
-This script currently builds local byte-encoded batches for either a head-only or
-tiny full-model smoke path. The full-model mode optimizes both the primary LM
-head path and the current auxiliary MTP heads on tiny configs, and it can also
-enable the gated Engram branch with `DEEPSEEK_V4_TRAIN_USE_ENGRAM=1`.
+This script now defaults to shared Julia-native tokenizer-backed local-text
+batches via `TextDataCore.jl`, while keeping `DEEPSEEK_V4_TRAIN_ENCODING=byte`
+as a compatibility path for the older byte-mod-vocab smoke mode. The full-model
+mode optimizes both the primary LM head path and the current auxiliary MTP heads
+on tiny configs, and it can also enable the gated Engram branch with
+`DEEPSEEK_V4_TRAIN_USE_ENGRAM=1`.
+
+For a Julia-native parquet-backed smoke run:
+
+```bash
+DEEPSEEK_V4_TRAIN_MODE=full_model \
+DEEPSEEK_V4_TRAIN_PARQUET_PATH=/path/to/local-text.parquet \
+DEEPSEEK_V4_TRAIN_TOKENIZER_MODEL_ID=gpt2 \
+DEEPSEEK_V4_TRAIN_TOTAL_STEPS=8 \
+DEEPSEEK_V4_TRAIN_SEQ_LEN=32 \
+julia --project=. scripts/train_deepseek_tiny.jl
+```
 
 ### Chunked prefill and cache reuse
 

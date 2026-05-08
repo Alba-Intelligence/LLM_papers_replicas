@@ -179,26 +179,52 @@ end
     DeepSeekHeadTrainerState{T}
 
 Mutable training state for the Lux-backed DeepSeek V4 head-only bootstrap path.
+This now reuses `TransformerCore.NextTokenTrainerState` for optimization,
+checkpointing, and the generic next-token training loop.
 """
-mutable struct DeepSeekHeadTrainerState{T<:AbstractFloat}
+mutable struct DeepSeekHeadTrainerState{T<:AbstractFloat, TS}
     layer::LuxHeadOnlyDeepSeekV4{DeepSeekV4Model{T}}
-    head::Matrix{T}
-    lux_state::NamedTuple
-    opt_state
-    schedule::WarmupCosineSchedule{T}
-    step::Int
+    trainer::TS
 end
 
 """
     DeepSeekFullModelTrainerState{T}
 
 Mutable training state for the current DeepSeek V4 full-model bootstrap trainer.
+This now reuses `TransformerCore.NextTokenTrainerState` as the common optimizer /
+checkpoint holder even though the loss is still DeepSeek-specific because of the
+MTP branch.
 """
-mutable struct DeepSeekFullModelTrainerState{T<:AbstractFloat}
-    model::DeepSeekV4Model{T}
-    opt_state
-    schedule::WarmupCosineSchedule{T}
-    step::Int
+mutable struct DeepSeekFullModelTrainerState{T<:AbstractFloat, TS}
+    trainer::TS
+end
+
+function Base.getproperty(state::DeepSeekHeadTrainerState, name::Symbol)
+    if name === :head
+        return getfield(state, :trainer).ps.head
+    elseif name === :lux_state
+        return getfield(state, :trainer).st
+    elseif name === :opt_state
+        return getfield(state, :trainer).opt_state
+    elseif name === :schedule
+        return getfield(state, :trainer).schedule
+    elseif name === :step
+        return getfield(state, :trainer).step
+    end
+    return getfield(state, name)
+end
+
+function Base.getproperty(state::DeepSeekFullModelTrainerState, name::Symbol)
+    if name === :model
+        return getfield(state, :trainer).ps
+    elseif name === :opt_state
+        return getfield(state, :trainer).opt_state
+    elseif name === :schedule
+        return getfield(state, :trainer).schedule
+    elseif name === :step
+        return getfield(state, :trainer).step
+    end
+    return getfield(state, name)
 end
 
 function DeepSeekFullModelTrainerState(
@@ -214,7 +240,8 @@ function DeepSeekFullModelTrainerState(
         Optimisers.AdamW(; eta=zero(T), beta=(T(beta1), T(beta2)), lambda=T(weight_decay), epsilon=T(eps)),
         model,
     )
-    return DeepSeekFullModelTrainerState(model, opt_state, schedule, 0)
+    trainer = NextTokenTrainerState(model, NamedTuple(), opt_state, schedule, 0)
+    return DeepSeekFullModelTrainerState{T, typeof(trainer)}(trainer)
 end
 
 function DeepSeekHeadTrainerState(
@@ -226,165 +253,107 @@ function DeepSeekHeadTrainerState(
     eps::Real=1e-8,
 ) where {T<:AbstractFloat}
     layer = LuxHeadOnlyDeepSeekV4(model)
-    head = Lux.initialparameters(Random.default_rng(), layer).head
-    lux_state = Lux.initialstates(Random.default_rng(), layer)
-    opt_state = Optimisers.setup(
-        Optimisers.AdamW(; eta=zero(T), beta=(T(beta1), T(beta2)), lambda=T(weight_decay), epsilon=T(eps)),
-        head,
+    trainer = NextTokenTrainerState(
+        layer;
+        schedule=schedule,
+        weight_decay=weight_decay,
+        beta1=beta1,
+        beta2=beta2,
+        eps=eps,
     )
-    return DeepSeekHeadTrainerState(
-        layer,
-        head,
-        lux_state,
-        opt_state,
-        schedule,
-        0,
-    )
+    return DeepSeekHeadTrainerState{T, typeof(trainer)}(layer, trainer)
 end
 
 """Return LM logits from the DeepSeek head-only trainer state."""
-function deepseek_head_logits(state::DeepSeekHeadTrainerState, input_ids::AbstractMatrix{<:Integer})
-    logits, _ = Lux.apply(state.layer, input_ids, (head=state.head,), state.lux_state)
-    return logits
-end
+deepseek_head_logits(state::DeepSeekHeadTrainerState, input_ids::AbstractMatrix{<:Integer}) =
+    next_token_logits(state.layer, state.trainer, input_ids)
 
 """Return sequence cross-entropy for the DeepSeek head-only trainer state."""
-function deepseek_head_loss(state::DeepSeekHeadTrainerState{T}, input_ids::AbstractMatrix{<:Integer}, target_ids::AbstractMatrix{<:Integer}) where {T<:AbstractFloat}
-    hidden = deepseek_hidden(state.layer.model, input_ids)
-    loss, = _head_loss_and_grad(hidden, state.head, target_ids)
-    return loss
-end
+deepseek_head_loss(state::DeepSeekHeadTrainerState, input_ids::AbstractMatrix{<:Integer}, target_ids::AbstractMatrix{<:Integer}) =
+    next_token_loss(state.layer, state.trainer, input_ids, target_ids)
 
 """Return LM logits from the full-model DeepSeek trainer state."""
 function deepseek_full_model_logits(state::DeepSeekFullModelTrainerState, input_ids::AbstractMatrix{<:Integer})
-    return state.model(input_ids)
+    return state.trainer.ps(input_ids)
 end
 
 """Return sequence cross-entropy for the full-model DeepSeek trainer state."""
 function deepseek_full_model_loss(state::DeepSeekFullModelTrainerState{T}, input_ids::AbstractMatrix{<:Integer}, target_ids::AbstractMatrix{<:Integer}) where {T<:AbstractFloat}
-    return _deepseek_full_model_loss(state.model, input_ids, target_ids)
+    return _deepseek_full_model_loss(state.trainer.ps, input_ids, target_ids)
 end
 
 """Take one optimization step in the DeepSeek V4 head-only trainer."""
 function train_deepseek_head_only_step!(state::DeepSeekHeadTrainerState{T}, input_ids::AbstractMatrix{<:Integer}, target_ids::AbstractMatrix{<:Integer}) where {T<:AbstractFloat}
-    size(input_ids) == size(target_ids) || throw(ArgumentError("input_ids and target_ids must have the same shape"))
-    hidden = deepseek_hidden(state.layer.model, input_ids)
-    loss, grad = _head_loss_and_grad(hidden, state.head, target_ids)
-
-    lr = learning_rate(state.schedule, state.step)
-    Optimisers.adjust!(state.opt_state, lr)
-    state.opt_state, state.head = Optimisers.update(state.opt_state, state.head, grad)
-    state.step += 1
-
-    return (loss=loss, lr=lr, grad_norm=T(sqrt(sum(abs2, grad))), step=state.step)
+    return train_next_token_step!(state.trainer, state.layer, input_ids, target_ids)
 end
 
 """Take one optimization step in the DeepSeek V4 full-model trainer."""
 function train_deepseek_full_model_step!(state::DeepSeekFullModelTrainerState{T}, input_ids::AbstractMatrix{<:Integer}, target_ids::AbstractMatrix{<:Integer}) where {T<:AbstractFloat}
     size(input_ids) == size(target_ids) || throw(ArgumentError("input_ids and target_ids must have the same shape"))
-    loss, grads = Zygote.withgradient(model -> _deepseek_full_model_loss(model, input_ids, target_ids), state.model)
+    loss, grads = Zygote.withgradient(model -> _deepseek_full_model_loss(model, input_ids, target_ids), state.trainer.ps)
     grad = only(grads)
 
-    lr = learning_rate(state.schedule, state.step)
-    Optimisers.adjust!(state.opt_state, lr)
-    state.opt_state, state.model = Optimisers.update(state.opt_state, state.model, grad)
-    state.step += 1
+    lr = learning_rate(state.trainer.schedule, state.trainer.step)
+    Optimisers.adjust!(state.trainer.opt_state, lr)
+    state.trainer.opt_state, state.trainer.ps = Optimisers.update(state.trainer.opt_state, state.trainer.ps, grad)
+    state.trainer.step += 1
 
-    return (loss=loss, lr=lr, grad_norm=T(sqrt(_tree_sumsq(grad))), step=state.step)
+    return (loss=loss, lr=lr, grad_norm=T(sqrt(_tree_sumsq(grad))), step=state.trainer.step)
 end
 
-"""Serialize the DeepSeek V4 head-only trainer state to a checkpoint directory."""
-function save_deepseek_checkpoint(state::DeepSeekHeadTrainerState, ckpt_dir::AbstractString; keep_last::Integer=3, metadata::AbstractDict=Dict{String, Any}())
-    keep_last > 0 || throw(ArgumentError("keep_last must be positive"))
-    mkpath(ckpt_dir)
-    filename = "step_$(lpad(string(state.step), 7, '0')).jls"
-    final_path = joinpath(ckpt_dir, filename)
-    temp_path = final_path * ".tmp"
-    payload = Dict(
-        "step" => state.step,
-        "head" => copy(state.head),
-        "lux_state" => state.lux_state,
-        "opt_state" => state.opt_state,
-        "schedule" => state.schedule,
-        "cfg" => state.layer.model.cfg,
-        "vocab_size" => state.layer.model.cfg.vocab_size,
-        "mode" => "lux_head_only_deepseek",
-        "metadata" => Dict(string(k) => v for (k, v) in pairs(metadata)),
+"""Serialize the DeepSeek V4 head-only trainer state to a shared checkpoint root."""
+function save_deepseek_checkpoint(state::DeepSeekHeadTrainerState, ckpt_root::AbstractString; keep_last::Integer=3, metadata::AbstractDict=Dict{String, Any}())
+    return save_trainer_checkpoint(
+        state.trainer,
+        ckpt_root;
+        family="deepseekv4",
+        mode="head_only",
+        keep_last=keep_last,
+        config=state.layer.model.cfg,
+        metadata=metadata,
     )
-    open(temp_path, "w") do io
-        serialize(io, payload)
-    end
-    mv(temp_path, final_path; force=true)
-
-    existing = filter(name -> startswith(name, "step_") && endswith(name, ".jls"), readdir(ckpt_dir))
-    sort!(existing)
-    for old in existing[1:max(0, length(existing) - keep_last)]
-        rm(joinpath(ckpt_dir, old); force=true)
-    end
-
-    return final_path
 end
 
-"""Serialize the DeepSeek V4 full-model trainer state to a checkpoint directory."""
-function save_deepseek_full_model_checkpoint(state::DeepSeekFullModelTrainerState, ckpt_dir::AbstractString; keep_last::Integer=3, metadata::AbstractDict=Dict{String, Any}())
-    keep_last > 0 || throw(ArgumentError("keep_last must be positive"))
-    mkpath(ckpt_dir)
-    filename = "step_$(lpad(string(state.step), 7, '0')).jls"
-    final_path = joinpath(ckpt_dir, filename)
-    temp_path = final_path * ".tmp"
-    payload = Dict(
-        "step" => state.step,
-        "model" => state.model,
-        "opt_state" => state.opt_state,
-        "schedule" => state.schedule,
-        "mode" => "full_model_deepseek_v4",
-        "metadata" => Dict(string(k) => v for (k, v) in pairs(metadata)),
+"""Serialize the DeepSeek V4 full-model trainer state to a shared checkpoint root."""
+function save_deepseek_full_model_checkpoint(state::DeepSeekFullModelTrainerState, ckpt_root::AbstractString; keep_last::Integer=3, metadata::AbstractDict=Dict{String, Any}())
+    return save_trainer_checkpoint(
+        state.trainer,
+        ckpt_root;
+        family="deepseekv4",
+        mode="full_model",
+        keep_last=keep_last,
+        config=state.trainer.ps.cfg,
+        metadata=metadata,
     )
-    open(temp_path, "w") do io
-        serialize(io, payload)
-    end
-    mv(temp_path, final_path; force=true)
-
-    existing = filter(name -> startswith(name, "step_") && endswith(name, ".jls"), readdir(ckpt_dir))
-    sort!(existing)
-    for old in existing[1:max(0, length(existing) - keep_last)]
-        rm(joinpath(ckpt_dir, old); force=true)
-    end
-
-    return final_path
 end
 
 """Restore a DeepSeek V4 head-only trainer state from `path` for `model`."""
 function load_deepseek_checkpoint(path::AbstractString, model::DeepSeekV4Model{T}) where {T<:AbstractFloat}
-    payload = open(path, "r") do io
-        deserialize(io)
-    end
-    head = T.(payload["head"])
-    size(head) == size(model.head) || throw(ArgumentError("checkpoint head shape does not match model"))
-    return DeepSeekHeadTrainerState(
-        LuxHeadOnlyDeepSeekV4(model),
-        head,
-        get(payload, "lux_state", NamedTuple()),
-        payload["opt_state"],
-        payload["schedule"],
-        Int(payload["step"]),
+    restored = load_trainer_checkpoint(path; expected_family="deepseekv4", expected_mode="head_only")
+    size(restored.state.ps.head) == size(model.head) || throw(ArgumentError("checkpoint head shape does not match model"))
+    trainer = NextTokenTrainerState(
+        (head=T.(restored.state.ps.head),),
+        restored.state.st,
+        restored.state.opt_state,
+        restored.state.schedule,
+        restored.state.step,
     )
+    return DeepSeekHeadTrainerState{T, typeof(trainer)}(LuxHeadOnlyDeepSeekV4(model), trainer)
 end
 
 """Restore a DeepSeek V4 full-model trainer state from `path`."""
 function load_deepseek_full_model_checkpoint(path::AbstractString)
-    payload = open(path, "r") do io
-        deserialize(io)
-    end
-    get(payload, "mode", nothing) == "full_model_deepseek_v4" || throw(ArgumentError("checkpoint is not a DeepSeek V4 full-model checkpoint"))
-    model = payload["model"]
+    restored = load_trainer_checkpoint(path; expected_family="deepseekv4", expected_mode="full_model")
+    model = restored.state.ps
     _validate_deepseek_full_model_cfg(model.cfg)
-    return DeepSeekFullModelTrainerState(
+    trainer = NextTokenTrainerState(
         model,
-        payload["opt_state"],
-        payload["schedule"],
-        Int(payload["step"]),
+        restored.state.st,
+        restored.state.opt_state,
+        restored.state.schedule,
+        restored.state.step,
     )
+    return DeepSeekFullModelTrainerState{eltype(model.head), typeof(trainer)}(trainer)
 end
 
 """Run a multi-step DeepSeek V4 head-only training loop over `batches`."""
@@ -399,28 +368,21 @@ function train_deepseek_head_only!(
     io::IO=stdout,
     checkpoint_metadata::AbstractDict=Dict{String, Any}(),
 )
-    isempty(batches) && throw(ArgumentError("at least one batch is required"))
-    total_steps >= state.step || throw(ArgumentError("total_steps must be >= current step"))
-
-    last_metrics = (loss=zero(eltype(state.head)), lr=zero(eltype(state.head)), grad_norm=zero(eltype(state.head)), step=state.step)
-    while state.step < total_steps
-        batch = batches[mod1(state.step + 1, length(batches))]
-        last_metrics = train_deepseek_head_only_step!(state, batch[1], batch[2])
-
-        if log_every > 0 && (state.step == 1 || state.step % log_every == 0 || state.step == total_steps)
-            println(io, "step $(state.step)/$(total_steps) | loss $(round(last_metrics.loss; digits=4)) | gnorm $(round(last_metrics.grad_norm; digits=4)) | lr $(last_metrics.lr)")
-        end
-
-        if ckpt_dir !== nothing && ckpt_every > 0 && state.step % ckpt_every == 0
-            save_deepseek_checkpoint(state, ckpt_dir; keep_last=keep_last, metadata=checkpoint_metadata)
-        end
-    end
-
-    if ckpt_dir !== nothing && ckpt_every > 0 && state.step > 0 && state.step % ckpt_every != 0
-        save_deepseek_checkpoint(state, ckpt_dir; keep_last=keep_last, metadata=checkpoint_metadata)
-    end
-
-    return last_metrics
+    return train_next_token!(
+        state.trainer,
+        state.layer,
+        batches;
+        total_steps=total_steps,
+        log_every=log_every,
+        io=io,
+        ckpt_root=ckpt_dir,
+        ckpt_every=ckpt_every,
+        family="deepseekv4",
+        mode="head_only",
+        keep_last=keep_last,
+        checkpoint_config=state.layer.model.cfg,
+        checkpoint_metadata=checkpoint_metadata,
+    )
 end
 
 """Run a multi-step DeepSeek V4 full-model training loop over `batches`."""

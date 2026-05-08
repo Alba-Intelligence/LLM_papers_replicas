@@ -16,6 +16,7 @@ using Serialization
 using Statistics
 import Lux
 import Optimisers
+import TextDataCore
 import Zygote
 using TransformerCore: _sigmoid,
                        _silu,
@@ -36,8 +37,14 @@ using TransformerCore: _sigmoid,
                        chunk_next_token_pairs,
                        text_next_token_pairs,
                        batch_next_token_pairs,
+                       NextTokenTrainerState,
+                       next_token_logits,
+                       next_token_loss,
+                       train_next_token_step!,
+                       train_next_token!,
                        latest_checkpoint,
-                       _head_loss_and_grad,
+                       save_trainer_checkpoint,
+                       load_trainer_checkpoint,
                        AxisAppendBuffer,
                        filled_axis_buffer,
                        ensure_axis_capacity!,

@@ -242,24 +242,41 @@ julia --project=. scripts/train_deepseek_tiny.jl
 
 Useful environment variables:
 
-| Variable                        | Meaning                                     | Default              |
-| ------------------------------- | ------------------------------------------- | -------------------- |
-| `DEEPSEEK_V4_TRAIN_VOCAB_SIZE`  | tiny bootstrap vocab size                   | `512`                |
-| `DEEPSEEK_V4_TRAIN_MODE`        | training mode (`head_only` or `full_model`) | `head_only`          |
-| `DEEPSEEK_V4_TRAIN_USE_ENGRAM`  | enable the gated Engram branch              | `0`                  |
-| `DEEPSEEK_V4_TRAIN_TOTAL_STEPS` | total bootstrap steps                       | `8`                  |
-| `DEEPSEEK_V4_TRAIN_SEQ_LEN`     | sequence length                             | `32`                 |
-| `DEEPSEEK_V4_TRAIN_BATCH_SIZE`  | batch size                                  | `2`                  |
-| `DEEPSEEK_V4_TRAIN_CKPT_DIR`    | checkpoint directory                        | `checkpoints/<mode>` |
-| `DEEPSEEK_V4_TRAIN_TEXT`        | local training text override                | empty                |
-| `DEEPSEEK_V4_TRAIN_TEXT_FILE`   | path to local training text                 | empty                |
+| Variable                              | Meaning                                                                 | Default      |
+| ------------------------------------- | ----------------------------------------------------------------------- | ------------ |
+| `DEEPSEEK_V4_TRAIN_MODE`              | training mode (`head_only` or `full_model`)                             | `head_only`  |
+| `DEEPSEEK_V4_TRAIN_ENCODING`          | data encoding mode (`tokenizer` or `byte`)                              | `tokenizer`  |
+| `DEEPSEEK_V4_TRAIN_TOKENIZER_MODEL_ID`| tokenizer model ID for the shared `TextDataCore.jl` path                | `gpt2`       |
+| `DEEPSEEK_V4_TRAIN_VOCAB_SIZE`        | fallback vocab size for `DEEPSEEK_V4_TRAIN_ENCODING=byte`               | `512`        |
+| `DEEPSEEK_V4_TRAIN_USE_ENGRAM`        | enable the gated Engram branch                                          | `0`          |
+| `DEEPSEEK_V4_TRAIN_TOTAL_STEPS`       | total bootstrap steps                                                   | `8`          |
+| `DEEPSEEK_V4_TRAIN_SEQ_LEN`           | sequence length                                                         | `32`         |
+| `DEEPSEEK_V4_TRAIN_BATCH_SIZE`        | batch size                                                              | `2`          |
+| `DEEPSEEK_V4_TRAIN_CKPT_DIR`          | checkpoint root directory (`deepseekv4/<mode>` under this root)         | `checkpoints`|
+| `DEEPSEEK_V4_TRAIN_TEXT`              | local training text override                                            | empty        |
+| `DEEPSEEK_V4_TRAIN_TEXT_FILE`         | path to local training text                                             | empty        |
+| `DEEPSEEK_V4_TRAIN_PARQUET_PATH`      | local parquet file or directory for the Julia-native text-data path     | empty        |
 
-Example local DeepSeek smoke run:
+Example local DeepSeek smoke run on the shared tokenizer-backed path:
 
 ```bash
 cd DeepSeekv4.jl
 DEEPSEEK_V4_TRAIN_MODE=full_model \
+DEEPSEEK_V4_TRAIN_ENCODING=tokenizer \
+DEEPSEEK_V4_TRAIN_TOKENIZER_MODEL_ID=gpt2 \
 DEEPSEEK_V4_TRAIN_USE_ENGRAM=1 \
+DEEPSEEK_V4_TRAIN_TOTAL_STEPS=8 \
+DEEPSEEK_V4_TRAIN_SEQ_LEN=32 \
+julia --project=. scripts/train_deepseek_tiny.jl
+```
+
+Example local DeepSeek parquet-backed smoke run:
+
+```bash
+cd DeepSeekv4.jl
+DEEPSEEK_V4_TRAIN_MODE=full_model \
+DEEPSEEK_V4_TRAIN_PARQUET_PATH=/path/to/local-text.parquet \
+DEEPSEEK_V4_TRAIN_TOKENIZER_MODEL_ID=gpt2 \
 DEEPSEEK_V4_TRAIN_TOTAL_STEPS=8 \
 DEEPSEEK_V4_TRAIN_SEQ_LEN=32 \
 julia --project=. scripts/train_deepseek_tiny.jl
@@ -276,6 +293,7 @@ The current bootstrap trainer is intentionally limited:
 - the package now also exposes a first Lux-native `LuxFullModelTrainerState` built on `TransformerCore.NextTokenTrainerState` plus shared family/mode-aware checkpoint save/load helpers,
 - those full-model paths currently support small GQA/MLA configs, including tiny sparse routed-expert setups with optional shared experts, while `full_model_legacy` and `head_only` remain compatibility modes,
 - `DeepSeekv4.jl` now has both a `LuxHeadOnlyDeepSeekV4` head-only trainer and a first tiny `DeepSeekFullModelTrainerState` bootstrap path,
+- DeepSeek now also reuses the shared `TextDataCore.jl` tokenizer/local-parquet data path and the shared family/mode-aware checkpoint layout,
 - the current DeepSeek full-model loss now trains both the main LM logits path and the current auxiliary MTP heads on tiny configs, with an optional gated Engram branch,
 - the core model internals are still mostly manual Julia blocks, though `OpenMythos.jl` now also exposes Lux-native mirrors for attention, experts / MoE, transformer blocks, recurrent update primitives, and a tied-embedding `LuxOpenMythos` shell,
 - broader sparse/full-model autodiff and distributed training are still future work.

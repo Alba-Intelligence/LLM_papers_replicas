@@ -96,9 +96,10 @@ end
         train_deepseek_head_only_step!(state, x, y)
         last_path = save_deepseek_checkpoint(state, dir; keep_last=2)
 
-        files = filter(name -> endswith(name, ".jls"), readdir(dir))
+        ckpt_dir = joinpath(dir, "deepseekv4", "head_only")
+        files = filter(name -> endswith(name, ".jls"), readdir(ckpt_dir))
         @test length(files) == 2
-        @test latest_checkpoint(dir) == last_path
+        @test latest_checkpoint(dir; family="deepseekv4", mode="head_only") == last_path
 
         restored = load_deepseek_checkpoint(last_path, model)
         @test restored.step == state.step
@@ -121,7 +122,7 @@ end
         metrics = train_deepseek_head_only!(state, batches; total_steps=3, log_every=1, ckpt_dir=dir, ckpt_every=2, io=io)
         @test metrics.step == 3
         @test occursin("step 3/3", String(take!(io)))
-        latest = latest_checkpoint(dir)
+        latest = latest_checkpoint(dir; family="deepseekv4", mode="head_only")
         @test latest !== nothing
         @test endswith(latest, "step_0000003.jls")
     end
@@ -140,6 +141,7 @@ end
         train_deepseek_full_model_step!(state, x, y)
         path = save_deepseek_full_model_checkpoint(state, dir; keep_last=2, metadata=Dict("source" => "test"))
         @test isfile(path)
+        @test occursin(joinpath("deepseekv4", "full_model"), path)
 
         restored = load_deepseek_full_model_checkpoint(path)
         @test restored.step == state.step
@@ -150,7 +152,7 @@ end
         metrics = train_deepseek_full_model!(restored, [(x, y)]; total_steps=2, log_every=1, ckpt_dir=dir, ckpt_every=2, io=io)
         @test metrics.step == 2
         @test occursin("step 2/2", String(take!(io)))
-        latest = latest_checkpoint(dir)
+        latest = latest_checkpoint(dir; family="deepseekv4", mode="full_model")
         @test latest !== nothing
         @test endswith(latest, "step_0000002.jls")
     end
