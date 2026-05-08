@@ -82,6 +82,42 @@ end
 TransformerCore.text_next_token_pairs(texts::AbstractVector{<:AbstractString}, tokenizer::MythosTokenizer, seq_len::Integer) =
     TransformerCore.text_next_token_pairs(texts, text -> encode(tokenizer, text), seq_len)
 
+const _FINEWEB_DATASET = "HuggingFaceFW/fineweb-edu"
+const _FINEWEB_ROWS_API = "https://datasets-server.huggingface.co/rows"
+const _FINEWEB_MAX_ROWS_PER_REQUEST = 100
+
+function _download_json(url::AbstractString)
+    mktemp() do path, io
+        close(io)
+        Downloads.download(url, path)
+        return JSON3.read(read(path, String))
+    end
+end
+
+function _drain_next_token_pairs!(pairs, buffer::Vector{Int}, seq_len::Int, max_pairs::Int)
+    while length(buffer) >= seq_len + 1 && length(pairs) < max_pairs
+        chunk = buffer[1:(seq_len + 1)]
+        push!(pairs, (copy(chunk[1:end-1]), copy(chunk[2:end])))
+        deleteat!(buffer, 1:(seq_len + 1))
+    end
+    return pairs
+end
+
+function _fineweb_rows_texts(; dataset::AbstractString=_FINEWEB_DATASET, config::AbstractString="sample-10BT", split::AbstractString="train", offset::Integer=0, length::Integer=_FINEWEB_MAX_ROWS_PER_REQUEST, fetch_json::Function=_download_json)
+    0 <= offset || throw(ArgumentError("offset must be non-negative"))
+    1 <= length <= _FINEWEB_MAX_ROWS_PER_REQUEST || throw(ArgumentError("length must be between 1 and $(_FINEWEB_MAX_ROWS_PER_REQUEST)"))
+
+    url = "$(_FINEWEB_ROWS_API)?dataset=$(dataset)&config=$(config)&split=$(split)&offset=$(Int(offset))&length=$(Int(length))"
+    payload = fetch_json(url)
+    texts = String[]
+    for entry in payload.rows
+        row = entry.row
+        hasproperty(row, :text) || continue
+        push!(texts, String(row.text))
+    end
+    return texts
+end
+
 function _fineweb_runner()
     if haskey(ENV, "OPENMYTHOS_FINEWEB_PYTHON")
         return Cmd([ENV["OPENMYTHOS_FINEWEB_PYTHON"]])
@@ -199,18 +235,66 @@ fineweb_edu_batches_from_parquet(model_id::String, parquet_path::AbstractString,
     fineweb_edu_batches_from_parquet(MythosTokenizer(model_id), parquet_path, seq_len, batch_size; kwargs...)
 
 """
-    fineweb_edu_batches(model_id, seq_len, batch_size; subset="sample-10BT", max_batches=8, runner=_fineweb_runner())
+    fineweb_edu_batches(tokenizer, seq_len, batch_size; subset="sample-10BT", max_batches=8)
 
-Fetch small next-token training batches from FineWeb-Edu through the optional
-Python bridge.
+Fetch small next-token training batches from FineWeb-Edu through the Julia-native
+Hugging Face dataset viewer rows API. This is intended for smoke-scale remote
+training; larger local parquet shards are still the preferred Julia path.
 """
-function fineweb_edu_batches(model_id::String, seq_len::Integer, batch_size::Integer; subset::String="sample-10BT", max_batches::Integer=8, runner::Cmd=_fineweb_runner())
+function fineweb_edu_batches(
+    tokenizer::MythosTokenizer,
+    seq_len::Integer,
+    batch_size::Integer;
+    subset::String="sample-10BT",
+    split::String="train",
+    max_batches::Integer=8,
+    fetch_rows::Function=_fineweb_rows_texts,
+    backend::Symbol=:julia_rows,
+    runner::Cmd=_fineweb_runner(),
+)
+    backend in (:julia_rows, :python) || throw(ArgumentError("backend must be :julia_rows or :python"))
+    backend === :python && return fineweb_edu_batches_python(tokenizer, seq_len, batch_size; subset=subset, max_batches=max_batches, runner=runner)
+
+    seq_len > 0 || throw(ArgumentError("seq_len must be positive"))
+    batch_size > 0 || throw(ArgumentError("batch_size must be positive"))
+    max_batches > 0 || throw(ArgumentError("max_batches must be positive"))
+
+    max_pairs = Int(max_batches) * Int(batch_size)
+    pairs = Tuple{Vector{Int}, Vector{Int}}[]
+    buffer = Int[]
+    offset = 0
+
+    while length(pairs) < max_pairs
+        texts = fetch_rows(; dataset=_FINEWEB_DATASET, config=subset, split=split, offset=offset, length=_FINEWEB_MAX_ROWS_PER_REQUEST)
+        isempty(texts) && break
+        for text in texts
+            append!(buffer, encode(tokenizer, text))
+            _drain_next_token_pairs!(pairs, buffer, Int(seq_len), max_pairs)
+            length(pairs) >= max_pairs && break
+        end
+        offset += length(texts)
+        length(texts) < _FINEWEB_MAX_ROWS_PER_REQUEST && break
+    end
+
+    return batch_next_token_pairs(pairs, batch_size; drop_last=false)
+end
+
+fineweb_edu_batches(model_id::String, seq_len::Integer, batch_size::Integer; kwargs...) =
+    fineweb_edu_batches(MythosTokenizer(model_id), seq_len, batch_size; kwargs...)
+
+"""
+    fineweb_edu_batches_python(model_id, seq_len, batch_size; subset="sample-10BT", max_batches=8, runner=_fineweb_runner())
+
+Legacy optional Python FineWeb-Edu batch loader kept as a compatibility fallback
+while the Julia-native remote path settles.
+"""
+function fineweb_edu_batches_python(model_id::String, seq_len::Integer, batch_size::Integer; subset::String="sample-10BT", max_batches::Integer=8, runner::Cmd=_fineweb_runner())
     raw = _run_fineweb_python(model_id, seq_len, batch_size; subset=subset, max_batches=max_batches, runner=runner)
     return _parse_fineweb_batches(raw, Int(seq_len))
 end
 
-fineweb_edu_batches(tokenizer::MythosTokenizer, seq_len::Integer, batch_size::Integer; kwargs...) =
-    fineweb_edu_batches(tokenizer.model_id, seq_len, batch_size; kwargs...)
+fineweb_edu_batches_python(tokenizer::MythosTokenizer, seq_len::Integer, batch_size::Integer; kwargs...) =
+    fineweb_edu_batches_python(tokenizer.model_id, seq_len, batch_size; kwargs...)
 
 """
     LuxHeadOnlyOpenMythos

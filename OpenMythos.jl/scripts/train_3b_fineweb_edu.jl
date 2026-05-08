@@ -8,6 +8,7 @@ const TOKENIZER_MODEL_ID = get(
 )
 const USE_FINEWEB = get(ENV, "OPENMYTHOS_USE_FINEWEB_EDU", "0") == "1"
 const FINEWEB_SUBSET = get(ENV, "OPENMYTHOS_FINEWEB_SUBSET", "sample-10BT")
+const FINEWEB_BACKEND = lowercase(get(ENV, "OPENMYTHOS_FINEWEB_BACKEND", "julia_rows"))
 const FINEWEB_PARQUET_PATH = get(ENV, "OPENMYTHOS_FINEWEB_PARQUET_PATH", "")
 const TRAIN_TEXT_FILE = get(ENV, "OPENMYTHOS_TRAIN_TEXT_FILE", "")
 const TRAIN_TEXT = get(ENV, "OPENMYTHOS_TRAIN_TEXT", "")
@@ -34,7 +35,7 @@ function _default_texts()
     return [
         "OpenMythos in Julia keeps the recurrent depth transformer architecture intact.",
         "Bootstrap training currently updates the language-model head while the rest of the port stays parity-focused.",
-        "FineWeb-Edu integration is available through an optional Python streaming bridge for small smoke runs.",
+        "FineWeb-Edu integration now has Julia-native local parquet and remote rows-api smoke paths.",
         "Tokenizer batching checkpointing and learning-rate scheduling now exist in the Julia replica.",
     ]
 end
@@ -55,8 +56,14 @@ function _load_batches(tokenizer::MythosTokenizer)
             println("Loading FineWeb-Edu batches from local parquet path via Julia...")
             return fineweb_edu_batches_from_parquet(tokenizer, FINEWEB_PARQUET_PATH, SEQ_LEN, BATCH_SIZE; max_batches=FINEWEB_BATCHES)
         end
-        println("Loading FineWeb-Edu batches via Python bridge...")
-        return fineweb_edu_batches(tokenizer, SEQ_LEN, BATCH_SIZE; subset=FINEWEB_SUBSET, max_batches=FINEWEB_BATCHES)
+        if FINEWEB_BACKEND == "python"
+            println("Loading FineWeb-Edu batches via legacy Python bridge...")
+            return fineweb_edu_batches_python(tokenizer, SEQ_LEN, BATCH_SIZE; subset=FINEWEB_SUBSET, max_batches=FINEWEB_BATCHES)
+        elseif FINEWEB_BACKEND == "julia_rows"
+            println("Loading FineWeb-Edu batches from the Julia rows API path...")
+            return fineweb_edu_batches(tokenizer, SEQ_LEN, BATCH_SIZE; subset=FINEWEB_SUBSET, max_batches=FINEWEB_BATCHES)
+        end
+        error("unsupported OPENMYTHOS_FINEWEB_BACKEND=$(FINEWEB_BACKEND); use julia_rows or python")
     end
 
     texts = _load_local_texts()
@@ -131,6 +138,7 @@ function main()
                 "tokenizer_model_id" => TOKENIZER_MODEL_ID,
                 "use_fineweb" => USE_FINEWEB,
                 "fineweb_subset" => FINEWEB_SUBSET,
+                "fineweb_backend" => FINEWEB_BACKEND,
                 "fineweb_parquet_path" => FINEWEB_PARQUET_PATH,
             ),
         )
@@ -148,6 +156,7 @@ function main()
                 "tokenizer_model_id" => TOKENIZER_MODEL_ID,
                 "use_fineweb" => USE_FINEWEB,
                 "fineweb_subset" => FINEWEB_SUBSET,
+                "fineweb_backend" => FINEWEB_BACKEND,
                 "fineweb_parquet_path" => FINEWEB_PARQUET_PATH,
             ),
         )
@@ -165,6 +174,7 @@ function main()
                 "tokenizer_model_id" => TOKENIZER_MODEL_ID,
                 "use_fineweb" => USE_FINEWEB,
                 "fineweb_subset" => FINEWEB_SUBSET,
+                "fineweb_backend" => FINEWEB_BACKEND,
                 "fineweb_parquet_path" => FINEWEB_PARQUET_PATH,
             ),
         )

@@ -5,6 +5,8 @@ using LinearAlgebra
 using Random
 using Serialization
 using Statistics
+import Downloads
+import JSON3
 import Lux
 import Optimisers
 import Zygote
@@ -106,6 +108,7 @@ export MythosConfig,
        text_next_token_pairs,
        batch_next_token_pairs,
        fineweb_edu_batches,
+       fineweb_edu_batches_python,
        fineweb_edu_batches_from_parquet,
        KVCacheEnvelope,
        save_kv_cache,
