@@ -1,4 +1,3 @@
-using Parquet2
 using Test
 
 @testset "FineWeb parquet batches via Julia path" begin
@@ -12,7 +11,7 @@ using Test
                 "A second row keeps the local parquet FineWeb replacement path exercised.",
             ],
         )
-        Parquet2.writefile(path, tbl)
+        OpenMythos.TextDataCore.Parquet2.writefile(path, tbl)
 
         batches = fineweb_edu_batches_from_parquet(tok, path, 4, 1; max_batches=2)
         @test length(batches) == 2

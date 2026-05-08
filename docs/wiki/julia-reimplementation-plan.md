@@ -11,6 +11,7 @@ The workspace now has:
 - `OpenMythos.jl/` for the original recurrent package,
 - `DeepSeekv4.jl/` for the new DeepSeek V4 package,
 - `TransformerCore.jl/` for shared low-level primitives,
+- `TextDataCore.jl/` for shared Julia-native tokenizer and local text-data helpers,
 - `docs/wiki/` as shared workspace narrative documentation,
 - `docs/` as a shared `Documenter.jl` API site.
 
@@ -47,11 +48,12 @@ The OpenMythos package includes a parity-tested core model stack:
 The current state is:
 
 - `OpenMythos.jl/` is the recurrent-depth package with parity-oriented model code, a head-only Lux bootstrap trainer, a legacy mutable full-model bootstrap trainer, and a new Lux-native `LuxFullModelTrainerState` plus shared save/load wrappers on the shared trainer foundation for small GQA/MLA configs including optional shared experts; the script default now points at the Lux-native path and keeps legacy checkpoint directories isolated.
+- `TextDataCore.jl/` now holds the shared GPT/tiktoken-style BPE tokenizer implementation, vocabulary-surface extraction helpers, and the local parquet-backed next-token batch builder that were previously OpenMythos-local.
 - `DeepSeekv4.jl/` is an architecture-first package with CSA/HCA, mHC, an optional gated Engram branch, MoE routing, MTP, chunked-prefill-aware generation, tiny-config tests, a head-only bootstrap training path, and a first tiny full-model bootstrap trainer that now updates both the main LM logits path and the current auxiliary MTP heads.
 - `TransformerCore.jl/` holds the shared primitive, Lux-native layer/trainer foundation, runtime-envelope, and paged/growable cache-buffer layer.
 - the workspace source now carries public-API docstrings and a shared Documenter build for the multi-package surface.
 
-The next milestone is to refactor both model families toward a clearer Lux-native full-model training story without prematurely collapsing their model-family-specific internals into one abstraction. `TransformerCore.jl` now has the first shared Lux-native layer/trainer/checkpoint foundation, and `OpenMythos.jl` now has Lux-native attention/FFN/block/recurrent mirrors, a tied-embedding `LuxOpenMythos` shell, a first `LuxFullModelTrainerState` plus shared save/load wrappers on top of that foundation, a Julia-native tokenizer path for the currently supported GPT/tiktoken-style families, and a first Julia-native local-parquet FineWeb path; the next package-level work is to replace the remaining legacy package training/checkpoint path and then reduce the optional remote Python FineWeb bridge before reusing the same pattern in DeepSeek.
+The next milestone is to refactor both model families toward a clearer Lux-native full-model training story without prematurely collapsing their model-family-specific internals into one abstraction. `TransformerCore.jl` now has the first shared Lux-native layer/trainer/checkpoint foundation, `TextDataCore.jl` now owns the shared Julia-native tokenizer and local-parquet text-data path, and `OpenMythos.jl` now has Lux-native attention/FFN/block/recurrent mirrors, a tied-embedding `LuxOpenMythos` shell, a first `LuxFullModelTrainerState` plus shared save/load wrappers on top of that foundation; the next package-level work is to replace the remaining legacy package training/checkpoint path, reduce the optional remote Python FineWeb bridge, and then finish moving DeepSeek onto the same shared tokenizer/data and checkpoint conventions.
 
 For future DeepSeek planning, keep the source priority explicit:
 
@@ -96,6 +98,10 @@ DeepSeekv4.jl/
   src/
   test/
 TransformerCore.jl/
+  Project.toml
+  src/
+  test/
+TextDataCore.jl/
   Project.toml
   src/
   test/

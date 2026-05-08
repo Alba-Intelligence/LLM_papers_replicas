@@ -1,0 +1,19 @@
+name = "TextDataCore"
+uuid = "45258179-04e6-4202-9281-1f60cf90e7ed"
+version = "0.1.0"
+
+[deps]
+BytePairEncoding = "a4280ba5-8788-555a-8ca8-4a8c3d966a71"
+Parquet2 = "98572fba-bba0-415d-956f-fa77e587d26d"
+TransformerCore = "b57a3b10-0dc6-488f-8532-4c1c16641fe1"
+
+[compat]
+BytePairEncoding = "0.5.2"
+Parquet2 = "0.2.33"
+julia = "1.12"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]

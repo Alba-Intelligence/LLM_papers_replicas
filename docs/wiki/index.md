@@ -10,6 +10,7 @@ It is intentionally concept-first: the goal is to explain what the Python projec
 - `OpenMythos.jl/` contains the recurrent OpenMythos Julia package with its own `Project.toml`, `src/`, `test/`, and `Manifest.toml`.
 - `DeepSeekv4.jl/` contains the new DeepSeek V4 Julia package.
 - `TransformerCore.jl/` contains reusable feature-last tensor helpers, `RMSNorm`, RoPE utilities, shared Lux-native layer/trainer helpers, family/mode-aware checkpoint helpers, and the first shared KV-cache envelope utilities.
+- `TextDataCore.jl/` contains shared Julia-native tokenizer and local text-data helpers, including GPT/tiktoken-style BPE tokenizers, vocabulary-surface extraction, and parquet-backed next-token batch loading.
 - For `OpenMythos.jl`, the authoritative vendored Python reference today is `reference/private/OpenMythos`.
 - The implemented Julia slice now covers the OpenMythos primitive layer and main model stack, plus an architecture-first DeepSeek V4 package with tiny-config CSA/HCA, mHC, an optional gated Engram branch, MTP, generation smoke paths, and bootstrap training surfaces that now include both head-only trainers, a first dense full-model OpenMythos slice, and a first tiny DeepSeek full-model slice.
 - The advanced-systems runtime work now includes shared cache envelopes, lower-allocation buffer-backed cache growth, and a first true paged cache-buffer implementation beneath the same outer runtime API.
@@ -74,7 +75,7 @@ The Julia replica now has a real bootstrap training path:
 - warmup + cosine learning-rate scheduling,
 - resumable checkpointing,
 - a small Julia `OpenMythos.jl/scripts/train_3b_fineweb_edu.jl` entrypoint,
-- local-text smoke training and an optional FineWeb-Edu Python streaming bridge,
+- local-text smoke training, a shared Julia-native tokenizer/text-data package, and an optional FineWeb-Edu Python streaming bridge,
 - a `LuxHeadOnlyOpenMythos` layer backed by `Optimisers.AdamW`,
 - a broadened OpenMythos full-model trainer/checkpoint path for small GQA/MLA configs, including tiny sparse routed-expert setups with optional shared experts,
 - a parallel `LuxHeadOnlyDeepSeekV4` bootstrap path plus a first tiny `DeepSeekFullModelTrainerState` path and `DeepSeekv4.jl/scripts/train_deepseek_tiny.jl`,

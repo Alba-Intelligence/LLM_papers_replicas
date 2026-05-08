@@ -83,7 +83,7 @@ model = DeepSeekV4Model(cfg)
 
 ## 5. Use the tokenizer
 
-The tokenizer is now package-specific but Julia-native for the currently supported GPT/tiktoken-style families. `OpenMythos.jl` uses `BytePairEncoding.jl` for native BPE/tokenization instead of a Python subprocess bridge. The remaining Python bridge in the training path is only the optional remote FineWeb-Edu streaming loader; local parquet FineWeb-style batches now have a Julia-native path.
+The tokenizer is now package-specific at the API boundary but backed by a shared Julia-native `TextDataCore.jl` implementation for the currently supported GPT/tiktoken-style families. `OpenMythos.jl` now reuses that shared package for native BPE/tokenization and local parquet text batching instead of keeping those helpers package-local. The remaining Python bridge in the training path is only the optional remote FineWeb-Edu streaming loader.
 
 ```julia
 using OpenMythos
@@ -109,6 +109,8 @@ Currently supported native tokenizer families include:
 - `cl100k_base`
 - `o200k_base`
 - `gpt-oss` aliases via an `o200k_harmony`-style vocabulary wrapper
+
+That shared tokenizer/data surface is now also available to other model packages in the workspace through `TextDataCore.jl`.
 
 ## 6. Reuse a prefetched KV cache
 
@@ -185,7 +187,7 @@ Useful environment variables:
 | `OPENMYTHOS_TRAIN_SHARED_EXPERTS`     | shared experts in full-model mode                                                                        | `0`                                    |
 | `OPENMYTHOS_TRAIN_EXPERTS_PER_TOKEN`  | routed experts selected per token in full-model mode                                                     | `1`                                    |
 | `OPENMYTHOS_TRAIN_CKPT_DIR`           | checkpoint root directory (`openmythos/full_model_lux` for Lux mode; `<mode>/` subdirs for legacy modes) | `checkpoints`                          |
-| `OPENMYTHOS_USE_FINEWEB_EDU`          | use FineWeb-Edu data path (local parquet if set, otherwise Python bridge)                               | `0`                                    |
+| `OPENMYTHOS_USE_FINEWEB_EDU`          | use FineWeb-Edu data path (local parquet if set, otherwise Python bridge)                                | `0`                                    |
 | `OPENMYTHOS_FINEWEB_PARQUET_PATH`     | local FineWeb parquet file or directory for the Julia-native path                                        | empty                                  |
 | `OPENMYTHOS_FINEWEB_SUBSET`           | FineWeb-Edu subset for the Python bridge                                                                 | `sample-10BT`                          |
 | `OPENMYTHOS_FINEWEB_BATCHES`          | number of FineWeb batches to fetch                                                                       | `max(total_steps, 1)`                  |

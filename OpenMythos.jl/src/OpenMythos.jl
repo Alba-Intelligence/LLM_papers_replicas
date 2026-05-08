@@ -1,15 +1,14 @@
 module OpenMythos
 
 using Base64
-using BytePairEncoding
 using LinearAlgebra
-using Parquet2
 using Random
 using Serialization
 using Statistics
 import Lux
 import Optimisers
 import Zygote
+import TextDataCore
 import TransformerCore
 using TransformerCore: _sigmoid,
                        _silu,

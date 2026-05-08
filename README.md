@@ -24,6 +24,9 @@ The most actively documented subworkspace currently centers on model-family port
 - `TransformerCore.jl/`
   - shared infrastructure for model-family ports
   - covers feature-last tensor helpers, embedding/sampling helpers, `RMSNorm`, RoPE, shared Lux-native training/checkpoint utilities, growable cache buffers, and serialized KV-cache envelopes
+- `TextDataCore.jl/`
+  - shared Julia-native tokenizer and local text-data helpers for model packages
+  - covers GPT/tiktoken-style BPE tokenizers, vocabulary surface extraction, and parquet-backed next-token batch loading
 - `docs/wiki/`
   - shared architecture and implementation notes for the model-port workspace
 
@@ -59,6 +62,13 @@ julia --project=. -q -e 'using Pkg; Pkg.test()'
 
 ```bash
 cd TransformerCore.jl
+julia --project=. -q -e 'using Pkg; Pkg.test()'
+```
+
+### TextDataCore tests
+
+```bash
+cd TextDataCore.jl
 julia --project=. -q -e 'using Pkg; Pkg.test()'
 ```
 
