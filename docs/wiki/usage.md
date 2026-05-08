@@ -174,7 +174,7 @@ Useful environment variables:
 | `OPENMYTHOS_TRAIN_N_EXPERTS`          | routed experts in full-model mode                                            | `1`                                    |
 | `OPENMYTHOS_TRAIN_SHARED_EXPERTS`     | shared experts in full-model mode                                            | `0`                                    |
 | `OPENMYTHOS_TRAIN_EXPERTS_PER_TOKEN`  | routed experts selected per token in full-model mode                         | `1`                                    |
-| `OPENMYTHOS_TRAIN_CKPT_DIR`           | checkpoint root directory                                                     | `checkpoints`                          |
+| `OPENMYTHOS_TRAIN_CKPT_DIR`           | checkpoint root directory (`openmythos/full_model_lux` for Lux mode; `<mode>/` subdirs for legacy modes) | `checkpoints`                          |
 | `OPENMYTHOS_USE_FINEWEB_EDU`          | use FineWeb-Edu batch bridge                                                 | `0`                                    |
 | `OPENMYTHOS_FINEWEB_SUBSET`           | FineWeb-Edu subset                                                           | `sample-10BT`                          |
 | `OPENMYTHOS_FINEWEB_BATCHES`          | number of FineWeb batches to fetch                                           | `max(total_steps, 1)`                  |
@@ -195,6 +195,8 @@ Mode aliases:
 - `OPENMYTHOS_TRAIN_MODE=full_model_lux` -> explicit Lux-native full-model path
 - `OPENMYTHOS_TRAIN_MODE=full_model_legacy` -> legacy mutable full-model trainer
 - `OPENMYTHOS_TRAIN_MODE=head_only` -> legacy head-only trainer
+
+The script now keeps Lux full-model checkpoints under the shared family/mode-aware layout and isolates legacy modes into separate subdirectories under `OPENMYTHOS_TRAIN_CKPT_DIR` to avoid mixed checkpoint namespaces.
 
 Example FineWeb-Edu-backed smoke run:
 

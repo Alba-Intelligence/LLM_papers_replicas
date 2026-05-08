@@ -46,7 +46,7 @@ The OpenMythos package includes a parity-tested core model stack:
 
 The current state is:
 
-- `OpenMythos.jl/` is the recurrent-depth package with parity-oriented model code, a head-only Lux bootstrap trainer, a legacy mutable full-model bootstrap trainer, and a new Lux-native `LuxFullModelTrainerState` plus shared save/load wrappers on the shared trainer foundation for small GQA/MLA configs including optional shared experts.
+- `OpenMythos.jl/` is the recurrent-depth package with parity-oriented model code, a head-only Lux bootstrap trainer, a legacy mutable full-model bootstrap trainer, and a new Lux-native `LuxFullModelTrainerState` plus shared save/load wrappers on the shared trainer foundation for small GQA/MLA configs including optional shared experts; the script default now points at the Lux-native path and keeps legacy checkpoint directories isolated.
 - `DeepSeekv4.jl/` is an architecture-first package with CSA/HCA, mHC, an optional gated Engram branch, MoE routing, MTP, chunked-prefill-aware generation, tiny-config tests, a head-only bootstrap training path, and a first tiny full-model bootstrap trainer that now updates both the main LM logits path and the current auxiliary MTP heads.
 - `TransformerCore.jl/` holds the shared primitive, Lux-native layer/trainer foundation, runtime-envelope, and paged/growable cache-buffer layer.
 - the workspace source now carries public-API docstrings and a shared Documenter build for the multi-package surface.

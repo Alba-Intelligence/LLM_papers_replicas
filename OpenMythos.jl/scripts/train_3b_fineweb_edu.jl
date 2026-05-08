@@ -60,6 +60,8 @@ function _load_batches(tokenizer::MythosTokenizer)
     return batch_next_token_pairs(pairs, BATCH_SIZE; drop_last=false)
 end
 
+_legacy_ckpt_dir(train_mode::AbstractString) = joinpath(CKPT_DIR, train_mode)
+
 function main()
     TRAIN_MODE in ("head_only", "full_model_lux", "full_model_legacy") ||
         error("unsupported OPENMYTHOS_TRAIN_MODE=$(RAW_TRAIN_MODE); use head_only, full_model, full_model_lux, or full_model_legacy")
@@ -84,7 +86,7 @@ function main()
     latest = if TRAIN_MODE == "full_model_lux"
         latest_checkpoint(CKPT_DIR; family="openmythos", mode="full_model_lux")
     else
-        latest_checkpoint(CKPT_DIR)
+        latest_checkpoint(_legacy_ckpt_dir(TRAIN_MODE))
     end
 
     state = if latest === nothing
@@ -133,7 +135,7 @@ function main()
             total_steps=TOTAL_STEPS,
             n_loops=cfg.max_loop_iters,
             log_every=1,
-            ckpt_dir=CKPT_DIR,
+            ckpt_dir=_legacy_ckpt_dir(TRAIN_MODE),
             ckpt_every=CKPT_EVERY,
             keep_last=KEEP_LAST,
             checkpoint_metadata=Dict(
@@ -149,7 +151,7 @@ function main()
             total_steps=TOTAL_STEPS,
             n_loops=cfg.max_loop_iters,
             log_every=1,
-            ckpt_dir=CKPT_DIR,
+            ckpt_dir=_legacy_ckpt_dir(TRAIN_MODE),
             ckpt_every=CKPT_EVERY,
             keep_last=KEEP_LAST,
             checkpoint_metadata=Dict(
@@ -162,7 +164,7 @@ function main()
 
     final_latest = TRAIN_MODE == "full_model_lux" ?
         latest_checkpoint(CKPT_DIR; family="openmythos", mode="full_model_lux") :
-        latest_checkpoint(CKPT_DIR)
+        latest_checkpoint(_legacy_ckpt_dir(TRAIN_MODE))
 
     println("Final loss: $(round(metrics.loss; digits=4))")
     println("Latest checkpoint: $(final_latest)")

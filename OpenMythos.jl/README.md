@@ -80,6 +80,8 @@ The mode aliases are:
 - `OPENMYTHOS_TRAIN_MODE=full_model_legacy` -> legacy mutable full-model trainer
 - `OPENMYTHOS_TRAIN_MODE=head_only` -> legacy head-only trainer
 
+The script now stores Lux full-model checkpoints under the shared family/mode-aware layout and isolates legacy modes into their own subdirectories under `OPENMYTHOS_TRAIN_CKPT_DIR` so checkpoint namespaces do not collide.
+
 To exercise the current Lux-native dense full-model bootstrap slice explicitly:
 
 ```bash
