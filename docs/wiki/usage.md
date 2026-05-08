@@ -163,21 +163,21 @@ julia --project=. scripts/train_3b_fineweb_edu.jl
 
 Useful environment variables:
 
-| Variable                              | Meaning                                              | Default                                |
-| ------------------------------------- | ---------------------------------------------------- | -------------------------------------- |
-| `OPENMYTHOS_TRAIN_TOKENIZER_MODEL_ID` | tokenizer model ID                                                           | `openai/gpt-oss-20b` unless overridden |
-| `OPENMYTHOS_TRAIN_MODE`               | training mode (`full_model`, `full_model_lux`, `full_model_legacy`, `head_only`) | `full_model`                           |
-| `OPENMYTHOS_TRAIN_TOTAL_STEPS`        | total bootstrap steps                                                        | `8`                                    |
-| `OPENMYTHOS_TRAIN_SEQ_LEN`            | sequence length                                                              | `32`                                   |
-| `OPENMYTHOS_TRAIN_BATCH_SIZE`         | batch size                                                                   | `2`                                    |
-| `OPENMYTHOS_TRAIN_ATTN_TYPE`          | attention backend (`gqa` or `mla`)                                           | `gqa`                                  |
-| `OPENMYTHOS_TRAIN_N_EXPERTS`          | routed experts in full-model mode                                            | `1`                                    |
-| `OPENMYTHOS_TRAIN_SHARED_EXPERTS`     | shared experts in full-model mode                                            | `0`                                    |
-| `OPENMYTHOS_TRAIN_EXPERTS_PER_TOKEN`  | routed experts selected per token in full-model mode                         | `1`                                    |
+| Variable                              | Meaning                                                                                                  | Default                                |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| `OPENMYTHOS_TRAIN_TOKENIZER_MODEL_ID` | tokenizer model ID                                                                                       | `openai/gpt-oss-20b` unless overridden |
+| `OPENMYTHOS_TRAIN_MODE`               | training mode (`full_model`, `full_model_lux`, `full_model_legacy`, `head_only`)                         | `full_model`                           |
+| `OPENMYTHOS_TRAIN_TOTAL_STEPS`        | total bootstrap steps                                                                                    | `8`                                    |
+| `OPENMYTHOS_TRAIN_SEQ_LEN`            | sequence length                                                                                          | `32`                                   |
+| `OPENMYTHOS_TRAIN_BATCH_SIZE`         | batch size                                                                                               | `2`                                    |
+| `OPENMYTHOS_TRAIN_ATTN_TYPE`          | attention backend (`gqa` or `mla`)                                                                       | `gqa`                                  |
+| `OPENMYTHOS_TRAIN_N_EXPERTS`          | routed experts in full-model mode                                                                        | `1`                                    |
+| `OPENMYTHOS_TRAIN_SHARED_EXPERTS`     | shared experts in full-model mode                                                                        | `0`                                    |
+| `OPENMYTHOS_TRAIN_EXPERTS_PER_TOKEN`  | routed experts selected per token in full-model mode                                                     | `1`                                    |
 | `OPENMYTHOS_TRAIN_CKPT_DIR`           | checkpoint root directory (`openmythos/full_model_lux` for Lux mode; `<mode>/` subdirs for legacy modes) | `checkpoints`                          |
-| `OPENMYTHOS_USE_FINEWEB_EDU`          | use FineWeb-Edu batch bridge                                                 | `0`                                    |
-| `OPENMYTHOS_FINEWEB_SUBSET`           | FineWeb-Edu subset                                                           | `sample-10BT`                          |
-| `OPENMYTHOS_FINEWEB_BATCHES`          | number of FineWeb batches to fetch                                           | `max(total_steps, 1)`                  |
+| `OPENMYTHOS_USE_FINEWEB_EDU`          | use FineWeb-Edu batch bridge                                                                             | `0`                                    |
+| `OPENMYTHOS_FINEWEB_SUBSET`           | FineWeb-Edu subset                                                                                       | `sample-10BT`                          |
+| `OPENMYTHOS_FINEWEB_BATCHES`          | number of FineWeb batches to fetch                                                                       | `max(total_steps, 1)`                  |
 
 Example local-text smoke run using the default Lux-native full-model path:
 
