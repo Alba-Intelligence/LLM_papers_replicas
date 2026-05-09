@@ -28,7 +28,7 @@ The most actively documented subworkspace currently centers on model-family port
   - shared Julia-native tokenizer and local text-data helpers for model packages
   - covers GPT/tiktoken-style BPE tokenizers, vocabulary surface extraction, and parquet-backed next-token batch loading
 - `docs/wiki/`
-  - shared architecture and implementation notes for the model-port workspace
+  - shared architecture and implementation notes for the model-port workspace, including the broader comparison-driven architecture inventory derived from Sebastian Raschka's PDF/article and YAML registry
 
 ### Other research/utility packages
 
@@ -84,5 +84,6 @@ julia --project=. scripts/train_deepseek_tiny.jl
 ## Documentation
 
 - model-port documentation currently lives under `docs/wiki/`
+- `docs/wiki/llm-architecture-comparison-map.md` records the PDF-scoped architecture inventory and the current shared-abstraction plan for future family ports
 - package-local READMEs provide more detail for each subproject
 - notebooks and scripts under the repo root capture more exploratory work

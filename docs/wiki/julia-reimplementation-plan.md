@@ -2,7 +2,9 @@
 
 ## Goal
 
-Grow this repository as a shared Julia workspace that can host multiple model families without losing the architectural core of either one.
+Grow this repository as a shared Julia workspace that can host multiple model families without losing the architectural core of any active target family.
+
+The current implementation nucleus is still OpenMythos plus DeepSeek V4, but the broader family inventory is now tracked in [Big LLM architecture comparison map](llm-architecture-comparison-map.md) based on Sebastian Raschka's comparison PDF/article and the matching YAML registry.
 
 ## Current implementation status
 
@@ -53,7 +55,7 @@ The current state is:
 - `TransformerCore.jl/` holds the shared primitive, Lux-native layer/trainer foundation, runtime-envelope, and paged/growable cache-buffer layer.
 - the workspace source now carries public-API docstrings and a shared Documenter build for the multi-package surface.
 
-The next milestone is to refactor both model families toward a clearer Lux-native full-model training story without prematurely collapsing their model-family-specific internals into one abstraction. `TransformerCore.jl` now has the first shared Lux-native layer/trainer/checkpoint foundation, `TextDataCore.jl` now owns the shared Julia-native tokenizer and local-parquet text-data path, `OpenMythos.jl` now has Lux-native attention/FFN/block/recurrent mirrors plus a first `LuxFullModelTrainerState` on top of that foundation plus Julia-native FineWeb rows-api and remote parquet-shard paths, and `DeepSeekv4.jl` now shares the tokenizer/data path plus the family/mode-aware checkpoint conventions while keeping a DeepSeek-specific full-model loss because of MTP. The next package-level work is to replace the remaining legacy package training/checkpoint path and broaden the Julia-native remote dataset story beyond the current bootstrap download loop.
+The next milestone is twofold: first, keep the existing OpenMythos and DeepSeek work moving toward a clearer Lux-native full-model training story; second, use the new PDF-scoped comparison map to decide which additional family packages and shared abstraction packages should land next. `TransformerCore.jl` now has the first shared Lux-native layer/trainer/checkpoint foundation, `TextDataCore.jl` now owns the shared Julia-native tokenizer and local-parquet text-data path, `OpenMythos.jl` now has Lux-native attention/FFN/block/recurrent mirrors plus a first `LuxFullModelTrainerState` on top of that foundation plus Julia-native FineWeb rows-api and remote parquet-shard paths, and `DeepSeekv4.jl` now shares the tokenizer/data path plus the family/mode-aware checkpoint conventions while keeping a DeepSeek-specific full-model loss because of MTP. The next package-level work is to replace the remaining legacy package training/checkpoint path, broaden the Julia-native remote dataset story beyond the current bootstrap download loop, and start adding comparison-driven family implementations where the shared boundaries are clear.
 
 For future DeepSeek planning, keep the source priority explicit:
 
@@ -194,8 +196,8 @@ These should not block the current Julia milestone:
 
 The best next vertical slice is:
 
-1. continue the OpenMythos Lux refactor by replacing the remaining legacy package training/checkpoint internals with the new `LuxOpenMythos` + `TransformerCore.jl` trainer/checkpoint foundation and make full-model training the primary path,
-2. broaden the OpenMythos Julia-native remote dataset story beyond the current bootstrap remote parquet download loop,
-3. preserve the shared runtime envelope while page-aware attention and deeper serving work remain model-specific underneath,
-4. expand distributed/runtime work once the single-process story is deeper,
-5. reuse the same shared training surface inside DeepSeek after the OpenMythos refactor is stable.
+1. use the comparison map to choose the first additional family package or broader DeepSeek-family split and the minimum reusable abstractions it needs,
+2. keep the OpenMythos Lux refactor moving by replacing the remaining legacy package training/checkpoint internals with the new `LuxOpenMythos` + `TransformerCore.jl` trainer/checkpoint foundation,
+3. broaden the shared attention/norm/MoE/runtime surfaces only when the second concrete family implementation justifies the extraction,
+4. preserve the shared runtime envelope while page-aware attention and deeper serving work remain model-specific underneath,
+5. expand distributed/runtime work once the single-process story is deeper.

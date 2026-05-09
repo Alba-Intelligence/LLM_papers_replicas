@@ -2,9 +2,19 @@
 
 This page consolidates the references currently shaping the Julia workspace:
 
+- the PDF/article/YAML materials driving the broader architecture-comparison program,
 - citations inherited from the Python OpenMythos project,
 - DeepSeek V4 materials used for the new package,
 - dataset and implementation references that inform future training/runtime work.
+
+## Architecture comparison materials
+
+| Topic | Reference | URL / Path | Used for |
+| --- | --- | --- | --- |
+| PDF snapshot of the comparison article | Sebastian Raschka, *The Big LLM Architecture Comparison* | `reference/private/The Big LLM Architecture Comparison.pdf` | workspace-level architecture inventory and future family scoping |
+| Live article version | Sebastian Raschka, *The Big LLM Architecture Comparison* | https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison | cross-checking section order, updates, and explanatory text |
+| Structured model registry | `Big-LLM-Architecture-models.yml` | `reference/private/Big-LLM-Architecture-models.yml` | authoritative model names, config links, tech-report links, and metadata for PDF-covered families |
+| Gemma 3n authority for the PDF scope | Google Developers Blog, *Introducing Gemma 3n* | https://developers.googleblog.com/en/introducing-gemma-3n/ | authority for the Gemma 3n section referenced by the comparison map |
 
 ## DeepSeek V4 materials
 
@@ -30,11 +40,11 @@ These references help explain the late-2025 / early-2026 research trajectory aro
 
 | Topic | Reference | URL | Referenced in |
 | --- | --- | --- | --- |
-| Recurrent-Depth Transformer | Loop, Think, & Generalize | https://arxiv.org/pdf/2604.07822 | `README.md`, `docs/open_mythos.md` |
-| Stable looped training | Parcae / Scaling Laws for Stable Looped Language Models | https://arxiv.org/abs/2604.12946 | `README.md`, `docs/open_mythos.md`, `open_mythos/main.py` |
-| Looped reasoning | Reasoning with Latent Thoughts | https://arxiv.org/abs/2502.17416 | `README.md`, `docs/open_mythos.md`, `open_mythos/main.py` |
-| ACT basis | Universal Transformers | https://arxiv.org/pdf/1807.03819 | `README.md`, `docs/open_mythos.md` |
-| Continuous latent reasoning | COCONUT / Training Large Language Models to Reason in a Continuous Latent Space | https://arxiv.org/abs/2412.06769 | `README.md`, `docs/open_mythos.md` |
+| Recurrent-Depth Transformer | Loop, Think, & Generalize | https://arxiv.org/pdf/2604.07822 | `README.md`, `reference/private/OpenMythos/docs/open_mythos.md` |
+| Stable looped training | Parcae / Scaling Laws for Stable Looped Language Models | https://arxiv.org/abs/2604.12946 | `README.md`, `reference/private/OpenMythos/docs/open_mythos.md`, `reference/private/OpenMythos/open_mythos/main.py` |
+| Looped reasoning | Reasoning with Latent Thoughts | https://arxiv.org/abs/2502.17416 | `README.md`, `reference/private/OpenMythos/docs/open_mythos.md`, `reference/private/OpenMythos/open_mythos/main.py` |
+| ACT basis | Universal Transformers | https://arxiv.org/pdf/1807.03819 | `README.md`, `reference/private/OpenMythos/docs/open_mythos.md` |
+| Continuous latent reasoning | COCONUT / Training Large Language Models to Reason in a Continuous Latent Space | https://arxiv.org/abs/2412.06769 | `README.md`, `reference/private/OpenMythos/docs/open_mythos.md` |
 | Recurrent alternatives | Hyperloop Transformers | https://arxiv.org/abs/2604.21254 | `README.md` |
 | Recurrent alternatives | The Recurrent Transformer: Greater Effective Depth and Efficient Decoding | https://arxiv.org/abs/2604.21215 | `README.md` |
 
@@ -42,31 +52,31 @@ These references help explain the late-2025 / early-2026 research trajectory aro
 
 | Topic | Reference | URL | Referenced in |
 | --- | --- | --- | --- |
-| DeepSeek V4 predecessor attention lineage | DeepSeek-V2 | https://arxiv.org/abs/2405.04434 | `docs/open_mythos.md`, `open_mythos/main.py`, DeepSeek V4 implementation context |
-| MLA | DeepSeek-V2 | https://arxiv.org/abs/2405.04434 | `docs/open_mythos.md`, `open_mythos/main.py` |
-| GQA | Ainslie et al., 2023 | https://arxiv.org/abs/2305.13245 | `README.md`, `docs/open_mythos.md`, `open_mythos/main.py` |
-| Flash Attention 2 | Dao et al., 2023 | cited by name in repo | `README.md`, `open_mythos/main.py` |
-| MoE FFN | DeepSeekMoE | https://arxiv.org/abs/2401.06066 | `README.md`, `docs/open_mythos.md`, `open_mythos/main.py`, `open_mythos/moda.py` |
-| Depth-wise LoRA | Relaxed Recursive Transformers | https://arxiv.org/pdf/2410.20672 | `README.md`, `docs/open_mythos.md`, `open_mythos/main.py` |
-| RMSNorm | Zhang and Sennrich, 2019 | https://arxiv.org/abs/1910.07467 | `docs/open_mythos.md`, `open_mythos/main.py` |
-| RoPE | Su et al., 2021 | https://arxiv.org/abs/2104.09864 | `docs/open_mythos.md` |
-| ACT | Graves, 2016 | https://arxiv.org/abs/1603.08983 | `docs/open_mythos.md`, `open_mythos/main.py` |
+| DeepSeek V4 predecessor attention lineage | DeepSeek-V2 | https://arxiv.org/abs/2405.04434 | `reference/private/OpenMythos/docs/open_mythos.md`, `reference/private/OpenMythos/open_mythos/main.py`, DeepSeek V4 implementation context |
+| MLA | DeepSeek-V2 | https://arxiv.org/abs/2405.04434 | `reference/private/OpenMythos/docs/open_mythos.md`, `reference/private/OpenMythos/open_mythos/main.py` |
+| GQA | Ainslie et al., 2023 | https://arxiv.org/abs/2305.13245 | `README.md`, `reference/private/OpenMythos/docs/open_mythos.md`, `reference/private/OpenMythos/open_mythos/main.py` |
+| Flash Attention 2 | Dao et al., 2023 | cited by name in repo | `README.md`, `reference/private/OpenMythos/open_mythos/main.py` |
+| MoE FFN | DeepSeekMoE | https://arxiv.org/abs/2401.06066 | `README.md`, `reference/private/OpenMythos/docs/open_mythos.md`, `reference/private/OpenMythos/open_mythos/main.py`, `reference/private/OpenMythos/open_mythos/moda.py` |
+| Depth-wise LoRA | Relaxed Recursive Transformers | https://arxiv.org/pdf/2410.20672 | `README.md`, `reference/private/OpenMythos/docs/open_mythos.md`, `reference/private/OpenMythos/open_mythos/main.py` |
+| RMSNorm | Zhang and Sennrich, 2019 | https://arxiv.org/abs/1910.07467 | `reference/private/OpenMythos/docs/open_mythos.md`, `reference/private/OpenMythos/open_mythos/main.py` |
+| RoPE | Su et al., 2021 | https://arxiv.org/abs/2104.09864 | `reference/private/OpenMythos/docs/open_mythos.md` |
+| ACT | Graves, 2016 | https://arxiv.org/abs/1603.08983 | `reference/private/OpenMythos/docs/open_mythos.md`, `reference/private/OpenMythos/open_mythos/main.py` |
 
 ## MoDA branch references
 
 | Topic | Reference | URL | Referenced in |
 | --- | --- | --- | --- |
-| MoDA attention | Mixture-of-Depths Attention | https://arxiv.org/abs/2603.15619 | `README.md`, `open_mythos/moda.py` |
-| DeepSeek V3 implementation reference | DeepSeek-V3 repo | https://github.com/deepseek-ai/DeepSeek-V3 | `open_mythos/moda.py` |
-| MoDA kernel reference | hustvl/MoDA | https://github.com/hustvl/MoDA | `open_mythos/moda.py` |
+| MoDA attention | Mixture-of-Depths Attention | https://arxiv.org/abs/2603.15619 | `README.md`, `reference/private/OpenMythos/open_mythos/moda.py` |
+| DeepSeek V3 implementation reference | DeepSeek-V3 repo | https://github.com/deepseek-ai/DeepSeek-V3 | `reference/private/OpenMythos/open_mythos/moda.py` |
+| MoDA kernel reference | hustvl/MoDA | https://github.com/hustvl/MoDA | `reference/private/OpenMythos/open_mythos/moda.py` |
 
 ## Datasets
 
 | Dataset | URL | Referenced in |
 | --- | --- | --- |
-| FineWeb-Edu | https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu | `docs/datasets.md`, `training/3b_fine_web_edu.py` |
-| OpenHermes 2.5 | https://huggingface.co/datasets/teknium/OpenHermes-2.5 | `docs/datasets.md` |
-| OpenWebMath | https://huggingface.co/datasets/open-web-math/open-web-math | `docs/datasets.md` |
+| FineWeb-Edu | https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu | `reference/private/OpenMythos/docs/datasets.md`, `reference/private/OpenMythos/training/3b_fine_web_edu.py` |
+| OpenHermes 2.5 | https://huggingface.co/datasets/teknium/OpenHermes-2.5 | `reference/private/OpenMythos/docs/datasets.md` |
+| OpenWebMath | https://huggingface.co/datasets/open-web-math/open-web-math | `reference/private/OpenMythos/docs/datasets.md` |
 
 ## Project and implementation references
 

@@ -1,8 +1,10 @@
-# OpenMythos Julia Wiki
+# Julia model-family replication wiki
 
-This wiki is the narrative spine for the Julia reimplementation of the vendored OpenMythos Python reference in `reference/private/OpenMythos`.
+This wiki is the narrative spine for the repository's Julia model-family replication workspace.
 
-It is intentionally concept-first: the goal is to explain what the Python project is doing, what parts matter for the port, and how the Julia codebase should grow without forcing readers to reverse-engineer `main.py` from scratch.
+It started as documentation for the vendored OpenMythos Python reference in `reference/private/OpenMythos`, but it now also tracks the architecture-first DeepSeek work and a broader comparison-driven replication program based on `reference/private/The Big LLM Architecture Comparison.pdf` plus `reference/private/Big-LLM-Architecture-models.yml`.
+
+It is intentionally concept-first: the goal is to explain what the active source materials are, what parts matter for the Julia implementations, and how the workspace should grow without forcing readers to reconstruct the repository history from scratch.
 
 ## Current repository state
 
@@ -11,6 +13,7 @@ It is intentionally concept-first: the goal is to explain what the Python projec
 - `DeepSeekv4.jl/` contains the new DeepSeek V4 Julia package.
 - `TransformerCore.jl/` contains reusable feature-last tensor helpers, `RMSNorm`, RoPE utilities, shared Lux-native layer/trainer helpers, family/mode-aware checkpoint helpers, and the first shared KV-cache envelope utilities.
 - `TextDataCore.jl/` contains shared Julia-native tokenizer and local text-data helpers, including GPT/tiktoken-style BPE tokenizers, vocabulary-surface extraction, and parquet-backed next-token batch loading.
+- the workspace now also keeps a comparison-driven architecture inventory rooted in `reference/private/The Big LLM Architecture Comparison.pdf` and `reference/private/Big-LLM-Architecture-models.yml`; for that expansion track, only the PDF/article-covered families are in active scope by default.
 - For `OpenMythos.jl`, the authoritative vendored Python reference today is `reference/private/OpenMythos`.
 - The implemented Julia slice now covers the OpenMythos primitive layer and main model stack, plus an architecture-first DeepSeek V4 package with tiny-config CSA/HCA, mHC, an optional gated Engram branch, MTP, generation smoke paths, and bootstrap training surfaces that now include both head-only trainers, a first dense full-model OpenMythos slice, and a first tiny DeepSeek full-model slice.
 - The advanced-systems runtime work now includes shared cache envelopes, lower-allocation buffer-backed cache growth, and a first true paged cache-buffer implementation beneath the same outer runtime API.
@@ -19,21 +22,22 @@ It is intentionally concept-first: the goal is to explain what the Python projec
 
 ## Reading order
 
-1. [Usage](usage.md) - how to actually run the current Julia package.
-2. [Architecture](architecture.md) - the model we are actually porting.
-3. [Python reference map](python-reference-map.md) - which Python OpenMythos files matter and how they translate into Julia work.
-4. [DeepSeek V4 reference map](deepseek-v4-reference-map.md) - which external DeepSeek materials map to which Julia files.
-5. [References](references.md) - papers, datasets, and implementation references now used across both model families.
-6. [DeepSeek V4 architecture](deepseek-v4-architecture.md) - the current DeepSeek V4 package surface and its deliberate deferrals.
-7. [Multi-package workspace](multi-model-repo-plan.md) - how the Julia workspace is split across packages.
-8. [Julia reimplementation plan](julia-reimplementation-plan.md) - current status and the remaining engineering phases.
-9. [HypergraphReasoning documentation](hypergraph-reasoning.md) - the integrated legacy Typst and specification material for the HypergraphReasoning Julia replication.
+1. [Usage](usage.md) - how to actually run the current Julia packages.
+2. [Architecture](architecture.md) - the workspace architecture that already exists.
+3. [Big LLM architecture comparison map](llm-architecture-comparison-map.md) - the PDF-scoped architecture inventory and shared-abstraction map for future family ports.
+4. [Python reference map](python-reference-map.md) - which Python OpenMythos files matter and how they translate into Julia work.
+5. [DeepSeek V4 reference map](deepseek-v4-reference-map.md) - which external DeepSeek materials map to which Julia files.
+6. [References](references.md) - papers, datasets, and implementation references now used across model families.
+7. [DeepSeek V4 architecture](deepseek-v4-architecture.md) - the current DeepSeek V4 package surface and its deliberate deferrals.
+8. [Multi-package workspace](multi-model-repo-plan.md) - how the Julia workspace is split across packages.
+9. [Julia reimplementation plan](julia-reimplementation-plan.md) - current status and the remaining engineering phases.
+10. [HypergraphReasoning documentation](hypergraph-reasoning.md) - the integrated legacy Typst and specification material for the HypergraphReasoning Julia replication.
 
 There is also a small Pluto notebook example at `notebooks/openmythos/small_example.jl`.
 
 ## Big picture
 
-The main OpenMythos path is a Recurrent-Depth Transformer:
+The deepest currently implemented path is still the OpenMythos recurrent-depth transformer:
 
 ```text
 tokens
@@ -44,7 +48,7 @@ tokens
   -> norm + lm head
 ```
 
-The recurrent block is the center of gravity. It combines:
+The recurrent block is the center of gravity for the current OpenMythos package. It combines:
 
 - shared transformer weights across loop iterations,
 - stable input injection,
@@ -53,13 +57,16 @@ The recurrent block is the center of gravity. It combines:
 - MoE feed-forward routing,
 - switchable GQA or MLA attention.
 
-That combination is what the Julia port should preserve first. Everything else is secondary.
+That combination is what the Julia OpenMythos port should preserve first.
+
+At the workspace level, however, it is no longer the only active architecture direction. The new comparison map records the broader set of decoder families, MoE variants, norm policies, sliding-window layouts, linear/state-space hybrids, and long-context attention tricks that the repository is now expected to absorb over time.
 
 ## Scope guidance
 
-- Treat `reference/private/OpenMythos/open_mythos/main.py` as the behavioral core.
-- Treat `reference/private/OpenMythos/docs/open_mythos.md` as the clearest architecture narrative.
-- Treat `reference/private/OpenMythos/open_mythos/moda.py` as a secondary experimental branch, not the first porting target.
+- Treat `reference/private/OpenMythos/open_mythos/main.py` as the behavioral core for OpenMythos-specific work.
+- Treat `reference/private/OpenMythos/docs/open_mythos.md` as the clearest OpenMythos architecture narrative.
+- Treat `reference/private/OpenMythos/open_mythos/moda.py` as a secondary experimental branch, not the first OpenMythos porting target.
+- For broader family work, use `llm-architecture-comparison-map.md` to decide scope before touching code.
 - Port invariants before porting scale.
 - Keep the wiki shared across packages even as Julia implementation code moves into package subdirectories.
 

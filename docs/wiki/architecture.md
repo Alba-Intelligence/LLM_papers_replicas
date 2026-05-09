@@ -19,6 +19,8 @@ DeepSeekv4.jl
 
 The shared wiki stays at the repository root because the important design questions span package boundaries.
 
+For the broader architecture-expansion track driven by Sebastian Raschka's comparison article/PDF, see [Big LLM architecture comparison map](llm-architecture-comparison-map.md). This page stays focused on the architecture that is already implemented in the repository, whereas the comparison map records the wider family inventory and future shared-abstraction seams.
+
 ## OpenMythos architecture
 
 For `OpenMythos.jl`, the authoritative vendored Python implementation still lives in `reference/private/OpenMythos/open_mythos/main.py`.
@@ -203,4 +205,4 @@ For DeepSeek V4, the Julia package currently uses tiny-config invariants:
 - FP4 QAT
 - contextual parallelism
 - production million-token serving work
-- paged/preallocated KV cache internals
+- page-aware attention kernels and production-scale paged/preallocated serving internals
