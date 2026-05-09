@@ -196,8 +196,10 @@ These should not block the current Julia milestone:
 
 The best next vertical slice is:
 
-1. use the comparison map to choose the first additional family package or broader DeepSeek-family split and the minimum reusable abstractions it needs,
-2. keep the OpenMythos Lux refactor moving by replacing the remaining legacy package training/checkpoint internals with the new `LuxOpenMythos` + `TransformerCore.jl` trainer/checkpoint foundation,
-3. broaden the shared attention/norm/MoE/runtime surfaces only when the second concrete family implementation justifies the extraction,
-4. preserve the shared runtime envelope while page-aware attention and deeper serving work remain model-specific underneath,
-5. expand distributed/runtime work once the single-process story is deeper.
+1. start the first additional family package as **`OLMo.jl`**, targeting a tiny OLMo 2 dense decoder slice first,
+2. follow that with **`Gemma.jl`** as the second dense family so the repo can prove or reject a shared non-recurrent decoder shell on a real second use,
+3. only after `OLMo.jl` and `Gemma.jl`, decide whether a delayed **`DecoderCore.jl`** extraction is justified,
+4. then add **`Qwen.jl`** with both a tiny dense Qwen3 preset and a tiny MoE Qwen3 preset so the repo can evaluate shared sparse-FFN/MoE boundaries against the existing DeepSeek-family code,
+5. in parallel, keep the OpenMythos Lux refactor moving by replacing the remaining legacy package training/checkpoint internals with the new `LuxOpenMythos` + `TransformerCore.jl` trainer/checkpoint foundation,
+6. preserve the shared runtime envelope while page-aware attention and deeper serving work remain model-specific underneath,
+7. expand distributed/runtime work once the single-process story is deeper.

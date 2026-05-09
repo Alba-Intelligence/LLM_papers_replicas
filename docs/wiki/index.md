@@ -19,6 +19,7 @@ It is intentionally concept-first: the goal is to explain what the active source
 - The advanced-systems runtime work now includes shared cache envelopes, lower-allocation buffer-backed cache growth, and a first true paged cache-buffer implementation beneath the same outer runtime API.
 - The workspace now also has a shared `Documenter.jl` site under `docs/` in addition to the narrative wiki under `docs/wiki/`.
 - Future work now focuses on deeper full-model training, paged/preallocated serving internals, and distributed/performance work rather than missing repository basics.
+- The current comparison-driven family order is `OLMo.jl` first, `Gemma.jl` second, and `Qwen.jl` third, with any shared decoder or MoE extraction delayed until the code has a real second user.
 
 ## Reading order
 

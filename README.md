@@ -84,6 +84,6 @@ julia --project=. scripts/train_deepseek_tiny.jl
 ## Documentation
 
 - model-port documentation currently lives under `docs/wiki/`
-- `docs/wiki/llm-architecture-comparison-map.md` records the PDF-scoped architecture inventory and the current shared-abstraction plan for future family ports
+- `docs/wiki/llm-architecture-comparison-map.md` records the PDF-scoped architecture inventory, the current shared-abstraction plan, and the initial `OLMo -> Gemma -> Qwen` execution order for future family ports
 - package-local READMEs provide more detail for each subproject
 - notebooks and scripts under the repo root capture more exploratory work

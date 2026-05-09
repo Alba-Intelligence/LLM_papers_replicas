@@ -53,9 +53,21 @@ too policy-heavy or dependency-heavy:
 - remote dataset bridges and package-specific dataset naming,
 - package-specific training wrappers while model-specific hidden-state computation still differs.
 
-## Upcoming shared extraction fronts
+## Upcoming family packages and extraction fronts
 
-As the PDF-scoped family ports expand, the most likely reusable extraction fronts are:
+The current recommended first three additional family packages are:
+
+1. `OLMo.jl`
+2. `Gemma.jl`
+3. `Qwen.jl`
+
+Why this order:
+
+- `OLMo.jl` gives the repo a clean dense non-recurrent decoder baseline.
+- `Gemma.jl` adds local/global sliding-window scheduling and a second dense family before any shared decoder extraction.
+- `Qwen.jl` is the first point where it becomes worth testing one family that spans both dense and MoE variants.
+
+As those family ports expand, the most likely reusable extraction fronts are:
 
 - decoder scaffolds and layer-schedule helpers,
 - attention-backend families,
@@ -63,6 +75,11 @@ As the PDF-scoped family ports expand, the most likely reusable extraction front
 - sparse FFN / MoE block families,
 - linear/state-space sequence blocks,
 - auxiliary decoding heads such as MTP.
+
+The first two delayed shared-package checkpoints are expected to be:
+
+- `DecoderCore.jl` after `OLMo.jl` and `Gemma.jl` if a real shared non-recurrent decoder shell emerges,
+- `SparseFFNCore.jl` after `Qwen.jl` only if the MoE API actually converges with the DeepSeek-family code.
 
 These should become new shared packages only when a second concrete family implementation makes the API real.
 
