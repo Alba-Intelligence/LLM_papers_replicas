@@ -11,28 +11,30 @@ It is intentionally concept-first: the goal is to explain what the active source
 - The root repository is now a multi-package workspace.
 - `OpenMythos.jl/` contains the recurrent OpenMythos Julia package with its own `Project.toml`, `src/`, `test/`, and `Manifest.toml`.
 - `DeepSeekv4.jl/` contains the new DeepSeek V4 Julia package.
+- `OLMo.jl/` contains the first non-recurrent dense-decoder family package added from the comparison-driven architecture track.
 - `TransformerCore.jl/` contains reusable feature-last tensor helpers, `RMSNorm`, RoPE utilities, shared Lux-native layer/trainer helpers, family/mode-aware checkpoint helpers, and the first shared KV-cache envelope utilities.
 - `TextDataCore.jl/` contains shared Julia-native tokenizer and local text-data helpers, including GPT/tiktoken-style BPE tokenizers, vocabulary-surface extraction, and parquet-backed next-token batch loading.
 - the workspace now also keeps a comparison-driven architecture inventory rooted in `reference/private/The Big LLM Architecture Comparison.pdf` and `reference/private/Big-LLM-Architecture-models.yml`; for that expansion track, only the PDF/article-covered families are in active scope by default.
 - For `OpenMythos.jl`, the authoritative vendored Python reference today is `reference/private/OpenMythos`.
-- The implemented Julia slice now covers the OpenMythos primitive layer and main model stack, plus an architecture-first DeepSeek V4 package with tiny-config CSA/HCA, mHC, an optional gated Engram branch, MTP, generation smoke paths, and bootstrap training surfaces that now include both head-only trainers, a first dense full-model OpenMythos slice, and a first tiny DeepSeek full-model slice.
+- The implemented Julia slice now covers the OpenMythos primitive layer and main model stack, an architecture-first DeepSeek V4 package with tiny-config CSA/HCA, mHC, an optional gated Engram branch, MTP, generation smoke paths, and bootstrap training surfaces that now include both head-only trainers plus a first tiny DeepSeek full-model slice, and a first `OLMo.jl` package slice covering OLMo 2-style dense decoder blocks with QK-Norm, inside-residual post-norm, cache-aware generation, and a tiny full-model bootstrap trainer.
 - The advanced-systems runtime work now includes shared cache envelopes, lower-allocation buffer-backed cache growth, and a first true paged cache-buffer implementation beneath the same outer runtime API.
 - The workspace now also has a shared `Documenter.jl` site under `docs/` in addition to the narrative wiki under `docs/wiki/`.
 - Future work now focuses on deeper full-model training, paged/preallocated serving internals, and distributed/performance work rather than missing repository basics.
-- The current comparison-driven family order is `OLMo.jl` first, `Gemma.jl` second, and `Qwen.jl` third, with any shared decoder or MoE extraction delayed until the code has a real second user.
+- The current comparison-driven family order is `OLMo.jl` first, `Gemma.jl` second, and `Qwen.jl` third, with `OLMo.jl` now landed as the first additional family package and any shared decoder or MoE extraction still delayed until the code has a real second user.
 
 ## Reading order
 
 1. [Usage](usage.md) - how to actually run the current Julia packages.
 2. [Architecture](architecture.md) - the workspace architecture that already exists.
 3. [Big LLM architecture comparison map](llm-architecture-comparison-map.md) - the PDF-scoped architecture inventory and shared-abstraction map for future family ports.
-4. [Python reference map](python-reference-map.md) - which Python OpenMythos files matter and how they translate into Julia work.
-5. [DeepSeek V4 reference map](deepseek-v4-reference-map.md) - which external DeepSeek materials map to which Julia files.
-6. [References](references.md) - papers, datasets, and implementation references now used across model families.
-7. [DeepSeek V4 architecture](deepseek-v4-architecture.md) - the current DeepSeek V4 package surface and its deliberate deferrals.
-8. [Multi-package workspace](multi-model-repo-plan.md) - how the Julia workspace is split across packages.
-9. [Julia reimplementation plan](julia-reimplementation-plan.md) - current status and the remaining engineering phases.
-10. [HypergraphReasoning documentation](hypergraph-reasoning.md) - the integrated legacy Typst and specification material for the HypergraphReasoning Julia replication.
+4. [OLMo reference map](olmo-reference-map.md) - which OLMo 2 materials currently drive `OLMo.jl`.
+5. [Python reference map](python-reference-map.md) - which Python OpenMythos files matter and how they translate into Julia work.
+6. [DeepSeek V4 reference map](deepseek-v4-reference-map.md) - which external DeepSeek materials map to which Julia files.
+7. [References](references.md) - papers, datasets, and implementation references now used across model families.
+8. [DeepSeek V4 architecture](deepseek-v4-architecture.md) - the current DeepSeek V4 package surface and its deliberate deferrals.
+9. [Multi-package workspace](multi-model-repo-plan.md) - how the Julia workspace is split across packages.
+10. [Julia reimplementation plan](julia-reimplementation-plan.md) - current status and the remaining engineering phases.
+11. [HypergraphReasoning documentation](hypergraph-reasoning.md) - the integrated legacy Typst and specification material for the HypergraphReasoning Julia replication.
 
 There is also a small Pluto notebook example at `notebooks/openmythos/small_example.jl`.
 
@@ -87,6 +89,7 @@ The Julia replica now has a real bootstrap training path:
 - a `LuxHeadOnlyOpenMythos` layer backed by `Optimisers.AdamW`,
 - a broadened OpenMythos full-model trainer/checkpoint path for small GQA/MLA configs, including tiny sparse routed-expert setups with optional shared experts,
 - a parallel `LuxHeadOnlyDeepSeekV4` bootstrap path plus a first tiny `DeepSeekFullModelTrainerState` path and `DeepSeekv4.jl/scripts/train_deepseek_tiny.jl`,
+- a first `OLMoFullModelTrainerState` path and `OLMo.jl/scripts/train_olmo_tiny.jl` for an OLMo 2-style dense decoder,
 - an optional DeepSeek Engram branch with dependency-free compressed token lookup support for selected layers,
 - shared schedule, batching, next-token loss, Lux-native layer/trainer, checkpoint-layout, and gradient-masking helpers in `TransformerCore.jl`.
 
@@ -98,7 +101,7 @@ The workspace now also has a first reusable long-context runtime seam:
 
 - `TransformerCore.KVCacheEnvelope` to hold a mutable cache dictionary plus `start_pos`,
 - `save_kv_cache` and `load_kv_cache` for serialized cache reuse,
-- `chunked_prefill` in both `OpenMythos.jl` and `DeepSeekv4.jl`,
+- `chunked_prefill` in `OpenMythos.jl`, `DeepSeekv4.jl`, and `OLMo.jl`,
 - envelope-aware `generate` methods that can resume from a prefetched prompt state,
 - growable buffer-backed cache entries that avoid full-tensor concatenation on every append,
 - envelope-level capacity hints that let both model families preallocate cache buffers before decode growth begins.

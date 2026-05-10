@@ -1,0 +1,26 @@
+name = "OLMo"
+uuid = "021e0e9b-d4b3-49c3-9a71-2879bad0df28"
+version = "0.1.0"
+
+[deps]
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Optimisers = "3bd65402-5787-11e9-1adc-39752487f4e2"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+Serialization = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
+TextDataCore = "45258179-04e6-4202-9281-1f60cf90e7ed"
+TransformerCore = "b57a3b10-0dc6-488f-8532-4c1c16641fe1"
+Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
+
+[sources]
+TextDataCore = {path = "../TextDataCore.jl"}
+TransformerCore = {path = "../TransformerCore.jl"}
+
+[compat]
+Optimisers = "0.4.7"
+julia = "1.12"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]

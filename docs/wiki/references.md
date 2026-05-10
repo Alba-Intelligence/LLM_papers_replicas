@@ -16,6 +16,15 @@ This page consolidates the references currently shaping the Julia workspace:
 | Structured model registry              | `Big-LLM-Architecture-models.yml`                        | `reference/private/Big-LLM-Architecture-models.yml`                         | authoritative model names, config links, tech-report links, and metadata for PDF-covered families |
 | Gemma 3n authority for the PDF scope   | Google Developers Blog, _Introducing Gemma 3n_           | https://developers.googleblog.com/en/introducing-gemma-3n/                  | authority for the Gemma 3n section referenced by the comparison map                               |
 
+## OLMo materials
+
+| Topic | Reference | URL | Used for |
+| --- | --- | --- | --- |
+| OLMo 2 technical report | OLMo 2 paper | https://arxiv.org/pdf/2501.00656 | `OLMo.jl`, OLMo wiki pages, architecture planning |
+| OLMo 2 7B config | Hugging Face `config.json` | https://huggingface.co/allenai/OLMo-2-1124-7B/blob/main/config.json | concrete published field values for the first Julia slice |
+| OLMo 2 reference implementation | Hugging Face `modular_olmo2.py` / `modeling_olmo2.py` | https://github.com/huggingface/transformers/tree/main/src/transformers/models/olmo2 | block ordering, QK-Norm placement, and decoder-layer interpretation |
+| OLMo source repository | AllenAI OLMo repo | https://github.com/allenai/OLMo | training/config context and family lineage |
+
 ## DeepSeek V4 materials
 
 | Topic                      | Reference                  | URL                                                                          | Used for                                                     |

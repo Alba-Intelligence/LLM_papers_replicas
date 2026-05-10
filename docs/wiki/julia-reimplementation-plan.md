@@ -12,6 +12,7 @@ The workspace now has:
 
 - `OpenMythos.jl/` for the original recurrent package,
 - `DeepSeekv4.jl/` for the new DeepSeek V4 package,
+- `OLMo.jl/` for the first additional dense decoder family package from the comparison track,
 - `TransformerCore.jl/` for shared low-level primitives,
 - `TextDataCore.jl/` for shared Julia-native tokenizer and local text-data helpers,
 - `docs/wiki/` as shared workspace narrative documentation,
@@ -52,6 +53,7 @@ The current state is:
 - `OpenMythos.jl/` is the recurrent-depth package with parity-oriented model code, a head-only Lux bootstrap trainer, a legacy mutable full-model bootstrap trainer, and a new Lux-native `LuxFullModelTrainerState` plus shared save/load wrappers on the shared trainer foundation for small GQA/MLA configs including optional shared experts; the script default now points at the Lux-native path and keeps legacy checkpoint directories isolated.
 - `TextDataCore.jl/` now holds the shared GPT/tiktoken-style BPE tokenizer implementation, vocabulary-surface extraction helpers, and the local parquet-backed next-token batch builder that were previously OpenMythos-local.
 - `DeepSeekv4.jl/` is an architecture-first package with CSA/HCA, mHC, an optional gated Engram branch, MoE routing, MTP, chunked-prefill-aware generation, tiny-config tests, a head-only bootstrap training path now backed by the shared `TransformerCore.NextTokenTrainerState` / checkpoint layout, shared tokenizer and local parquet text-data helpers through `TextDataCore.jl`, and a first tiny full-model bootstrap trainer that now updates both the main LM logits path and the current auxiliary MTP heads.
+- `OLMo.jl/` is the first comparison-driven non-recurrent family package and currently covers an OLMo 2-style dense decoder with QK-Norm MHA, inside-residual post-norm, cache-aware generation, a shared-tokenizer-backed wrapper, and a tiny full-model bootstrap trainer with shared checkpoint layout.
 - `TransformerCore.jl/` holds the shared primitive, Lux-native layer/trainer foundation, runtime-envelope, and paged/growable cache-buffer layer.
 - the workspace source now carries public-API docstrings and a shared Documenter build for the multi-package surface.
 
@@ -99,6 +101,11 @@ DeepSeekv4.jl/
   Project.toml
   src/
   test/
+OLMo.jl/
+  Project.toml
+  src/
+  test/
+  scripts/
 TransformerCore.jl/
   Project.toml
   src/
@@ -147,6 +154,16 @@ Status: done for the current bootstrap milestone.
 
 Status: done for the current tiny-config architecture-first milestone.
 
+### Phase 4.5: first comparison-driven dense family package
+
+- add `OLMo.jl/`,
+- implement an OLMo 2-style dense decoder with QK-Norm MHA and inside-residual post-norm,
+- add cache-aware generation smoke paths,
+- land a tiny full-model bootstrap trainer on the shared checkpoint foundation,
+- defer tokenizer-exact masking-token parity and OLMo 3 local/global scheduling until later package work.
+
+Status: done for the initial OLMo 2 slice.
+
 ### Phase 5: training foundation
 
 - generalize the current training helpers into model-family-neutral entry points,
@@ -181,6 +198,7 @@ Status: in progress; the runtime-envelope, lower-allocation cache-buffer, preall
 | `TransformerCore.jl` | primitive smoke and invariant tests                                                                        |
 | `OpenMythos.jl`      | translated parity tests plus tokenizer, head-only, and dense full-model training smoke tests               |
 | `DeepSeekv4.jl`      | tiny-config architecture, generation, Engram, head-only training, and tiny full-model training smoke tests |
+| `OLMo.jl`            | tiny-config forward, cache-aware generation, tokenizer-wrapper, and full-model training smoke tests        |
 
 ## Explicit deferrals
 
@@ -196,10 +214,9 @@ These should not block the current Julia milestone:
 
 The best next vertical slice is:
 
-1. start the first additional family package as **`OLMo.jl`**, targeting a tiny OLMo 2 dense decoder slice first,
-2. follow that with **`Gemma.jl`** as the second dense family so the repo can prove or reject a shared non-recurrent decoder shell on a real second use,
-3. only after `OLMo.jl` and `Gemma.jl`, decide whether a delayed **`DecoderCore.jl`** extraction is justified,
-4. then add **`Qwen.jl`** with both a tiny dense Qwen3 preset and a tiny MoE Qwen3 preset so the repo can evaluate shared sparse-FFN/MoE boundaries against the existing DeepSeek-family code,
-5. in parallel, keep the OpenMythos Lux refactor moving by replacing the remaining legacy package training/checkpoint internals with the new `LuxOpenMythos` + `TransformerCore.jl` trainer/checkpoint foundation,
-6. preserve the shared runtime envelope while page-aware attention and deeper serving work remain model-specific underneath,
-7. expand distributed/runtime work once the single-process story is deeper.
+1. follow the landed `OLMo.jl` first slice with **`Gemma.jl`** as the second dense family so the repo can prove or reject a shared non-recurrent decoder shell on a real second use,
+2. only after `OLMo.jl` and `Gemma.jl`, decide whether a delayed **`DecoderCore.jl`** extraction is justified,
+3. then add **`Qwen.jl`** with both a tiny dense Qwen3 preset and a tiny MoE Qwen3 preset so the repo can evaluate shared sparse-FFN/MoE boundaries against the existing DeepSeek-family code,
+4. in parallel, keep the OpenMythos Lux refactor moving by replacing the remaining legacy package training/checkpoint internals with the new `LuxOpenMythos` + `TransformerCore.jl` trainer/checkpoint foundation,
+5. preserve the shared runtime envelope while page-aware attention and deeper serving work remain model-specific underneath,
+6. expand distributed/runtime work once the single-process story is deeper.

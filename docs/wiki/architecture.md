@@ -2,7 +2,7 @@
 
 ## Workspace-level view
 
-The repository now carries two model families plus a shared primitive layer:
+The repository now carries three model families plus a shared primitive layer:
 
 ```text
 TransformerCore.jl
@@ -15,6 +15,9 @@ OpenMythos.jl
 
 DeepSeekv4.jl
   -> architecture-first DeepSeek V4 stack
+
+OLMo.jl
+  -> dense decoder-only OLMo family slice
 ```
 
 The shared wiki stays at the repository root because the important design questions span package boundaries.
@@ -118,6 +121,36 @@ Input IDs
 - `mtp_logits`
 
 The current implementation is intentionally correctness-first and tiny-config-first. It is not yet a production-scale training or serving system.
+
+## OLMo architecture
+
+`OLMo.jl/` is the first additional family package landed from the comparison-driven architecture track.
+
+The current Julia slice targets **OLMo 2** first:
+
+```text
+Input IDs
+  -> token embedding
+  -> dense decoder block stack
+       -> QK-Norm MHA
+       -> SwiGLU MLP
+       -> inside-residual post-norm
+  -> RMSNorm
+  -> LM head
+```
+
+### OLMo-specific components
+
+- `OLMoConfig`
+- `OLMoAttention`
+- `OLMoMLP`
+- `OLMoBlock`
+- `OLMoModel`
+- `generate`
+- `chunked_prefill`
+- `OLMoFullModelTrainerState`
+
+The current implementation is intentionally OLMo-2-first and tiny-config-first. It does **not** yet include exact tokenizer parity for the extra OLMo masking-token extension or OLMo 3's later sliding-window / GQA changes.
 
 ## Shared primitive layer
 

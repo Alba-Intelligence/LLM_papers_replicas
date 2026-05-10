@@ -21,6 +21,9 @@ The most actively documented subworkspace currently centers on model-family port
 - `DeepSeekv4.jl/`
   - architecture-first DeepSeek V4 implementation in Julia
   - covers CSA/HCA hybrid attention, mHC residual mixing, routed/shared/hash MoE paths, optional Engram conditional memory, MTP heads, cached generation reuse, and tiny-config Lux bootstrap training
+- `OLMo.jl/`
+  - OLMo family implementation in Julia
+  - currently covers a first OLMo 2-style dense decoder slice with QK-Norm MHA, inside-residual post-norm, cache-aware generation, and a tiny full-model bootstrap trainer
 - `TransformerCore.jl/`
   - shared infrastructure for model-family ports
   - covers feature-last tensor helpers, embedding/sampling helpers, `RMSNorm`, RoPE, shared Lux-native training/checkpoint utilities, growable cache buffers, and serialized KV-cache envelopes
@@ -65,11 +68,27 @@ cd TransformerCore.jl
 julia --project=. -q -e 'using Pkg; Pkg.test()'
 ```
 
+### OLMo tests
+
+```bash
+cd OLMo.jl
+julia --project=. -q -e 'using Pkg; Pkg.test()'
+```
+
 ### TextDataCore tests
 
 ```bash
 cd TextDataCore.jl
 julia --project=. -q -e 'using Pkg; Pkg.test()'
+```
+
+### OLMo tiny training smoke run
+
+```bash
+cd OLMo.jl
+OLMO_TRAIN_TOTAL_STEPS=8 \
+OLMO_TRAIN_SEQ_LEN=32 \
+julia --project=. scripts/train_olmo_tiny.jl
 ```
 
 ### DeepSeek V4 tiny training smoke run

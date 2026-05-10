@@ -12,6 +12,7 @@ The current workspace already contains OpenMythos- and DeepSeek-specific package
 | ------------------------------- | -------------------------------------------------------------------------- |
 | `OpenMythos.jl/`                | recurrent OpenMythos package                                               |
 | `DeepSeekv4.jl/`                | architecture-first DeepSeek V4 package                                     |
+| `OLMo.jl/`                      | dense decoder-only OLMo family package                                     |
 | `TransformerCore.jl/`           | shared low-level primitives plus Lux-native training/checkpoint foundation |
 | `TextDataCore.jl/`              | shared tokenizer and local text-data helpers                               |
 | `docs/wiki/`                    | common documentation                                                       |
@@ -49,6 +50,7 @@ too policy-heavy or dependency-heavy:
 
 - OpenMythos recurrence, ACT, LoRA, and LTI logic,
 - DeepSeek V4 CSA/HCA attention, mHC, MTP, and routing choices,
+- OLMo-family QK-Norm MHA, inside-residual post-norm, and the first dense decoder shell,
 - model-family naming/policy wrappers on top of shared tokenizers,
 - remote dataset bridges and package-specific dataset naming,
 - package-specific training wrappers while model-specific hidden-state computation still differs.

@@ -2,9 +2,9 @@
 
 ## Mission
 
-This repository is for a Julia reimplementation of the Python project stored in `reference/private/OpenMythos` for `OpenMythos.jl` work.
+This repository is now a broader Julia model-family replication workspace.
 
-The main job for coding agents is to turn the Python reference into a Julia package and documentation set without losing the architectural core:
+For `OpenMythos.jl` work, the Python project stored in `reference/private/OpenMythos` remains the source of truth and should be ported without losing the architectural core:
 
 - Prelude -> Recurrent Block -> Coda,
 - ACT halting,
@@ -18,11 +18,15 @@ The main job for coding agents is to turn the Python reference into a Julia pack
 
 - Root repo: environment scaffolding, a multi-package Julia workspace, and porting docs.
 - Python reference for `OpenMythos.jl`: `reference/private/OpenMythos`.
+- comparison-driven architecture scope anchor: `reference/private/The Big LLM Architecture Comparison.pdf`
+- structured authority registry for that expansion track: `reference/private/Big-LLM-Architecture-models.yml`
 - Julia packages:
   - `OpenMythos.jl/` for the recurrent OpenMythos package,
   - `DeepSeekv4.jl/` for the DeepSeek V4 package,
+  - `OLMo.jl/` for the first additional dense decoder family package,
   - `TransformerCore.jl/` for shared reusable primitives,
   - `TextDataCore.jl/` for shared tokenizer and local text-data helpers.
+- The current `OLMo.jl` slice covers an OLMo 2-style dense decoder with QK-Norm MHA, inside-residual post-norm, cache-aware generation, a shared-tokenizer-backed wrapper, and a tiny full-model bootstrap trainer.
 - Wiki: `docs/wiki/`.
 
 The current Julia slice covers the core numerical primitives, the main model stack, tokenizer parity, and a bootstrap training/data path plus a first shared Lux-native training foundation in `TransformerCore.jl`:
@@ -53,6 +57,8 @@ The current OpenMythos training path is intentionally bootstrap-sized: it wires 
 
 ## Source priority
 
+### OpenMythos work
+
 Use sources in this order:
 
 1. `reference/private/OpenMythos/open_mythos/main.py`
@@ -64,6 +70,18 @@ Use sources in this order:
 7. `reference/private/OpenMythos/README.md`
 
 `README.md` is useful, but it mixes implementation facts with broader theory and speculation. Prefer code and tests when they disagree.
+
+### Comparison-driven family work
+
+Use sources in this order:
+
+1. `reference/private/The Big LLM Architecture Comparison.pdf`
+2. `reference/private/Big-LLM-Architecture-models.yml`
+3. the cited model paper / technical report
+4. the published model config / model card
+5. the reference implementation code when needed to resolve ambiguity
+
+Only implement the architectures explicitly covered in the PDF/article unless the user expands scope.
 
 ## Scope rules
 
@@ -120,6 +138,11 @@ DeepSeekv4.jl/
   Project.toml
   src/
   test/
+OLMo.jl/
+  Project.toml
+  src/
+  test/
+  scripts/
 TransformerCore.jl/
   Project.toml
   src/
@@ -212,6 +235,8 @@ Do not present those as root-level Julia commands.
 
 ## Near-term execution order
 
-1. Extend training beyond the current head-only Lux layer.
-2. Explore distributed/runtime behavior once the single-process story grows.
-3. Expand docs again when those surfaces land.
+1. Land the first additional dense family package slice in `OLMo.jl`.
+2. Follow with `Gemma.jl`, then `Qwen.jl`, while delaying any shared decoder or sparse-FFN extraction until the second use is real.
+3. Extend training beyond the current bootstrap full-model slices.
+4. Explore distributed/runtime behavior once the single-process story grows.
+5. Expand docs again when those surfaces land.

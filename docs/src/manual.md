@@ -8,6 +8,7 @@ This repository is a multi-package Julia workspace:
   and KV-cache infrastructure.
 - `OpenMythos.jl/` holds the recurrent-depth OpenMythos model family.
 - `DeepSeekv4.jl/` holds the DeepSeek V4 architecture-first implementation.
+- `OLMo.jl/` holds the first comparison-driven dense decoder family slice.
 - `docs/wiki/` remains the shared narrative design/wiki layer.
 
 ## Running tests
@@ -21,11 +22,14 @@ OPENMYTHOS_TEST_TOKENIZER_MODEL_ID=gpt2 julia --project=. -q -e 'using Pkg; Pkg.
 
 cd ../DeepSeekv4.jl
 julia --project=. -q -e 'using Pkg; Pkg.test()'
+
+cd ../OLMo.jl
+julia --project=. -q -e 'using Pkg; Pkg.test()'
 ```
 
 ## Runtime workflow
 
-Both model packages expose the same cache-oriented outer runtime contract:
+The current model-family packages expose the same cache-oriented outer runtime contract:
 
 1. build a `KVCacheEnvelope`,
 2. prefill it with `chunked_prefill`,
@@ -47,7 +51,7 @@ continued = generate(model, ids; max_new_tokens=4, n_loops=2, envelope=env)
 ```
 
 The same `KVCacheEnvelope` / `chunked_prefill` / `generate` workflow also applies
-to `DeepSeekV4Model`.
+to `DeepSeekV4Model` and `OLMoModel`.
 
 ## Training workflow
 
@@ -59,6 +63,8 @@ The current training surface is intentionally bootstrap-sized:
 - `DeepSeekv4.jl` now exposes both a **head-only Lux path** and a first **tiny
   full-model** bootstrap trainer for the primary LM logits path, the current
   MTP heads, and an optional gated Engram branch.
+- `OLMo.jl` now exposes a first **tiny dense full-model** bootstrap trainer for
+  an OLMo 2-style decoder stack.
 - `TransformerCore.jl` provides the shared warmup/cosine schedule, token-pair
   batching helpers, checkpoint discovery, and head-loss math.
 

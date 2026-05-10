@@ -42,6 +42,10 @@ The repo already has a meaningful shared base for the comparison-driven expansio
   - MoE routing variants
   - MTP heads
   - generation/runtime scaffolding for a non-recurrent decoder family
+- `OLMo.jl`
+  - dense decoder stack with QK-Norm MHA
+  - inside-residual post-norm block layout
+  - cache-aware generation and a tiny full-model bootstrap trainer
 
 That means the comparison effort is **not** starting from zero. The existing code already covers several recurring motifs: GQA, MLA, MoE, shared experts, RoPE, RMSNorm, MTP-adjacent training surfaces, and reusable training/runtime infrastructure.
 
@@ -106,7 +110,7 @@ The main missing components relative to the PDF map are:
 - latent-space MoE
 - key-reuse attention policies
 - PLE / MatFormer-style runtime-efficient parameter slicing
-- family packages beyond the current OpenMythos and DeepSeek-specific ones
+- family packages beyond the current OpenMythos, DeepSeek, and first OLMo slices
 
 ## Packaging guidance for the next implementation phase
 
@@ -128,7 +132,7 @@ The main missing components relative to the PDF map are:
 
 The current recommended sequence is:
 
-1. **`OLMo.jl` first**
+1. **`OLMo.jl` first** - landed as the first additional family slice
 2. **`Gemma.jl` second**
 3. **`Qwen.jl` third**
 
@@ -229,10 +233,10 @@ The goal is to earn the abstractions in a clarity-first order rather than chase 
 
 ## Immediate repository-level next step
 
-Before implementing more families, the repository should keep this sequence:
+With the first `OLMo.jl` slice now landed, the repository should keep this sequence:
 
-1. map a target PDF family to its YAML authority entries,
-2. identify which parts are family-specific versus reusable,
-3. land the smallest clear Julia family package or variant extension,
-4. extract reusable logic only after the second use appears,
+1. map the next target family (`Gemma.jl`) to its PDF/YAML authority entries,
+2. keep sliding-window scheduling and dual pre/post norm package-local on that first Gemma use,
+3. compare `Gemma.jl` against `OLMo.jl` before attempting any `DecoderCore.jl` extraction,
+4. only after that, add `Qwen.jl` as the first dense+MoE family package,
 5. update this page and the broader wiki before each commit.

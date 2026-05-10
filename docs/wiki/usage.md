@@ -6,6 +6,7 @@ This page shows the current user-facing workflow for the Julia workspace.
 
 - Run OpenMythos package commands from `OpenMythos.jl/`.
 - Run DeepSeek V4 package commands from `DeepSeekv4.jl/`.
+- Run OLMo package commands from `OLMo.jl/`.
 - Shared low-level primitives plus the emerging Lux-native training/checkpoint foundation live in `TransformerCore.jl/`.
 - Use `docs/` for the generated `Documenter.jl` site and `docs/wiki/` for the longer-form narrative docs.
 
@@ -20,6 +21,9 @@ OPENMYTHOS_TEST_TOKENIZER_MODEL_ID=gpt2 julia --project=. -q -e 'using Pkg; Pkg.
 
 cd ../DeepSeekv4.jl
 julia --project=. -q -e 'using Pkg; Pkg.test()'
+
+cd ../OLMo.jl
+julia --project=. -q -e 'using Pkg; Pkg.test()'
 ```
 
 ## 2. Build the API documentation
@@ -30,7 +34,7 @@ julia --project=docs -q docs/make.jl
 
 This builds the shared `Documenter.jl` site from:
 
-- source docstrings in all three Julia packages,
+- source docstrings in the current Julia family packages,
 - manual overview pages under `docs/src/`,
 - the shared docs environment in `docs/Project.toml`.
 
@@ -55,7 +59,26 @@ Expected shape:
 (1, 16, 256)
 ```
 
-## 4. Construct a tiny DeepSeek V4 model
+## 4. Construct a tiny OLMo model
+
+```julia
+using OLMo
+
+cfg = olmo2_tiny()
+model = OLMoModel(cfg)
+input_ids = reshape(collect(0:7), 1, :)
+
+logits = model(input_ids)
+size(logits)
+```
+
+Expected shape:
+
+```text
+(1, 8, cfg.vocab_size)
+```
+
+## 5. Construct a tiny DeepSeek V4 model
 
 ```julia
 using DeepSeekV4
@@ -81,9 +104,9 @@ cfg = deepseek_v4_tiny_engram()
 model = DeepSeekV4Model(cfg)
 ```
 
-## 5. Use the tokenizer
+## 6. Use the tokenizer
 
-The tokenizer is now package-specific at the API boundary but backed by a shared Julia-native `TextDataCore.jl` implementation for the currently supported GPT/tiktoken-style families. `OpenMythos.jl` now reuses that shared package for native BPE/tokenization and local parquet text batching instead of keeping those helpers package-local. The remote FineWeb-Edu smoke path now also uses a Julia-native dataset-viewer rows loader.
+The tokenizer is now package-specific at the API boundary but backed by a shared Julia-native `TextDataCore.jl` implementation for the currently supported GPT/tiktoken-style families. `OpenMythos.jl` now reuses that shared package for native BPE/tokenization and local parquet text batching instead of keeping those helpers package-local. `OLMo.jl` currently uses the shared `cl100k_base` path through `TextDataCore.jl`; exact parity for the extra OLMo masking-token extension is still deferred. The remote FineWeb-Edu smoke path now also uses a Julia-native dataset-viewer rows loader.
 
 ```julia
 using OpenMythos
@@ -96,6 +119,7 @@ text = detokenize(tok, ids)
 Useful entry points:
 
 - `MythosTokenizer(model_id)`
+- `OLMoTokenizer(model_id="cl100k_base")`
 - `tokenize(tok, text)`
 - `detokenize(tok, ids)`
 - `vocab_size(tok)`
@@ -112,7 +136,7 @@ Currently supported native tokenizer families include:
 
 That shared tokenizer/data surface is now also available to other model packages in the workspace through `TextDataCore.jl`.
 
-## 6. Reuse a prefetched KV cache
+## 7. Reuse a prefetched KV cache
 
 Both model packages now expose the same lightweight runtime workflow:
 
@@ -130,7 +154,7 @@ loaded = load_kv_cache("cache/openmythos_prefill.jls")
 continued = generate(model, ids; max_new_tokens=4, n_loops=2, envelope=loaded)
 ```
 
-The same `chunked_prefill`, `save_kv_cache`, `load_kv_cache`, and `generate(...; envelope=...)` pattern also works in `DeepSeekV4.jl`. If you want the cache to reserve space ahead of decode growth, construct the envelope with a capacity hint:
+The same `chunked_prefill`, `save_kv_cache`, `load_kv_cache`, and `generate(...; envelope=...)` pattern also works in `DeepSeekV4.jl` and `OLMo.jl`. If you want the cache to reserve space ahead of decode growth, construct the envelope with a capacity hint:
 
 ```julia
 env = KVCacheEnvelope(; capacity_hint=256)
@@ -140,7 +164,7 @@ continued = generate(model, ids; max_new_tokens=32, envelope=env)
 
 This is a reference runtime seam, not a production serving stack: the envelope still owns a Julia dictionary, but the per-layer cache payloads now use growable buffer-backed entries and can reserve capacity ahead of time rather than growing from minimal allocations on every decode step.
 
-## 7. Open the notebook example
+## 8. Open the notebook example
 
 There is a small Pluto notebook in:
 
@@ -164,7 +188,7 @@ The notebook demonstrates:
 - a forward pass,
 - short random-weight generation.
 
-## 8. Run the bootstrap training scripts
+## 9. Run the bootstrap training scripts
 
 The OpenMythos training entrypoint is:
 
@@ -248,6 +272,39 @@ OPENMYTHOS_FINEWEB_BATCHES=8 \
 julia --project=. scripts/train_3b_fineweb_edu.jl
 ```
 
+The OLMo training entrypoint is:
+
+```bash
+cd OLMo.jl
+julia --project=. scripts/train_olmo_tiny.jl
+```
+
+Useful environment variables:
+
+| Variable                        | Meaning                         | Default        |
+| ------------------------------- | ------------------------------- | -------------- |
+| `OLMO_TRAIN_TOKENIZER_MODEL_ID` | tokenizer model ID              | `cl100k_base`  |
+| `OLMO_TRAIN_TEXT`               | local training text override    | empty          |
+| `OLMO_TRAIN_TEXT_FILE`          | path to local training text     | empty          |
+| `OLMO_TRAIN_CKPT_DIR`           | checkpoint root directory       | `checkpoints`  |
+| `OLMO_TRAIN_TOTAL_STEPS`        | total bootstrap steps           | `8`            |
+| `OLMO_TRAIN_SEQ_LEN`            | sequence length                 | `32`           |
+| `OLMO_TRAIN_BATCH_SIZE`         | batch size                      | `2`            |
+| `OLMO_TRAIN_LR`                 | learning rate                   | `0.02`         |
+| `OLMO_TRAIN_WEIGHT_DECAY`       | AdamW weight decay              | `0.0`          |
+| `OLMO_TRAIN_CKPT_EVERY`         | checkpoint cadence              | `4`            |
+| `OLMO_TRAIN_KEEP_LAST`          | checkpoints to keep             | `3`            |
+| `OLMO_TRAIN_SEED`               | RNG seed                        | `1`            |
+
+Example OLMo local-text smoke run:
+
+```bash
+cd OLMo.jl
+OLMO_TRAIN_TOTAL_STEPS=8 \
+OLMO_TRAIN_SEQ_LEN=32 \
+julia --project=. scripts/train_olmo_tiny.jl
+```
+
 The DeepSeek V4 training entrypoint is:
 
 ```bash
@@ -297,7 +354,7 @@ DEEPSEEK_V4_TRAIN_SEQ_LEN=32 \
 julia --project=. scripts/train_deepseek_tiny.jl
 ```
 
-## 9. Understand the current training and runtime scope
+## 10. Understand the current training and runtime scope
 
 The current bootstrap trainer is intentionally limited:
 
@@ -308,6 +365,7 @@ The current bootstrap trainer is intentionally limited:
 - the package now also exposes a first Lux-native `LuxFullModelTrainerState` built on `TransformerCore.NextTokenTrainerState` plus shared family/mode-aware checkpoint save/load helpers,
 - those full-model paths currently support small GQA/MLA configs, including tiny sparse routed-expert setups with optional shared experts, while `full_model_legacy` and `head_only` remain compatibility modes,
 - `DeepSeekv4.jl` now has both a `LuxHeadOnlyDeepSeekV4` head-only trainer and a first tiny `DeepSeekFullModelTrainerState` bootstrap path,
+- `OLMo.jl` now has a first tiny `OLMoFullModelTrainerState` bootstrap path for an OLMo 2-style dense decoder,
 - DeepSeek now also reuses the shared `TextDataCore.jl` tokenizer/local-parquet data path and the shared family/mode-aware checkpoint layout,
 - the current DeepSeek full-model loss now trains both the main LM logits path and the current auxiliary MTP heads on tiny configs, with an optional gated Engram branch,
 - the core model internals are still mostly manual Julia blocks, though `OpenMythos.jl` now also exposes Lux-native mirrors for attention, experts / MoE, transformer blocks, recurrent update primitives, and a tied-embedding `LuxOpenMythos` shell,
@@ -320,7 +378,7 @@ The current runtime seam is also intentionally lightweight:
 - cache payloads are still family-specific runtime entries under a `Dict{String, Any}` envelope, now backed by growable append buffers with optional preallocated capacity hints,
 - true paged attention and production cache allocators are still future work.
 
-## 9. What to read next
+## 11. What to read next
 
 1. [Architecture](architecture.md)
 2. [Python reference map](python-reference-map.md)
